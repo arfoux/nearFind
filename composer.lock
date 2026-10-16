@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cda2add6397422fb1a2eb5b9207f1575",
+    "content-hash": "386be0e660c0fbf0d82281a08a13edb1",
     "packages": [
         {
             "name": "brick/math",
@@ -2462,6 +2462,91 @@
             "time": "2026-09-13T18:51:52+00:00"
         },
         {
+            "name": "ntanduy/cloudflare-d1-database",
+            "version": "v0.10.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/TanDuy03/cloudflare-d1-database.git",
+                "reference": "660b7ddfddf004d7035124697d47f7f9090cb684"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/TanDuy03/cloudflare-d1-database/zipball/660b7ddfddf004d7035124697d47f7f9090cb684",
+                "reference": "660b7ddfddf004d7035124697d47f7f9090cb684",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/cache": "^10.0|^11.0|^12.0|^13.0",
+                "illuminate/contracts": "^10.0|^11.0|^12.0|^13.0",
+                "illuminate/database": "^10.0|^11.0|^12.0|^13.0",
+                "illuminate/http": "^10.0|^11.0|^12.0|^13.0",
+                "illuminate/support": "^10.0|^11.0|^12.0|^13.0",
+                "php": "^8.2",
+                "saloonphp/saloon": "^4.0"
+            },
+            "require-dev": {
+                "laravel/pint": "^1.27",
+                "mockery/mockery": "^1.6",
+                "orchestra/testbench": "^8.0|^9.0|^10.0|^11.0",
+                "pestphp/pest": "^2.35|^3.0|^4.0",
+                "phpstan/phpstan": "^2.1"
+            },
+            "suggest": {
+                "ext-pdo": "Required to extend the PDO driver for Cloudflare D1."
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "Ntanduy\\CFD1\\D1ServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Ntanduy\\CFD1\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "TanDuy03",
+                    "email": "contact@ntanduy.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Cloudflare D1 database driver for Laravel — full Eloquent & Query Builder support.",
+            "homepage": "https://github.com/TanDuy03/cloudflare-d1-database",
+            "keywords": [
+                "cloudflare",
+                "cloudflare-d1",
+                "d1",
+                "database",
+                "database-driver",
+                "driver",
+                "eloquent",
+                "laravel",
+                "laravel-package",
+                "pdo",
+                "php",
+                "sqlite"
+            ],
+            "support": {
+                "issues": "https://github.com/TanDuy03/cloudflare-d1-database/issues",
+                "source": "https://github.com/TanDuy03/cloudflare-d1-database/tree/v0.10.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/TanDuy03",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-05-16T09:47:22+00:00"
+        },
+        {
             "name": "nunomaduro/termwind",
             "version": "v2.4.0",
             "source": {
@@ -3267,6 +3352,88 @@
                 "source": "https://github.com/ramsey/uuid/tree/4.9.4"
             },
             "time": "2026-09-16T11:39:30+00:00"
+        },
+        {
+            "name": "saloonphp/saloon",
+            "version": "v4.5.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/saloonphp/saloon.git",
+                "reference": "2f45e526f9d1d10a138f864492b074b046d2e52e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/saloonphp/saloon/zipball/2f45e526f9d1d10a138f864492b074b046d2e52e",
+                "reference": "2f45e526f9d1d10a138f864492b074b046d2e52e",
+                "shasum": ""
+            },
+            "require": {
+                "guzzlehttp/guzzle": "^7.6 || ^8.0",
+                "guzzlehttp/promises": "^1.5 || ^2.0 || ^3.0",
+                "guzzlehttp/psr7": "^2.0 || ^3.0",
+                "php": "^8.2",
+                "psr/clock": "^1.0",
+                "psr/http-factory": "^1.0",
+                "psr/http-message": "^1.1 || ^2.0"
+            },
+            "conflict": {
+                "sammyjo20/saloon": "*"
+            },
+            "require-dev": {
+                "ext-simplexml": "*",
+                "friendsofphp/php-cs-fixer": "^3.5",
+                "illuminate/collections": "^10.0 || ^11.0 || ^12.0",
+                "league/flysystem": "^3.0",
+                "pestphp/pest": "^2.36.0 || ^3.8.2 || ^4.1.4",
+                "phpstan/phpstan": "^2.1.13",
+                "saloonphp/xml-wrangler": "^1.1",
+                "spatie/invade": "^2.1",
+                "symfony/dom-crawler": "^6.0 || ^7.0",
+                "symfony/var-dumper": "^6.3 || ^7.0"
+            },
+            "suggest": {
+                "illuminate/collections": "Required for the response collect() method.",
+                "saloonphp/xml-wrangler": "Required for the response xmlReader() method.",
+                "symfony/dom-crawler": "Required for the response dom() method.",
+                "symfony/var-dumper": "Required for default debugging drivers."
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Saloon\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Sam Carré",
+                    "email": "29132017+Sammyjo20@users.noreply.github.com",
+                    "role": "Developer"
+                }
+            ],
+            "description": "Build beautiful API integrations and SDKs with Saloon",
+            "homepage": "https://github.com/saloonphp/saloon",
+            "keywords": [
+                "api",
+                "api-integrations",
+                "saloon",
+                "sammyjo20",
+                "sdk"
+            ],
+            "support": {
+                "issues": "https://github.com/saloonphp/saloon/issues",
+                "source": "https://github.com/saloonphp/saloon/tree/v4.5.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/sammyjo20",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-10-03T14:00:29+00:00"
         },
         {
             "name": "symfony/clock",
