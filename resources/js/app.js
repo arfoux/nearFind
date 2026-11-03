@@ -1,5 +1,6 @@
 import { Map as MapLibreMap, Marker, Popup, setWorkerUrl } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+import './profile.js';
 
 setWorkerUrl(workerUrl);
 

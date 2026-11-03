@@ -2,6 +2,7 @@
 
 namespace App\Auth;
 
+use App\Models\Profile;
 use App\Support\Seal\Sealer;
 use App\Support\Seal\SealException;
 use Illuminate\Auth\GuardHelpers;
@@ -44,7 +45,7 @@ final class SealGuard implements Guard
             return null;
         }
 
-        return $this->user = new StatelessUser($email, $name);
+        return $this->user = new StatelessUser($email, Profile::displayNameForEmail($email) ?? $name);
     }
 
     public function validate(array $credentials = []): bool

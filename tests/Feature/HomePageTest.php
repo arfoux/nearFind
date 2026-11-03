@@ -23,10 +23,10 @@ class HomePageTest extends TestCase
         $response->assertSee('Masuk untuk melanjutkan');
     }
 
-    public function test_only_home_page_is_available(): void
+    public function test_only_planned_pages_are_unavailable(): void
     {
         $this->get('/jelajahi')->assertNotFound();
         $this->get('/laporan')->assertNotFound();
-        $this->get('/profil')->assertNotFound();
+        $this->get('/profil')->assertRedirect(route('login'));
     }
 }

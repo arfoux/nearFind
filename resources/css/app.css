@@ -409,7 +409,8 @@ body.app-background {
 /* -------------------------------------------------------------------------- */
 
 .filter-sheet-panel,
-.login-gate-panel {
+.login-gate-panel,
+.profile-modal-panel {
     animation: nf-sheet-in 0.26s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
