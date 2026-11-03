@@ -168,3 +168,4 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Kalau `main` bergerak duluan, PR jadi "behind" dan auto-merge menunggu: sinkronkan lewat tombol **Update branch** atau `gh pr update-branch`.
 - PR yang menyentuh `.github/workflows/` **tidak** di-arm: perubahan konfigurasi CI wajib lewat review manusia, jadi harus di-merge manual.
 - Aturan di atas juga berlaku untuk anggota tim manusia; versi onboarding mereka ada di `CONTRIBUTING.md`.
+- Branch head yang tertinggal (merge oleh bot tidak memicu `delete_branch_on_merge` maupun event `closed`) disapu `.github/workflows/cleanup-branches.yml`: tiap 15 menit, saat push ke `main`, atau manual (`gh workflow run cleanup-branches.yml`).

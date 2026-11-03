@@ -1,0 +1,59 @@
+name: Cleanup merged branches
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+concurrency:
+  group: cleanup-branches
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: Delete branches of merged PRs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Sweep merged head branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          default="${DEFAULT:-main}"
+          owner="${REPO%%/*}"
+
+          open_refs=$(gh pr list --repo "$REPO" --state open --limit 200 --json headRefName --jq '.[].headRefName')
+          merged_refs=$(gh pr list --repo "$REPO" --state merged --limit 200 --json headRefName,headRepositoryOwner --jq --arg o "$owner" '.[] | select(.headRepositoryOwner.login == $o) | .headRefName')
+
+          deleted=0
+          skipped=0
+          for ref in $(printf '%s\n' "$merged_refs" | sort -u); do
+            [ -z "$ref" ] && continue
+            if [ "$ref" = "$default" ]; then
+              echo "lewati branch default: $ref"
+              skipped=$((skipped + 1))
+              continue
+            fi
+            if printf '%s\n' "$open_refs" | grep -qxF "$ref"; then
+              echo "lewati (masih ada PR terbuka): $ref"
+              skipped=$((skipped + 1))
+              continue
+            fi
+            if ! gh api "repos/$REPO/git/refs/heads/$ref" >/dev/null 2>&1; then
+              echo "sudah tidak ada: $ref"
+              continue
+            fi
+            gh api -X DELETE "repos/$REPO/git/refs/heads/$ref" >/dev/null
+            echo "hapus $ref"
+            deleted=$((deleted + 1))
+          done
+          echo "selesai: $deleted dihapus, $skipped dilewati"
