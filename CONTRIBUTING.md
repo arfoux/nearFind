@@ -22,11 +22,9 @@ gh pr create --fill                        # atau lewat web
 2. branch sudah up-to-date dengan `main` (kalau tertinggal, klik **Update branch** — lihat bawah),
 3. semua percakapan review diselesaikan.
 
-Branch head-nya dihapus otomatis oleh GitHub lewat setelan repo `delete_branch_on_merge` - tanpa workflow. Bukti dari dua merge terakhir: branch-nya sudah hilang sebelum job apa pun sempat jalan. Yang perlu jaring adalah kasus langka (merge oleh `GITHUB_TOKEN` di Actions tidak memicu setelan itu; penghapusan bisa gagal) - itu tugas `.github/workflows/cleanup-branches.yml` (harian, jadwalnya best-effort punya GitHub), dan bisa dipicu manual:
+Branch head-nya dihapus otomatis oleh GitHub lewat setelan repo `delete_branch_on_merge` - tanpa workflow, tanpa cron. Bukti: pada dua merge terakhir (#18, #19) branch-nya sudah hilang sebelum job apa pun sempat jalan.
 
-```bash
-gh workflow run cleanup-branches.yml
-```
+Tidak ada penyapu otomatis. Kalau langka-langka ada branch sisa setelah merge (penghapusan gagal, atau merge oleh `GITHUB_TOKEN` kalau kelak ada bot yang merge), hapus manual dari halaman PR - tombol **Delete branch**. Jangan pakai branch yang sudah merge untuk kerja baru.
 
 ## Yang perlu dihindari
 
