@@ -167,6 +167,6 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - **Merge itu manual**: buka PR, pastikan CI hijau (`Lint, test, and build`), lalu **manusia** yang menekan merge (squash). Tidak ada job yang meng-arm `gh pr merge --auto` - mesin arming itu pernah ada dan sengaja dihapus; jangan dikembalikan tanpa alasan baru.
 - Jangan merge PR yang belum kamu tinjau sendiri. Approval wajib saat ini `0`, jadi tidak ada yang menahan - 100% keputusan manusia.
 - Kalau `main` bergerak duluan, PR jadi "behind" dan proteksi menahan merge: klik **Update branch** atau `gh pr update-branch`, lalu merge.
-- Setelah merge, branch head dihapus otomatis oleh `.github/workflows/hapus-branch.yml` (setelan repo `delete_branch_on_merge` ikut membantu untuk merge lewat web). Branch yang sudah merge **tidak dipakai lagi** untuk kerja baru - mulai branch baru dari `main` terbaru.
+- Setelah merge, branch head dihapus otomatis oleh setelan repo `delete_branch_on_merge` (GitHub, tanpa workflow). Branch yang sudah merge **tidak dipakai lagi** untuk kerja baru - mulai branch baru dari `main` terbaru.
 - Jaring keamanan: `.github/workflows/cleanup-branches.yml` (harian) menyapu branch sisa; bisa dipicu manual `gh workflow run cleanup-branches.yml`.
 - Aturan di atas juga berlaku untuk anggota tim manusia; versi onboarding mereka ada di `CONTRIBUTING.md`.
