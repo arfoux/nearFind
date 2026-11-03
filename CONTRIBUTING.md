@@ -39,7 +39,9 @@ gh workflow run cleanup-branches.yml
 
 ## Kalau `main` bergerak duluan
 
-PR-mu jadi "behind" dan auto-merge menunggu. Sinkronkan lewat tombol **Update branch** di halaman PR, atau:
+PR-mu jadi "behind" dan auto-merge menunggu - `main` mensyaratkan branch yang sudah up to date. Job `arm` menyinkronkannya sendiri (maksimal 5 kali, dicek tiap ±1 menit) lalu memicu ulang CI, jadi biasanya tidak perlu kamu apa-apakan.
+
+Cadangan manual - kalau job itu sudah menyerah di menit ke-30 (misalnya update gagal karena konflik), pakai tombol **Update branch** di halaman PR atau:
 
 ```bash
 gh pr update-branch

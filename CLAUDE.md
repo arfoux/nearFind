@@ -166,7 +166,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 
 - PR biasa **ter-arm otomatis** oleh `.github/workflows/auto-merge.yml` (`gh pr merge --auto --squash`) — tidak perlu menekan "Enable auto-merge".
 - Merge jalan sendiri begitu CI hijau **dan** branch up-to-date dengan `main` **dan** percakapan review selesai. Setelah itu branch head dihapus otomatis.
-- Kalau `main` bergerak duluan, PR jadi "behind" dan auto-merge menunggu: sinkronkan lewat tombol **Update branch** atau `gh pr update-branch`.
+- Kalau `main` bergerak duluan, PR jadi "behind" dan auto-merge menunggu: job `arm` menyinkronkan sendiri (maks 5x, dicek tiap ±1 menit) lalu memicu ulang CI. Tombol **Update branch** / `gh pr update-branch` = cadangan kalau job itu sudah menyerah di menit ke-30.
 - PR yang menyentuh `.github/workflows/` **tidak** di-arm: perubahan konfigurasi CI wajib lewat review manusia, jadi **merge-nya manual oleh manusia** - jangan di-merge sendiri.
 - Aturan di atas juga berlaku untuk anggota tim manusia; versi onboarding mereka ada di `CONTRIBUTING.md`.
 - Penghapusan branch itu otomatis; kalau ada branch sisa yang belum hilang setelah merge (job timeout atau penghapusan gagal), jangan dipakai ulang - sapu dengan `gh workflow run cleanup-branches.yml`.
