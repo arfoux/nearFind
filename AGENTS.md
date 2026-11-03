@@ -160,3 +160,10 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - **Konflik** — selesaikan hanya di file milikmu. Jangan pernah mengubah/menghapus perubahan orang lain untuk "menyelesaikan" konflik; kalau tercampur, berhenti dan tanya.
 - **Larangan mutlak** — force-push, rebase branch yang sudah di-push orang lain, amend commit yang sudah ter-publish, hapus branch orang lain.
 - **Akhir sesi** — tidak ada pekerjaan menggantung: commit & push ke branch-mu (PR boleh tetap draft).
+
+### Alur merge
+
+- PR biasa **ter-arm otomatis** oleh `.github/workflows/auto-merge.yml` (`gh pr merge --auto --squash`) — tidak perlu menekan "Enable auto-merge".
+- Merge jalan sendiri begitu CI hijau **dan** branch up-to-date dengan `main` **dan** percakapan review selesai. Setelah itu branch head dihapus otomatis.
+- Kalau `main` bergerak duluan, PR jadi "behind" dan auto-merge menunggu: sinkronkan lewat tombol **Update branch** atau `gh pr update-branch`.
+- PR yang menyentuh `.github/workflows/` **tidak** di-arm: perubahan konfigurasi CI wajib lewat review manusia, jadi harus di-merge manual.
