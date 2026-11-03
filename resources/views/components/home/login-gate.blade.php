@@ -1,4 +1,4 @@
-<div id="login-gate" data-login-url="{{ route('login') }}" class="fixed inset-0 z-[1300] hidden items-end justify-center lg:items-center" role="presentation">
+<div id="login-gate" class="fixed inset-0 z-[1300] hidden items-end justify-center lg:items-center" role="presentation">
     <div data-login-backdrop class="absolute inset-0 bg-brand-900/35 backdrop-blur-[2px]"></div>
 
     <div
@@ -51,14 +51,14 @@
                 Nanti saja
             </button>
 
-            <button
-                type="button"
+            <a
+                href="{{ route('login') }}"
                 data-login-submit
                 class="inline-flex h-11 flex-[1.35] items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 text-[12px] font-semibold text-white shadow-[0_12px_24px_-16px_rgba(0,92,85,0.8)] transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
             >
                 Masuk
                 <x-icon name="arrow-right" class="size-4" />
-            </button>
+            </a>
         </div>
     </div>
 </div>
