@@ -68,10 +68,15 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
     const toast = document.getElementById('toast');
     const toastMessage = toast?.querySelector('[data-toast-message]');
     const mapTip = document.querySelector('[data-map-tip]');
+    const needPanel = document.getElementById('need-panel');
+    const cardToggle = document.querySelector('[data-card-toggle]');
+    const mapControls = document.querySelector('[data-map-controls]');
+    const desktopQuery = window.matchMedia('(min-width: 1024px)');
     const requestedNeedId = new URLSearchParams(window.location.search).get('need');
 
     const initialNeed = needs.find((need) => need.id === requestedNeedId) ?? needs[0] ?? null;
     state.selectedId = initialNeed?.id ?? null;
+    let cardExpanded = desktopQuery.matches;
 
     const tooltip = new Popup({
         closeButton: false,
@@ -94,6 +99,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
     initMap();
     bindEvents();
     applyFilters({ fit: true, syncUrl: false });
+    setCardExpanded(cardExpanded);
 
     requestAnimationFrame(() => {
         map?.resize();
@@ -246,6 +252,11 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
 
             if (filterSheet && !filterSheet.classList.contains('hidden')) {
                 closeFilterSheet();
+                return;
+            }
+
+            if (!desktopQuery.matches && needPanel?.dataset.state === 'expanded') {
+                setCardExpanded(false);
             }
         });
 
@@ -254,6 +265,12 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         document.querySelector('[data-map-locate]')?.addEventListener('click', locateUser);
         document.querySelector('[data-map-zoom-in]')?.addEventListener('click', () => zoomBy(0.5));
         document.querySelector('[data-map-zoom-out]')?.addEventListener('click', () => zoomBy(-0.5));
+
+        cardToggle?.addEventListener('click', () => setCardExpanded(!cardExpanded));
+
+        desktopQuery.addEventListener('change', (event) => {
+            setCardExpanded(event.matches);
+        });
 
         needCardElement.addEventListener('click', (event) => {
             const supportButton = event.target.closest('[data-support-button]');
@@ -498,6 +515,24 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         loginReturnFocus = null;
     }
 
+    function setCardExpanded(expanded) {
+        if (!needPanel || !cardToggle) {
+            return;
+        }
+
+        cardExpanded = expanded;
+        needPanel.dataset.state = expanded ? 'expanded' : 'collapsed';
+        cardToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        cardToggle.setAttribute('aria-label', expanded ? 'Tutup detail kebutuhan' : 'Buka detail kebutuhan');
+        mapControls?.classList.toggle('is-hidden', !desktopQuery.matches && expanded);
+
+        const label = cardToggle.querySelector('[data-card-toggle-label]');
+
+        if (label) {
+            label.textContent = expanded ? 'Tutup' : 'Detail';
+        }
+    }
+
     function renderMarkers() {
         if (!map) {
             return;
@@ -608,6 +643,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
 
         state.filtered.forEach((filteredNeed) => refreshMarker(filteredNeed));
 
+        mapTip?.remove();
         renderCard({ preserveScroll });
         syncUrlSelection();
 
@@ -769,13 +805,24 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
             [coordinates[0], coordinates[0]],
         );
         const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+        const mapWidth = mapElement.clientWidth || window.innerWidth;
+        const mapHeight = mapElement.clientHeight || window.innerHeight;
+        const mapCredit = document.querySelector('[data-map-credit]');
+        const mapTop = mapElement.getBoundingClientRect().top;
+        const creditBottom = mapCredit ? mapCredit.getBoundingClientRect().bottom - mapTop : 0;
+        const topPadding = Math.min(
+            Math.max(isDesktop ? 180 : 210, creditBottom + 28),
+            Math.max(120, mapHeight * 0.34),
+        );
+        const bottomPadding = Math.min(isDesktop ? 80 : 230, Math.max(60, mapHeight * 0.32));
+        const rightPadding = isDesktop ? Math.min(430, Math.max(120, mapWidth * 0.4)) : 80;
 
         map.fitBounds(bounds, {
             padding: {
-                top: isDesktop ? 118 : 104,
-                right: isDesktop ? 60 : 24,
-                bottom: isDesktop ? 50 : 40,
-                left: isDesktop ? 60 : 24,
+                top: topPadding,
+                right: rightPadding,
+                bottom: bottomPadding,
+                left: isDesktop ? 40 : 32,
             },
             maxZoom: isDesktop ? 16 : 15.5,
             linear: true,

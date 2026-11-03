@@ -77,6 +77,41 @@ body.app-background {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Glass surfaces                                                             */
+/* -------------------------------------------------------------------------- */
+
+.nf-glass,
+.nf-glass-strong,
+.nf-glass-subtle {
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    box-shadow:
+        0 18px 50px -30px rgba(0, 60, 55, 0.55),
+        0 0 0 1px rgba(0, 92, 85, 0.04);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+.nf-glass {
+    background: rgba(255, 255, 255, 0.68);
+}
+
+.nf-glass-strong {
+    background: rgba(255, 255, 255, 0.84);
+}
+
+.nf-glass-subtle {
+    background: rgba(255, 255, 255, 0.58);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .nf-glass,
+    .nf-glass-strong,
+    .nf-glass-subtle {
+        background: rgba(255, 255, 255, 0.96);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
 /* Map                                                                        */
 /* -------------------------------------------------------------------------- */
 
@@ -89,7 +124,7 @@ body.app-background {
     position: absolute;
     z-index: 350;
     inset: 0;
-    background: linear-gradient(180deg, rgba(248, 246, 240, 0.42), rgba(248, 246, 240, 0.24));
+    background: linear-gradient(180deg, rgba(248, 246, 240, 0.26), rgba(248, 246, 240, 0.1));
     content: '';
     pointer-events: none;
 }
@@ -101,8 +136,8 @@ body.app-background {
 }
 
 .maplibregl-canvas {
-    filter: saturate(0.32) brightness(1.22) contrast(0.77) sepia(0.09);
-    opacity: 0.94;
+    filter: saturate(0.5) brightness(1.14) contrast(0.84) sepia(0.05);
+    opacity: 0.98;
 }
 
 .maplibregl-control-container {
@@ -302,11 +337,13 @@ body.app-background {
     align-items: center;
     justify-content: center;
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.96);
+    background: rgba(255, 255, 255, 0.76);
     color: var(--color-brand-700);
     box-shadow:
         0 10px 24px -16px rgba(0, 60, 55, 0.55),
         0 0 0 1px rgba(0, 92, 85, 0.1);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
     transition:
         background 0.18s ease,
         color 0.18s ease,
@@ -315,7 +352,7 @@ body.app-background {
 }
 
 .map-control:hover {
-    background: #fff;
+    background: rgba(255, 255, 255, 0.94);
     color: var(--color-brand-800);
     transform: translateY(-1px);
     box-shadow:
@@ -352,9 +389,9 @@ body.app-background {
     flex-shrink: 0;
     align-items: center;
     gap: 6px;
-    border: 1px solid rgba(0, 92, 85, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.6);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.96);
+    background: rgba(255, 255, 255, 0.72);
     padding: 0 13px;
     color: var(--color-ink);
     font-size: 11px;
@@ -362,6 +399,8 @@ body.app-background {
     letter-spacing: -0.01em;
     white-space: nowrap;
     box-shadow: 0 6px 18px -12px rgba(0, 60, 55, 0.35);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
     transition:
         background 0.18s ease,
         color 0.18s ease,
@@ -370,7 +409,7 @@ body.app-background {
 }
 
 .category-chip:hover {
-    background: #fff;
+    background: rgba(255, 255, 255, 0.94);
     transform: translateY(-1px);
 }
 
@@ -443,6 +482,73 @@ body.app-background {
 
 .filter-option input:checked + .filter-sort-inner .filter-radio > span {
     background: #fff;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Map-first detail panel                                                     */
+/* -------------------------------------------------------------------------- */
+
+.nf-need-panel {
+    --nf-panel-peek: 9rem;
+    height: var(--nf-panel-peek);
+    background: rgba(255, 255, 255, 0.92);
+    transition: height 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nf-need-panel[data-state='expanded'] {
+    height: max(var(--nf-panel-peek), min(56dvh, calc(100dvh - 16rem), 34rem));
+    background: rgba(255, 255, 255, 0.98);
+}
+
+.nf-need-panel[data-state='collapsed'] #need-card {
+    overflow-y: hidden;
+}
+
+.nf-need-panel[data-state='collapsed']::after {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1;
+    height: 2.75rem;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.72));
+    content: '';
+    pointer-events: none;
+}
+
+.nf-need-panel[data-state='expanded'] [data-card-toggle] .nf-chevron {
+    transform: rotate(180deg);
+}
+
+.nf-fab {
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease,
+        background 0.18s ease;
+}
+
+.nf-map-controls.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-0.25rem);
+}
+
+@media (max-width: 1023px) {
+    .nf-need-panel[data-state='expanded'] ~ .nf-fab {
+        opacity: 0;
+        pointer-events: none;
+        transform: translateY(0.5rem);
+    }
+}
+
+@media (min-width: 1024px) {
+    .nf-need-panel {
+        --nf-panel-peek: 10rem;
+    }
+
+    .nf-need-panel[data-state='expanded'] {
+        height: max(var(--nf-panel-peek), min(calc(100dvh - 18.5rem), 38rem));
+    }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -542,5 +648,15 @@ body.app-background {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .category-chip {
+        background: rgba(255, 255, 255, 0.96);
+    }
+
+    .map-control:not(.map-control--flush) {
+        background: rgba(255, 255, 255, 0.96);
     }
 }

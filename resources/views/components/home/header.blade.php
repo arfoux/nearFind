@@ -1,4 +1,4 @@
-<header class="relative z-[700] shrink-0 bg-canvas px-4 pb-3 pt-3.5 sm:px-5 lg:px-6 lg:pb-4 lg:pt-5">
+<header class="nf-glass-strong pointer-events-auto relative z-[700] rounded-[22px] px-3.5 py-3 sm:px-4 lg:px-5 lg:py-3.5">
     <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-x-8">
         <x-brand class="col-start-1 row-start-1 justify-self-start" />
 

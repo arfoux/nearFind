@@ -1,4 +1,4 @@
-@props(['active' => 'peta'])
+@props(['active' => 'peta', 'floating' => false])
 
 @php
     $isAuthenticated = auth('seal')->check();
@@ -11,8 +11,21 @@
     ];
 @endphp
 
-<nav class="relative z-[1000] shrink-0 border-t border-brand-900/10 bg-white/95 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_32px_-28px_rgba(0,60,55,0.5)] backdrop-blur-xl" aria-label="Navigasi utama">
-    <div class="mx-auto flex w-full max-w-[560px] items-stretch justify-around px-2.5">
+<nav
+    @class([
+        'z-[1000]',
+        'pointer-events-none absolute inset-x-0 bottom-0 px-3 pb-[max(0.5rem,env(safe-area-inset-bottom))]' => $floating,
+        'relative shrink-0 border-t border-brand-900/10 bg-white/95 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_32px_-28px_rgba(0,60,55,0.5)] backdrop-blur-xl' => ! $floating,
+    ])
+    aria-label="Navigasi utama"
+>
+    <div
+        @class([
+            'mx-auto flex w-full items-stretch justify-around',
+            'nf-glass pointer-events-auto max-w-[560px] rounded-[24px] px-2 py-1.5' => $floating,
+            'max-w-[560px] px-2.5' => ! $floating,
+        ])
+    >
         @foreach ($items as $item)
             @php
                 $isActive = $active === $item['key'];
