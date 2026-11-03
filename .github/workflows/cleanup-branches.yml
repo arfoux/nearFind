@@ -32,12 +32,15 @@ jobs:
           owner="${REPO%%/*}"
 
           open_refs=$(gh pr list --repo "$REPO" --state open --limit 200 --json headRefName --jq '.[].headRefName')
-          merged_refs=$(gh pr list --repo "$REPO" --state merged --limit 200 --json headRefName,headRepositoryOwner --jq --arg o "$owner" '.[] | select(.headRepositoryOwner.login == $o) | .headRefName')
+          merged=$(gh pr list --repo "$REPO" --state merged --limit 200 --json headRefName,headRepositoryOwner --jq '.[] | "\(.headRepositoryOwner.login)\t\(.headRefName)"')
 
           deleted=0
           skipped=0
-          for ref in $(printf '%s\n' "$merged_refs" | sort -u); do
-            [ -z "$ref" ] && continue
+          while IFS=$'\t' read -r ref_owner ref; do
+            [ -n "$ref" ] || continue
+            if [ "$ref_owner" != "$owner" ]; then
+              continue
+            fi
             if [ "$ref" = "$default" ]; then
               echo "lewati branch default: $ref"
               skipped=$((skipped + 1))
@@ -52,8 +55,13 @@ jobs:
               echo "sudah tidak ada: $ref"
               continue
             fi
+            if [ "${DRY_RUN:-0}" = "1" ]; then
+              echo "DRY_RUN: akan hapus $ref"
+              deleted=$((deleted + 1))
+              continue
+            fi
             gh api -X DELETE "repos/$REPO/git/refs/heads/$ref" >/dev/null
             echo "hapus $ref"
             deleted=$((deleted + 1))
-          done
+          done < <(printf '%s\n' "$merged" | sort -u)
           echo "selesai: $deleted dihapus, $skipped dilewati"
