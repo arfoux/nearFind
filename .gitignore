@@ -28,3 +28,8 @@ Thumbs.db
 /docs
 /.agents
 /.claude
+
+# laravel-workers build output
+/.cache/
+/dist/
+/wrangler.jsonc
