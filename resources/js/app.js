@@ -195,17 +195,6 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
 
         loginGate?.querySelector('[data-login-backdrop]')?.addEventListener('click', closeLoginGate);
 
-        loginSubmit?.addEventListener('click', () => {
-            const loginUrl = loginGate?.dataset.loginUrl;
-
-            if (loginUrl) {
-                window.location.assign(loginUrl);
-                return;
-            }
-
-            closeLoginGate();
-        });
-
         loginGate?.addEventListener('keydown', (event) => {
             if (event.key !== 'Tab') {
                 return;
