@@ -1,0 +1,54 @@
+name: Hapus branch setelah merge
+
+# Merge-nya manual (manusia). Job ini cuma merapikan: begitu PR ter-merge,
+# branch head-nya dihapus - tidak perlu polling, tidak perlu menunggu apa pun.
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  hapus:
+    name: Hapus branch head
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Hapus branch head (kecuali branch default / PR dari fork)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          if [ "$HEAD_REPO" != "$REPO" ]; then
+            echo "PR dari fork - branch bukan milik repo ini, dilewati."
+            exit 0
+          fi
+          if [ "$REF" = "$DEFAULT" ]; then
+            echo "Branch default, dilewati."
+            exit 0
+          fi
+
+          hapus=0
+          for _ in 1 2 3; do
+            if gh api -X DELETE "repos/$REPO/git/refs/heads/$REF" >/dev/null 2>&1; then
+              hapus=1
+              break
+            fi
+            # Sudah tidak ada (mis. disetel delete_branch_on_merge) = selesai juga.
+            if ! gh api "repos/$REPO/git/refs/heads/$REF" >/dev/null 2>&1; then
+              echo "branch $REF sudah tidak ada (dihapus setelan repo atau job lain)."
+              exit 0
+            fi
+            sleep 5
+          done
+          if [ "$hapus" = "1" ]; then
+            echo "branch $REF terhapus."
+          else
+            echo "::warning::Gagal hapus $REF (3 percobaan) - cleanup-branches.yml akan mencoba lagi."
+          fi
