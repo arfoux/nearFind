@@ -1,11 +1,13 @@
 # Kontribusi
 
-`main` di repo ini **diproteksi**: tidak ada yang bisa push langsung ke sana — termasuk owner. Semua perubahan lewat pull request, dan PR biasa **merge sendiri** setelah syaratnya terpenuhi.
+`main` di repo ini **diproteksi**: tidak ada yang bisa push langsung ke sana — termasuk owner. Semua perubahan lewat pull request, dan PR di-merge **manual oleh manusia** setelah syaratnya terpenuhi.
 
 ## Alur singkat
 
 ```bash
-git fetch origin && git switch main && git pull origin main
+git fetch origin
+git switch main
+git pull origin main
 git switch -c feat/nama-singkat            # satu pekerjaan = satu branch
 # ...kerja...
 vendor/bin/pint --test                     # gaya kode (sama seperti CI)
@@ -14,7 +16,15 @@ git add <file>                             # sebutkan file; jangan `git add -A`
 git commit -m "feat(map): ..."             # satu logika per commit
 git push -u origin feat/nama-singkat
 gh pr create --fill                        # atau lewat web
+
+gh pr checks --watch                       # tunggu CI sampai hijau
+gh pr merge --squash                       # merge manual (squash) - jangan `--auto`
+git switch main
+git pull
+git branch -D feat/nama-singkat            # hapus branch lokal - cek dulu PR-nya MERGED; `-D` dipakai karena squash-merge menulis commit BARU, jadi `-d` menolak ("not fully merged")
 ```
+
+Satu perintah per baris itu disengaja: `&&` tidak didukung Windows PowerShell 5.1. Kalau `gh` belum terpasang, buat dan merge PR-nya dari web: `https://github.com/<owner>/<repo>/compare/main...<branch>`.
 
 **Merge-nya manual.** Tidak ada job yang meng-arm auto-merge: PR di-merge oleh manusia (squash) setelah:
 
@@ -22,11 +32,9 @@ gh pr create --fill                        # atau lewat web
 2. branch sudah up-to-date dengan `main` (kalau tertinggal, klik **Update branch** — lihat bawah),
 3. semua percakapan review diselesaikan.
 
-Branch head-nya dihapus otomatis begitu PR ter-merge: `.github/workflows/hapus-branch.yml` melakukannya lewat API, dan setelan repo `delete_branch_on_merge` ikut membantu untuk merge lewat web (mana pun yang jalan lebih dulu - job-nya menganggap "branch sudah hilang" sebagai sukses). Branch sisa disapu jaring keamanan `.github/workflows/cleanup-branches.yml` (harian, jadwalnya best-effort punya GitHub); bisa dipicu manual:
+Branch head-nya dihapus otomatis oleh GitHub lewat setelan repo `delete_branch_on_merge` - tanpa workflow, tanpa cron. Bukti: pada dua merge terakhir (#18, #19) branch-nya sudah hilang sebelum job apa pun sempat jalan.
 
-```bash
-gh workflow run cleanup-branches.yml
-```
+Tidak ada penyapu otomatis. Kalau langka-langka ada branch sisa setelah merge (penghapusan gagal, atau merge oleh `GITHUB_TOKEN` kalau kelak ada bot yang merge), hapus manual dari halaman PR - tombol **Delete branch**. Jangan pakai branch yang sudah merge untuk kerja baru.
 
 ## Yang perlu dihindari
 
@@ -43,6 +51,19 @@ Proteksi `main` mensyaratkan branch yang sudah up to date, jadi PR yang tertingg
 
 ```bash
 gh pr update-branch
+```
+
+Khusus branch yang belum pernah di-push: ia belum punya upstream, jadi `git pull` polos gagal dengan **"There is no tracking information for the current branch"**. Itu bukan kerusakan - tarik `main` secara eksplisit ke branch kerjamu:
+
+```bash
+git fetch origin
+git merge origin/main      # setara: git pull origin main
+```
+
+Supaya `git pull`/`git push` polos bekerja, pasang upstream di push pertama - `git push -u origin feat/nama` - atau sekali untuk selamanya:
+
+```bash
+git config --global push.autoSetupRemote true
 ```
 
 ## Review
