@@ -33,3 +33,4 @@ Thumbs.db
 /.cache/
 /dist/
 /wrangler.jsonc
+/.wrangler/
