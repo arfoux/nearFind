@@ -21,7 +21,7 @@ gh pr checks --watch                       # tunggu CI sampai hijau
 gh pr merge --squash                       # merge manual (squash) - jangan `--auto`
 git switch main
 git pull
-git branch -d feat/nama-singkat            # hapus branch lokal; `-d` hanya jalan kalau sudah ter-merge
+git branch -D feat/nama-singkat            # hapus branch lokal - cek dulu PR-nya MERGED; `-D` dipakai karena squash-merge menulis commit BARU, jadi `-d` menolak ("not fully merged")
 ```
 
 Satu perintah per baris itu disengaja: `&&` tidak didukung Windows PowerShell 5.1. Kalau `gh` belum terpasang, buat dan merge PR-nya dari web: `https://github.com/<owner>/<repo>/compare/main...<branch>`.
