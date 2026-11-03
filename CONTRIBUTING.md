@@ -16,13 +16,13 @@ git push -u origin feat/nama-singkat
 gh pr create --fill                        # atau lewat web
 ```
 
-Setelah PR dibuka, `.github/workflows/auto-merge.yml` meng-arm auto-merge untuk PR itu. PR lalu merge sendiri begitu:
+**Merge-nya manual.** Tidak ada job yang meng-arm auto-merge: PR di-merge oleh manusia (squash) setelah:
 
 1. CI hijau — check `Lint, test, and build` (pint + `php artisan test`),
-2. branch sudah up-to-date dengan `main`,
+2. branch sudah up-to-date dengan `main` (kalau tertinggal, klik **Update branch** — lihat bawah),
 3. semua percakapan review diselesaikan.
 
-Branch head-nya dihapus otomatis - juga untuk PR yang di-merge bot. Jalur normalnya: job auto-merge menunggu sampai status PR-nya `MERGED`, lalu menghapus branch head-nya sendiri (`.github/workflows/auto-merge.yml`). Ini perlu karena merge oleh `GITHUB_TOKEN` tidak memicu `delete_branch_on_merge` GitHub. Kalau job itu menunggu lebih dari 30 menit atau penghapusannya gagal, sisanya disapu `.github/workflows/cleanup-branches.yml` - jadwal 15 menitnya best-effort punya GitHub, jadi sapu manual kalau perlu:
+Branch head-nya dihapus otomatis begitu PR ter-merge: `.github/workflows/hapus-branch.yml` melakukannya lewat API, dan setelan repo `delete_branch_on_merge` ikut membantu untuk merge lewat web (mana pun yang jalan lebih dulu - job-nya menganggap "branch sudah hilang" sebagai sukses). Branch sisa disapu jaring keamanan `.github/workflows/cleanup-branches.yml` (harian, jadwalnya best-effort punya GitHub); bisa dipicu manual:
 
 ```bash
 gh workflow run cleanup-branches.yml
@@ -39,15 +39,11 @@ gh workflow run cleanup-branches.yml
 
 ## Kalau `main` bergerak duluan
 
-PR-mu jadi "behind" dan auto-merge menunggu. Sinkronkan lewat tombol **Update branch** di halaman PR, atau:
+Proteksi `main` mensyaratkan branch yang sudah up to date, jadi PR yang tertinggal dari `main` tidak bisa di-merge. Sinkronkan dulu — tombol **Update branch** di halaman PR atau:
 
 ```bash
 gh pr update-branch
 ```
-
-## PR yang menyentuh `.github/workflows/`
-
-Tidak di-arm otomatis. Perubahan konfigurasi CI wajib ditinjau manusia, jadi PR seperti itu harus di-merge manual.
 
 ## Review
 
