@@ -22,7 +22,7 @@ Setelah PR dibuka, `.github/workflows/auto-merge.yml` meng-arm auto-merge untuk 
 2. branch sudah up-to-date dengan `main`,
 3. semua percakapan review diselesaikan.
 
-Branch head-nya dihapus otomatis. Satu pengecualian yang sering bikin bingung: kalau yang merge adalah **bot auto-merge**, GitHub tidak menghapus branch-nya sendiri (merge oleh `GITHUB_TOKEN` tidak memicu `delete_branch_on_merge`). Yang menyapu kasus itu `.github/workflows/cleanup-branches.yml` — jalan tiap 15 menit, saat ada push ke `main`, atau manual:
+Branch head-nya dihapus otomatis - juga untuk PR yang di-merge bot. Jalur normalnya: job auto-merge menunggu sampai status PR-nya `MERGED`, lalu menghapus branch head-nya sendiri (`.github/workflows/auto-merge.yml`). Ini perlu karena merge oleh `GITHUB_TOKEN` tidak memicu `delete_branch_on_merge` GitHub. Kalau job itu menunggu lebih dari 30 menit atau penghapusannya gagal, sisanya disapu `.github/workflows/cleanup-branches.yml` - jadwal 15 menitnya best-effort punya GitHub, jadi sapu manual kalau perlu:
 
 ```bash
 gh workflow run cleanup-branches.yml

@@ -17,7 +17,7 @@ jobs:
     name: Arm auto-merge (squash)
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 35
     steps:
       - name: Guard - PR yang mengubah workflow tidak di-arm
         id: guard
@@ -36,3 +36,55 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.html_url }}
         run: gh pr merge --auto --squash "$PR"
+
+      - name: Tunggu merge lalu hapus branch head
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.html_url }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          if [ "$HEAD_REPO" != "$REPO" ]; then
+            echo "PR dari fork - branch bukan milik repo ini, dilewati."
+            exit 0
+          fi
+          if [ "$REF" = "$DEFAULT" ]; then
+            echo "Branch default, dilewati."
+            exit 0
+          fi
+
+          state=""
+          for _ in $(seq 1 120); do
+            state=$(gh pr view "$PR" --json state --jq .state) || state=""
+            if [ "$state" = "MERGED" ]; then
+              break
+            fi
+            if [ "$state" = "CLOSED" ]; then
+              echo "PR ditutup tanpa merge - branch dibiarkan."
+              exit 0
+            fi
+            sleep 15
+          done
+
+          if [ "$state" != "MERGED" ]; then
+            echo "::warning::Belum merge setelah 30 menit - sisa branch diserahkan ke cleanup-branches.yml."
+            exit 0
+          fi
+
+          hapus=0
+          for _ in 1 2 3; do
+            if gh api -X DELETE "repos/$REPO/git/refs/heads/$REF" >/dev/null 2>&1; then
+              hapus=1
+              break
+            fi
+            sleep 5
+          done
+          if [ "$hapus" = "1" ]; then
+            echo "branch $REF terhapus."
+          else
+            echo "::warning::Gagal hapus $REF (3 percobaan) - cleanup-branches.yml akan mencoba lagi."
+          fi
