@@ -1,4 +1,9 @@
-import L from 'leaflet';
+import { Map as MapLibreMap, Marker, Popup, setWorkerUrl } from 'maplibre-gl';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+
+setWorkerUrl(workerUrl);
+
+const DEFAULT_MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
 
 const dataElement = document.getElementById('nearfind-data');
 const needCardElement = document.getElementById('need-card');
@@ -12,7 +17,7 @@ if (dataElement && needCardElement && mapElement) {
     }
 }
 
-function initNearFind({ categories, needs, authenticated = false }) {
+function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = DEFAULT_MAP_STYLE_URL }) {
     const categoryById = Object.fromEntries(categories.map((category) => [category.id, category]));
     const fallbackCategory = categoryById.all ?? categories[0];
 
@@ -46,54 +51,73 @@ function initNearFind({ categories, needs, authenticated = false }) {
     const initialNeed = needs.find((need) => need.id === requestedNeedId) ?? needs[0] ?? null;
     state.selectedId = initialNeed?.id ?? null;
 
+    const tooltip = new Popup({
+        closeButton: false,
+        closeOnClick: false,
+        focusAfterOpen: false,
+        anchor: 'bottom',
+        offset: [0, -50],
+        maxWidth: '260px',
+        className: 'nf-tooltip',
+    });
+
     let map = null;
-    let markerLayer = null;
     let userMarker = null;
     let searchDebounce = null;
     let toastTimeout = null;
     let loginReturnFocus = null;
+    let mapErrors = 0;
+    let mapErrorShown = false;
 
     initMap();
     bindEvents();
     applyFilters({ fit: true, syncUrl: false });
 
     requestAnimationFrame(() => {
-        map?.invalidateSize({ pan: false });
+        map?.resize();
         fitMapToFiltered();
     });
 
     function initMap() {
-        map = L.map(mapElement, {
-            zoomControl: false,
-            attributionControl: false,
-            minZoom: 13,
-            maxZoom: 19,
-            zoomSnap: 0.25,
-            zoomDelta: 0.5,
-        }).setView([-6.8903, 107.5944], 15);
+        try {
+            map = new MapLibreMap({
+                container: mapElement,
+                style: mapStyleUrl || DEFAULT_MAP_STYLE_URL,
+                center: [107.5944, -6.8903],
+                zoom: 15,
+                minZoom: 13,
+                maxZoom: 19,
+                attributionControl: false,
+                dragRotate: false,
+                pitchWithRotate: false,
+                maxPitch: 0,
+                renderWorldCopies: false,
+            });
+        } catch (error) {
+            console.error('nearFind: peta gagal dibuat.', error);
+            showToast('Peta tidak dapat dimuat di browser ini.');
+            return;
+        }
 
-        const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        });
+        map.setZoomSnap(0.25);
+        map.touchZoomRotate.disableRotation();
+        map.keyboard.disableRotation();
 
-        let tileErrors = 0;
-        let tileErrorShown = false;
+        map.on('error', (event) => {
+            if (!event?.error) {
+                return;
+            }
 
-        tiles.on('tileerror', () => {
-            tileErrors += 1;
+            mapErrors += 1;
 
-            if (tileErrors >= 4 && !tileErrorShown) {
-                tileErrorShown = true;
+            if (mapErrors >= 4 && !mapErrorShown) {
+                mapErrorShown = true;
                 showToast('Peta tidak dapat memuat tile. Periksa koneksi internetmu.');
             }
         });
 
-        tiles.addTo(map);
-        markerLayer = L.layerGroup().addTo(map);
-
         if ('ResizeObserver' in window) {
-            const resizeObserver = new ResizeObserver(() => map?.invalidateSize({ pan: false }));
+            const resizeObserver = new ResizeObserver(() => map?.resize());
             resizeObserver.observe(mapElement);
         }
     }
@@ -211,8 +235,8 @@ function initNearFind({ categories, needs, authenticated = false }) {
         document.querySelector('[data-dismiss-tip]')?.addEventListener('click', () => mapTip?.remove());
 
         document.querySelector('[data-map-locate]')?.addEventListener('click', locateUser);
-        document.querySelector('[data-map-zoom-in]')?.addEventListener('click', () => map?.zoomIn());
-        document.querySelector('[data-map-zoom-out]')?.addEventListener('click', () => map?.zoomOut());
+        document.querySelector('[data-map-zoom-in]')?.addEventListener('click', () => zoomBy(0.5));
+        document.querySelector('[data-map-zoom-out]')?.addEventListener('click', () => zoomBy(-0.5));
 
         needCardElement.addEventListener('click', (event) => {
             const supportButton = event.target.closest('[data-support-button]');
@@ -458,79 +482,102 @@ function initNearFind({ categories, needs, authenticated = false }) {
     }
 
     function renderMarkers() {
-        if (!map || !markerLayer) {
+        if (!map) {
             return;
         }
 
-        markerLayer.clearLayers();
+        tooltip.remove();
+        state.markers.forEach((marker) => marker.remove());
         state.markers.clear();
 
         state.filtered.forEach((need) => {
-            const category = categoryById[need.category] ?? fallbackCategory;
-            const isSelected = need.id === state.selectedId;
-
-            const marker = L.marker([need.latitude, need.longitude], {
-                icon: createMarkerIcon(need, isSelected),
-                keyboard: true,
-                riseOnHover: true,
-                zIndexOffset: isSelected ? 1000 : 0,
-                title: `${need.title} — ${category.label}`,
-            });
+            const element = createMarkerElement(need, need.id === state.selectedId);
+            const marker = new Marker({
+                element,
+                anchor: 'bottom',
+                subpixelPositioning: true,
+            })
+                .setLngLat([need.longitude, need.latitude])
+                .addTo(map);
 
             marker.on('click', () => selectNeed(need.id));
-            marker.bindTooltip(`${escapeHtml(need.marker_label)} · ${displaySupporters(need)} warga`, {
-                direction: 'top',
-                offset: [0, isSelected ? -48 : -30],
-                opacity: 1,
-                className: 'nf-tooltip',
+
+            element.addEventListener('mouseenter', () => showMarkerTooltip(need));
+            element.addEventListener('focus', () => showMarkerTooltip(need));
+            element.addEventListener('mouseleave', hideMarkerTooltip);
+            element.addEventListener('blur', hideMarkerTooltip);
+            element.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') {
+                    return;
+                }
+
+                event.preventDefault();
+                selectNeed(need.id);
             });
-            marker.addTo(markerLayer);
-            marker.getElement()?.setAttribute('role', 'button');
-            updateMarkerAria(marker, need);
 
             state.markers.set(need.id, marker);
         });
     }
 
-    function createMarkerIcon(need, isSelected) {
+    function createMarkerElement(need, isSelected) {
+        const element = document.createElement('div');
+        element.className = 'nf-marker-wrapper';
+        element.setAttribute('role', 'button');
+        element.setAttribute('tabindex', '0');
+        element.style.width = isSelected ? '176px' : '46px';
+        element.style.height = '48px';
+        element.style.zIndex = isSelected ? '420' : '';
+        element.innerHTML = markerMarkup(need, isSelected);
+        updateMarkerAria(element, need);
+
+        return element;
+    }
+
+    function markerMarkup(need, isSelected) {
         const category = categoryById[need.category] ?? fallbackCategory;
         const supporters = displaySupporters(need);
         const markerStyle = `--marker-color:${category.color};--marker-soft:${category.soft_color}`;
 
-        const markerHtml = isSelected
-            ? `<div class="nf-marker" style="${markerStyle}">
+        if (isSelected) {
+            return `<div class="nf-marker" style="${markerStyle}">
                     <div class="nf-marker-label">
                         <span class="nf-marker-label-icon">${icon(category.icon, 'size-3.5')}</span>
                         <span class="nf-marker-label-title">${escapeHtml(need.marker_label)}</span>
                         <span class="nf-marker-label-count">${supporters}</span>
                     </div>
                     <span class="nf-marker-tail"></span>
-                </div>`
-            : `<div class="nf-marker" style="${markerStyle}">
+                </div>`;
+        }
+
+        return `<div class="nf-marker" style="${markerStyle}">
                     <div class="nf-marker-dot">
                         ${icon(category.icon, 'size-4')}
                         <span class="nf-marker-count">${supporters}</span>
                     </div>
                 </div>`;
-
-        const width = isSelected ? 176 : 46;
-        const height = 48;
-
-        return L.divIcon({
-            className: 'nf-marker-wrapper',
-            html: markerHtml,
-            iconSize: [width, height],
-            iconAnchor: [width / 2, height - 2],
-            popupAnchor: [0, -height],
-        });
     }
 
-    function updateMarkerAria(marker, need) {
+    function updateMarkerAria(element, need) {
         const category = categoryById[need.category] ?? fallbackCategory;
-        marker.getElement()?.setAttribute(
+        element.setAttribute(
             'aria-label',
             `${need.title}, kategori ${category.label}, ${displaySupporters(need)} warga mendukung`,
         );
+    }
+
+    function showMarkerTooltip(need) {
+        if (!map) {
+            return;
+        }
+
+        tooltip
+            .setLngLat([need.longitude, need.latitude])
+            .setText(`${need.marker_label} · ${displaySupporters(need)} warga`)
+            .addTo(map);
+    }
+
+    function hideMarkerTooltip() {
+        tooltip.remove();
     }
 
     function selectNeed(needId, { pan = true, preserveScroll = false } = {}) {
@@ -542,29 +589,13 @@ function initNearFind({ categories, needs, authenticated = false }) {
 
         state.selectedId = need.id;
 
-        state.filtered.forEach((filteredNeed) => {
-            const marker = state.markers.get(filteredNeed.id);
-
-            if (!marker) {
-                return;
-            }
-
-            const isSelected = filteredNeed.id === state.selectedId;
-            marker.setIcon(createMarkerIcon(filteredNeed, isSelected));
-            marker.setZIndexOffset(isSelected ? 1000 : 0);
-            updateMarkerAria(marker, filteredNeed);
-        });
+        state.filtered.forEach((filteredNeed) => refreshMarker(filteredNeed));
 
         renderCard({ preserveScroll });
         syncUrlSelection();
 
         if (pan && map) {
-            map.panInside([need.latitude, need.longitude], {
-                paddingTopLeft: [92, 100],
-                paddingBottomRight: [92, 70],
-                animate: true,
-                duration: 0.35,
-            });
+            map.panTo([need.longitude, need.latitude], { duration: 350 });
         }
     }
 
@@ -596,9 +627,13 @@ function initNearFind({ categories, needs, authenticated = false }) {
             return;
         }
 
+        const element = marker.getElement();
         const isSelected = need.id === state.selectedId;
-        marker.setIcon(createMarkerIcon(need, isSelected));
-        updateMarkerAria(marker, need);
+        element.style.width = isSelected ? '176px' : '46px';
+        element.style.height = '48px';
+        element.style.zIndex = isSelected ? '420' : '';
+        element.innerHTML = markerMarkup(need, isSelected);
+        updateMarkerAria(element, need);
     }
 
     function renderCard({ preserveScroll = false } = {}) {
@@ -708,16 +743,36 @@ function initNearFind({ categories, needs, authenticated = false }) {
             return;
         }
 
-        const bounds = L.latLngBounds(state.filtered.map((need) => [need.latitude, need.longitude]));
+        const coordinates = state.filtered.map((need) => [need.longitude, need.latitude]);
+        const bounds = coordinates.reduce(
+            (result, coordinate) => [
+                [Math.min(result[0][0], coordinate[0]), Math.min(result[0][1], coordinate[1])],
+                [Math.max(result[1][0], coordinate[0]), Math.max(result[1][1], coordinate[1])],
+            ],
+            [coordinates[0], coordinates[0]],
+        );
         const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
 
         map.fitBounds(bounds, {
-            paddingTopLeft: [isDesktop ? 60 : 24, isDesktop ? 118 : 104],
-            paddingBottomRight: [isDesktop ? 60 : 24, isDesktop ? 50 : 40],
+            padding: {
+                top: isDesktop ? 118 : 104,
+                right: isDesktop ? 60 : 24,
+                bottom: isDesktop ? 50 : 40,
+                left: isDesktop ? 60 : 24,
+            },
             maxZoom: isDesktop ? 16 : 15.5,
-            animate: true,
-            duration: 0.35,
+            linear: true,
+            duration: 350,
         });
+    }
+
+    function zoomBy(delta) {
+        if (!map) {
+            return;
+        }
+
+        map.stop();
+        map.easeTo({ zoom: map.getZoom() + delta, duration: 200 });
     }
 
     async function shareNeed(needId) {
@@ -791,24 +846,25 @@ function initNearFind({ categories, needs, authenticated = false }) {
 
         navigator.geolocation.getCurrentPosition(
             ({ coords }) => {
-                const location = [coords.latitude, coords.longitude];
+                const location = [coords.longitude, coords.latitude];
 
                 if (userMarker) {
                     userMarker.remove();
                 }
 
-                userMarker = L.marker(location, {
-                    icon: L.divIcon({
-                        className: 'nf-user-marker',
-                        html: '<span class="nf-user-dot"></span>',
-                        iconSize: [18, 18],
-                        iconAnchor: [9, 9],
-                    }),
-                    interactive: false,
-                    keyboard: false,
-                }).addTo(map);
+                const element = document.createElement('div');
+                element.className = 'nf-user-marker';
+                element.style.pointerEvents = 'none';
+                element.innerHTML = '<span class="nf-user-dot"></span>';
 
-                map.flyTo(location, 16, { duration: 0.6 });
+                userMarker = new Marker({
+                    element,
+                    anchor: 'center',
+                })
+                    .setLngLat(location)
+                    .addTo(map);
+
+                map.flyTo({ center: location, zoom: 16, duration: 600 });
                 showToast('Lokasi kamu ditemukan.');
 
                 button?.removeAttribute('aria-busy');
