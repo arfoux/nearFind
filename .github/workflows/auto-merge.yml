@@ -2,7 +2,7 @@ name: Auto-merge
 
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review, closed]
+    types: [opened, reopened, ready_for_review]
 
 permissions:
   contents: write
@@ -36,34 +36,3 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.html_url }}
         run: gh pr merge --auto --squash "$PR"
-
-  cleanup:
-    name: Delete merged branch
-    if: github.event.action == 'closed' && github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: write
-    steps:
-      - name: Hapus head branch
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: ${{ github.repository }}
-          REF: ${{ github.event.pull_request.head.ref }}
-          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
-          DEFAULT: ${{ github.event.repository.default_branch }}
-        run: |
-          if [ "$HEAD_REPO" != "$REPO" ]; then
-            echo "PR dari fork - branch bukan milik repo ini, dilewati."
-            exit 0
-          fi
-          if [ "$REF" = "$DEFAULT" ]; then
-            echo "Branch default, dilewati."
-            exit 0
-          fi
-          if ! gh api "repos/$REPO/git/refs/heads/$REF" >/dev/null 2>&1; then
-            echo "Branch $REF sudah tidak ada."
-            exit 0
-          fi
-          gh api -X DELETE "repos/$REPO/git/refs/heads/$REF"
-          echo "Branch $REF terhapus."
