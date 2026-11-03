@@ -33,6 +33,7 @@ gh workflow run cleanup-branches.yml
 - **Push ke `main`** — ditolak server.
 - **`git add -A` / `git add .`** — stage hanya file yang kamu ubah.
 - **Force-push, amend, atau rebase branch orang lain** — terutama yang sudah di-push.
+- **Melanjutkan kerja di branch yang sudah di-merge** — branch head-nya dihapus otomatis; mulai branch baru dari `main` terbaru.
 - **Menimpa perubahan orang lain untuk "menyelesaikan" konflik** — kalau file tercampur, berhenti dan tanya.
 - Commit `.env` dan secrets, `node_modules`/`vendor`, serta hasil build (`dist/`, `.cache/`, `wrangler.jsonc`).
 

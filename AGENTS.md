@@ -159,6 +159,7 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - **Sinkron** — kalau `main` bergerak selama kamu bekerja, tarik `origin/main` ke branch-mu sebelum push berikutnya; jangan biarkan deviasi menumpuk lebih dari satu hari.
 - **Konflik** — selesaikan hanya di file milikmu. Jangan pernah mengubah/menghapus perubahan orang lain untuk "menyelesaikan" konflik; kalau tercampur, berhenti dan tanya.
 - **Larangan mutlak** — force-push, rebase branch yang sudah di-push orang lain, amend commit yang sudah ter-publish, hapus branch orang lain.
+- **Branch yang sudah merge** — jangan dipakai lagi untuk kerja baru: branch head-nya dihapus otomatis. Mulai branch baru dari `main` terbaru.
 - **Akhir sesi** — tidak ada pekerjaan menggantung: commit & push ke branch-mu (PR boleh tetap draft).
 
 ### Alur merge
@@ -166,6 +167,6 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - PR biasa **ter-arm otomatis** oleh `.github/workflows/auto-merge.yml` (`gh pr merge --auto --squash`) — tidak perlu menekan "Enable auto-merge".
 - Merge jalan sendiri begitu CI hijau **dan** branch up-to-date dengan `main` **dan** percakapan review selesai. Setelah itu branch head dihapus otomatis.
 - Kalau `main` bergerak duluan, PR jadi "behind" dan auto-merge menunggu: sinkronkan lewat tombol **Update branch** atau `gh pr update-branch`.
-- PR yang menyentuh `.github/workflows/` **tidak** di-arm: perubahan konfigurasi CI wajib lewat review manusia, jadi harus di-merge manual.
+- PR yang menyentuh `.github/workflows/` **tidak** di-arm: perubahan konfigurasi CI wajib lewat review manusia, jadi **merge-nya manual oleh manusia** - jangan di-merge sendiri.
 - Aturan di atas juga berlaku untuk anggota tim manusia; versi onboarding mereka ada di `CONTRIBUTING.md`.
-- Branch head dihapus oleh job auto-merge itu sendiri begitu PR-nya MERGED (merge oleh `GITHUB_TOKEN` tidak memicu `delete_branch_on_merge` GitHub, jadi tak ada yang menghapusnya sendiri). `.github/workflows/cleanup-branches.yml` menyapu sisa yang lolos - job arm timeout (>30 menit), PR di-merge manual, atau penghapusan yang gagal: tiap 15 menit (best-effort punya GitHub), saat push ke `main`, atau manual (`gh workflow run cleanup-branches.yml`).
+- Penghapusan branch itu otomatis; kalau ada branch sisa yang belum hilang setelah merge (job timeout atau penghapusan gagal), jangan dipakai ulang - sapu dengan `gh workflow run cleanup-branches.yml`.
