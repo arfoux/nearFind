@@ -43,7 +43,7 @@ Boost provides your agent 15+ tools and skills that help agents build Laravel ap
 
 ## Contributing
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Aturan kerja tim — branch, commit, PR, merge otomatis, dan cara menjalankan CI di lokal — ada di **[CONTRIBUTING.md](CONTRIBUTING.md)**.
 
 ## Code of Conduct
 
