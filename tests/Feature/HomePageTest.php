@@ -17,6 +17,8 @@ class HomePageTest extends TestCase
         $response->assertSee('Jasa Servis AC');
         $response->assertSee('Ajukan Kebutuhan');
         $response->assertSee('OpenStreetMap');
+        $response->assertSee('mapStyleUrl');
+        $response->assertSee('tiles.openfreemap.org');
         $response->assertSee('id="login-gate"', false);
         $response->assertSee('Masuk untuk melanjutkan');
     }

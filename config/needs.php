@@ -3,6 +3,21 @@
 return [
     /*
     |--------------------------------------------------------------------------
+    | Gaya peta vector tile
+    |--------------------------------------------------------------------------
+    |
+    | URL style MapLibre untuk peta. Default memakai OpenFreeMap yang gratis
+    | dan tidak memerlukan API key. Ganti nilainya bila ingin memakai style
+    | atau penyedia vector tile lain.
+    |
+    */
+
+    'map' => [
+        'style_url' => env('NEARFIND_MAP_STYLE_URL', 'https://tiles.openfreemap.org/styles/positron'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Kategori kebutuhan
     |--------------------------------------------------------------------------
     |

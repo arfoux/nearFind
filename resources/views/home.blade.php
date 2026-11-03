@@ -4,6 +4,7 @@
             'categories' => $categories,
             'needs' => $needs,
             'authenticated' => $authenticated,
+            'mapStyleUrl' => $mapStyleUrl,
         ];
     @endphp
 

@@ -1,5 +1,5 @@
 @import 'tailwindcss';
-@import 'leaflet/dist/leaflet.css';
+@import 'maplibre-gl/dist/maplibre-gl.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -94,31 +94,35 @@ body.app-background {
     pointer-events: none;
 }
 
-.leaflet-container {
+.maplibregl-map {
     background: #eef3ec;
     font-family: var(--font-sans);
     cursor: grab;
 }
 
-.leaflet-dragging .leaflet-container {
-    cursor: grabbing;
-}
-
-.leaflet-tile-pane {
+.maplibregl-canvas {
     filter: saturate(0.32) brightness(1.22) contrast(0.77) sepia(0.09);
     opacity: 0.94;
 }
 
-.leaflet-control-container {
+.maplibregl-control-container {
     display: none;
 }
 
-.leaflet-container:focus-visible {
+.maplibregl-canvas:focus-visible {
     outline: 3px solid rgba(15, 118, 110, 0.35);
     outline-offset: -3px;
 }
 
-.leaflet-tooltip.nf-tooltip {
+.maplibregl-marker {
+    z-index: 400;
+}
+
+.maplibregl-popup {
+    z-index: 450;
+}
+
+.maplibregl-popup.nf-tooltip .maplibregl-popup-content {
     border: 0;
     border-radius: 10px;
     background: #063a35;
@@ -128,9 +132,10 @@ body.app-background {
     font-weight: 600;
     line-height: 1.3;
     box-shadow: 0 10px 22px -14px rgba(0, 60, 55, 0.7);
+    white-space: nowrap;
 }
 
-.leaflet-tooltip-top.nf-tooltip::before {
+.maplibregl-popup-anchor-bottom.nf-tooltip .maplibregl-popup-tip {
     border-top-color: #063a35;
 }
 
