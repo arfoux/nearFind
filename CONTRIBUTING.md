@@ -43,6 +43,19 @@ Proteksi `main` mensyaratkan branch yang sudah up to date, jadi PR yang tertingg
 gh pr update-branch
 ```
 
+Khusus branch yang belum pernah di-push: ia belum punya upstream, jadi `git pull` polos gagal dengan **"There is no tracking information for the current branch"**. Itu bukan kerusakan - tarik `main` secara eksplisit ke branch kerjamu:
+
+```bash
+git fetch origin
+git merge origin/main      # setara: git pull origin main
+```
+
+Supaya `git pull`/`git push` polos bekerja, pasang upstream di push pertama - `git push -u origin feat/nama` - atau sekali untuk selamanya:
+
+```bash
+git config --global push.autoSetupRemote true
+```
+
 ## Review
 
 Jumlah approval wajib saat ini `0`, jadi PR bisa merge tanpa reviewer. Untuk perubahan besar tetap minta satu orang membaca. Kalau ada percakapan review yang belum selesai, proteksi menahan merge sampai diselesaikan.
