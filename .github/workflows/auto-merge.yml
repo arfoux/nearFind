@@ -5,6 +5,7 @@ on:
     types: [opened, reopened, ready_for_review]
 
 permissions:
+  actions: write # memicu ulang CI setelah branch disinkronkan
   contents: write
   pull-requests: write
 
@@ -58,7 +59,10 @@ jobs:
           fi
 
           state=""
+          sync=0
+          i=0
           for _ in $(seq 1 120); do
+            i=$((i + 1))
             state=$(gh pr view "$PR" --json state --jq .state) || state=""
             if [ "$state" = "MERGED" ]; then
               break
@@ -66,6 +70,23 @@ jobs:
             if [ "$state" = "CLOSED" ]; then
               echo "PR ditutup tanpa merge - branch dibiarkan."
               exit 0
+            fi
+            # Branch protection mensyaratkan "up to date", dan auto-merge tidak menyentuh
+            # branch sama sekali - ia cuma menunggu. Tanpa sinkronisasi, PR yang ketinggalan
+            # main mentok sampai poll menyerah. Jadi sinkronkan sendiri (maks 5x), lalu picu
+            # ulang CI: push oleh GITHUB_TOKEN tidak membuat workflow run baru, dan commit
+            # merge itu butuh status "Lint, test, and build" sendiri.
+            if [ "$sync" -lt 5 ] && [ $((i % 4)) -eq 1 ]; then
+              status=$(gh pr view "$PR" --json mergeStateStatus --jq .mergeStateStatus) || status=""
+              if [ "$status" = "BEHIND" ]; then
+                sync=$((sync + 1))
+                if gh pr update-branch "$PR" >/dev/null 2>&1; then
+                  echo "Branch ketinggalan $DEFAULT - disinkronkan [$sync/5], CI dipicu ulang."
+                  gh workflow run ci.yml --ref "$REF" >/dev/null 2>&1 || echo "::warning::Gagal memicu CI - merge menunggu status."
+                else
+                  echo "::warning::Branch ketinggalan tapi update-branch gagal (konflik?) - menunggu."
+                fi
+              fi
             fi
             sleep 15
           done
