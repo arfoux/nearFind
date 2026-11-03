@@ -146,3 +146,17 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - Run `vendor/bin/phpunit` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
 
 </laravel-boost-guidelines>
+
+## Aturan Git & Branch — WAJIB
+
+`main` selalu dalam keadaan benar & deployable. Semua kerja lewat branch + PR, tanpa pengecualian — termasuk perbaikan kecil. Branch `main` diproteksi di GitHub: PR wajib, force-push dan penghapusan branch ditolak.
+
+- **Mulai** — `git fetch origin && git switch main && git pull origin main`, lalu `git switch -c <tipe>/<nama>` dari `main` terbaru. Satu pekerjaan = satu branch (`feat/`, `fix/`, `chore/`).
+- **Commit** — kecil, satu logika per commit: `feat|fix|chore(<scope>): <apa>`. Stage file yang kamu ubah saja (`git add <path>`); **dilarang** `git add -A` / `git add .`.
+- **Jangan commit** — `.env`/secrets, `node_modules`/`vendor`/hasil build, konfigurasi pribadi (`.claude/`, `.mcp.json`, `boost.json`, dsb.).
+- **Push** — hanya ke branch-mu (`git push -u origin <branch>`). Dilarang push ke `main`.
+- **PR** — satu topik per PR. Merge hanya setelah CI hijau atau reviewer menyetujui.
+- **Sinkron** — kalau `main` bergerak selama kamu bekerja, tarik `origin/main` ke branch-mu sebelum push berikutnya; jangan biarkan deviasi menumpuk lebih dari satu hari.
+- **Konflik** — selesaikan hanya di file milikmu. Jangan pernah mengubah/menghapus perubahan orang lain untuk "menyelesaikan" konflik; kalau tercampur, berhenti dan tanya.
+- **Larangan mutlak** — force-push, rebase branch yang sudah di-push orang lain, amend commit yang sudah ter-publish, hapus branch orang lain.
+- **Akhir sesi** — tidak ada pekerjaan menggantung: commit & push ke branch-mu (PR boleh tetap draft).
