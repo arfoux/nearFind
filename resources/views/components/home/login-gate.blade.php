@@ -1,4 +1,4 @@
-<div id="login-gate" class="fixed inset-0 z-[1300] hidden items-end justify-center lg:items-center" role="presentation">
+<div id="login-gate" data-login-url="{{ route('login') }}" class="fixed inset-0 z-[1300] hidden items-end justify-center lg:items-center" role="presentation">
     <div data-login-backdrop class="absolute inset-0 bg-brand-900/35 backdrop-blur-[2px]"></div>
 
     <div
@@ -31,7 +31,7 @@
         </div>
 
         <p id="login-gate-description" data-login-message class="mt-3 text-[12px] leading-relaxed text-muted">
-            Masuk atau daftar untuk melanjutkan.
+            Masuk ke akun warga untuk melanjutkan.
         </p>
 
         <div class="mt-4 flex items-start gap-2.5 rounded-2xl bg-canvas px-3.5 py-3 ring-1 ring-brand-900/5">

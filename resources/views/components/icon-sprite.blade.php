@@ -123,4 +123,26 @@
     <symbol id="nf-chevron-down" viewBox="0 0 24 24">
         <path d="m6 9 6 6 6-6" />
     </symbol>
+
+    <symbol id="nf-lock" viewBox="0 0 24 24">
+        <rect x="4" y="10" width="16" height="11" rx="2.5" />
+        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+    </symbol>
+
+    <symbol id="nf-eye" viewBox="0 0 24 24">
+        <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+        <circle cx="12" cy="12" r="3" />
+    </symbol>
+
+    <symbol id="nf-eye-off" viewBox="0 0 24 24">
+        <path d="m3 3 18 18" />
+        <path d="M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-3.1 3.8" />
+        <path d="M6.2 6.2C3.9 8.2 2.5 12 2.5 12S6 18 12 18c1.6 0 3-.4 4.2-1" />
+        <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+    </symbol>
+
+    <symbol id="nf-log-out" viewBox="0 0 24 24">
+        <path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4" />
+        <path d="m15 8 4 4-4 4M19 12H9" />
+    </symbol>
 </svg>
