@@ -56,11 +56,12 @@ Jumlah approval wajib saat ini `0`, jadi PR bisa merge tanpa reviewer. Untuk per
 ## Setup lokal
 
 ```bash
-composer install
-npm ci
-cp .env.example .env && php artisan key:generate
-npm run build
-php artisan serve
+composer setup   # install dependensi, .env + APP_KEY, database/database.sqlite + migrate, build asset
+composer dev     # server di 127.0.0.1:8000 + queue + vite sekaligus
 ```
+
+Aplikasi memakai sqlite untuk session, cache, dan queue (lihat `.env.example`), jadi
+`database/database.sqlite` wajib ada dan ter-migrate. File itu tidak ada di repo - `composer setup`
+yang membuatnya (`touch` + `migrate`), supaya klon segar tidak berakhir dengan halaman 500.
 
 Perintah yang dijalankan CI persis: `vendor/bin/pint --test --format agent` dan `php artisan test --compact`.
