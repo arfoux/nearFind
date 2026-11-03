@@ -1,0 +1,38 @@
+name: Auto-merge
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: auto-merge-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  arm:
+    name: Arm auto-merge (squash)
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Guard - PR yang mengubah workflow tidak di-arm
+        id: guard
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.html_url }}
+        run: |
+          if gh pr view "$PR" --json files --jq '.files[].path' | grep -q '^\.github/workflows/'; then
+            echo "PR menyentuh .github/workflows/ - tidak di-arm, tunggu review manusia."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Arm auto-merge
+        if: steps.guard.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PR"
