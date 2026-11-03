@@ -17,6 +17,27 @@ if (dataElement && needCardElement && mapElement) {
     }
 }
 
+initPasswordToggles();
+
+function initPasswordToggles() {
+    document.querySelectorAll('[data-password-toggle]').forEach((toggle) => {
+        toggle.addEventListener('click', () => {
+            const input = toggle.parentElement?.querySelector('[data-password-input]');
+
+            if (!input) {
+                return;
+            }
+
+            const reveal = input.type === 'password';
+
+            input.type = reveal ? 'text' : 'password';
+            toggle.setAttribute('aria-pressed', reveal ? 'true' : 'false');
+            toggle.setAttribute('aria-label', reveal ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+            toggle.querySelector('use')?.setAttribute('href', reveal ? '#nf-eye-off' : '#nf-eye');
+        });
+    });
+}
+
 function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = DEFAULT_MAP_STYLE_URL }) {
     const categoryById = Object.fromEntries(categories.map((category) => [category.id, category]));
     const fallbackCategory = categoryById.all ?? categories[0];
@@ -175,8 +196,14 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         loginGate?.querySelector('[data-login-backdrop]')?.addEventListener('click', closeLoginGate);
 
         loginSubmit?.addEventListener('click', () => {
+            const loginUrl = loginGate?.dataset.loginUrl;
+
+            if (loginUrl) {
+                window.location.assign(loginUrl);
+                return;
+            }
+
             closeLoginGate();
-            showToast('Fitur masuk segera hadir.');
         });
 
         loginGate?.addEventListener('keydown', (event) => {

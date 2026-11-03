@@ -1,11 +1,13 @@
 @props(['active' => 'peta'])
 
 @php
+    $isAuthenticated = auth('seal')->check();
+
     $items = [
         ['key' => 'peta', 'label' => 'Peta', 'icon' => 'map', 'route' => 'home'],
         ['key' => 'jelajahi', 'label' => 'Jelajahi', 'icon' => 'compass', 'route' => null],
         ['key' => 'laporan', 'label' => 'Laporan', 'icon' => 'clipboard', 'route' => null],
-        ['key' => 'profil', 'label' => 'Profil', 'icon' => 'user', 'route' => null],
+        ['key' => 'profil', 'label' => 'Profil', 'icon' => 'user', 'route' => $isAuthenticated ? 'dashboard' : 'login'],
     ];
 @endphp
 
@@ -19,8 +21,8 @@
                 $labelClass = 'text-[10px] font-semibold tracking-[0.01em] '.($isActive ? 'text-brand-700' : 'text-muted group-hover:text-brand-700');
             @endphp
 
-            @if ($isActive)
-                <a href="{{ route($item['route']) }}" aria-current="page" class="{{ $itemClass }}">
+            @if ($item['route'])
+                <a href="{{ route($item['route']) }}" @if ($isActive) aria-current="page" @endif class="{{ $itemClass }}">
                     <span class="{{ $iconClass }}">
                         <x-icon :name="$item['icon']" class="size-[21px]" stroke-width="2" />
                     </span>
