@@ -1,11 +1,13 @@
 # Kontribusi
 
-`main` di repo ini **diproteksi**: tidak ada yang bisa push langsung ke sana — termasuk owner. Semua perubahan lewat pull request, dan PR biasa **merge sendiri** setelah syaratnya terpenuhi.
+`main` di repo ini **diproteksi**: tidak ada yang bisa push langsung ke sana — termasuk owner. Semua perubahan lewat pull request, dan PR di-merge **manual oleh manusia** setelah syaratnya terpenuhi.
 
 ## Alur singkat
 
 ```bash
-git fetch origin && git switch main && git pull origin main
+git fetch origin
+git switch main
+git pull origin main
 git switch -c feat/nama-singkat            # satu pekerjaan = satu branch
 # ...kerja...
 vendor/bin/pint --test                     # gaya kode (sama seperti CI)
@@ -14,7 +16,15 @@ git add <file>                             # sebutkan file; jangan `git add -A`
 git commit -m "feat(map): ..."             # satu logika per commit
 git push -u origin feat/nama-singkat
 gh pr create --fill                        # atau lewat web
+
+gh pr checks --watch                       # tunggu CI sampai hijau
+gh pr merge --squash                       # merge manual (squash) - jangan `--auto`
+git switch main
+git pull
+git branch -d feat/nama-singkat            # hapus branch lokal; `-d` hanya jalan kalau sudah ter-merge
 ```
+
+Satu perintah per baris itu disengaja: `&&` tidak didukung Windows PowerShell 5.1. Kalau `gh` belum terpasang, buat dan merge PR-nya dari web: `https://github.com/<owner>/<repo>/compare/main...<branch>`.
 
 **Merge-nya manual.** Tidak ada job yang meng-arm auto-merge: PR di-merge oleh manusia (squash) setelah:
 
