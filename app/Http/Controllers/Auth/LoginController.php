@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\Profile;
 use App\Support\Seal\Sealer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,11 +28,13 @@ class LoginController extends Controller
 
         $configuredEmail = Str::lower(trim((string) config('seal.auth.email')));
         $configuredHash = trim((string) config('seal.auth.password_hash'));
+        $profile = Profile::findByEmail($request->email());
+        $passwordHash = $profile?->password_hash ?: $configuredHash;
 
         $valid = $configuredEmail !== ''
-            && $configuredHash !== ''
+            && $passwordHash !== ''
             && hash_equals($configuredEmail, $request->email())
-            && Hash::check((string) $request->input('password'), $configuredHash);
+            && Hash::check((string) $request->input('password'), $passwordHash);
 
         if (! $valid) {
             $request->hitRateLimiter();
@@ -52,7 +55,7 @@ class LoginController extends Controller
 
         $token = $this->sealer->seal(Sealer::PURPOSE_SESSION, [
             'email' => $request->email(),
-            'name' => (string) config('seal.auth.name'),
+            'name' => $profile?->name ?: (string) config('seal.auth.name'),
         ], $ttlMs);
 
         $cookie = cookie(
