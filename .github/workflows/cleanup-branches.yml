@@ -36,6 +36,7 @@ jobs:
 
           deleted=0
           skipped=0
+          failed=0
           while IFS=$'\t' read -r ref_owner ref; do
             [ -n "$ref" ] || continue
             if [ "$ref_owner" != "$owner" ]; then
@@ -60,8 +61,20 @@ jobs:
               deleted=$((deleted + 1))
               continue
             fi
-            gh api -X DELETE "repos/$REPO/git/refs/heads/$ref" >/dev/null
-            echo "hapus $ref"
-            deleted=$((deleted + 1))
+            hapus=0
+            for _ in 1 2 3; do
+              if gh api -X DELETE "repos/$REPO/git/refs/heads/$ref" >/dev/null 2>&1; then
+                hapus=1
+                break
+              fi
+              sleep 5
+            done
+            if [ "$hapus" = "1" ]; then
+              echo "hapus $ref"
+              deleted=$((deleted + 1))
+            else
+              echo "::warning::gagal hapus $ref (3 percobaan) - run berikutnya mengulang"
+              failed=$((failed + 1))
+            fi
           done < <(printf '%s\n' "$merged" | sort -u)
-          echo "selesai: $deleted dihapus, $skipped dilewati"
+          echo "selesai: $deleted dihapus, $failed gagal, $skipped dilewati"
