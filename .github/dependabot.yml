@@ -22,6 +22,11 @@ updates:
     groups:
       composer:
         patterns: ['*']
+    ignore:
+      # PHPUnit 13 needs PHP >= 8.4; the app's CI (and the build) runs 8.3,
+      # so the bump can only fail on install. Revisit when the runtime moves.
+      - dependency-name: phpunit/phpunit
+        update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions
     directory: /
