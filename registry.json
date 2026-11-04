@@ -1,0 +1,15 @@
+{
+  "guards": {
+    "seal": "seal-guard"
+  },
+  "ports": {
+    "/masuk": "login",
+    "/keluar": "logout"
+  },
+  "static": {
+    "/masuk": "masuk/index.html"
+  },
+  "config": [
+    "needs"
+  ]
+}
