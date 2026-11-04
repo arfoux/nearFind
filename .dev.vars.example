@@ -1,0 +1,12 @@
+# Bindings `wrangler dev` passes to the worker. Copy to `.dev.vars` (gitignored).
+# Deployed secrets are set with `wrangler secret put <NAME>` - this file is local only.
+#
+# SEAL_KEY_ID / SEAL_KEY feed config/seal.php's keyring on the PHP side and
+# keyringFromEnv() in ports/_lib.mjs on the worker side. Both must be the same
+# pair or the seal cookie minted by one side cannot be read by the other.
+#
+# The key below is a LOCAL sample (`local` id, 32 random bytes as base64url). It
+# is safe to commit. Set a real, rotated key for the deployed worker.
+SEAL_KEY_ID=local
+SEAL_KEY=O0d-Wgoy5X5WQk3Spj6K6NNPWgJbc0vygLjgXUtPuuo
+NEARFIND_AUTH_EMAIL=warga@nearfind.test

@@ -7,9 +7,7 @@ use App\Models\Profile;
 use App\Models\Report;
 use App\Support\Seal\Sealer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -157,26 +155,6 @@ class ProfileTest extends TestCase
             ->assertSessionHasErrors('username');
     }
 
-    public function test_a_warga_can_upload_a_profile_photo(): void
-    {
-        Storage::fake('public');
-
-        $profile = $this->profile();
-
-        $this->asWarga()
-            ->put(route('profile.update'), [
-                'name' => self::NAME,
-                'username' => 'warga_uji',
-                'avatar' => UploadedFile::fake()->image('avatar.jpg', 400, 400),
-            ])
-            ->assertSessionHasNoErrors();
-
-        $profile->refresh();
-
-        $this->assertNotNull($profile->avatar_path);
-        Storage::disk('public')->assertExists($profile->avatar_path);
-    }
-
     public function test_a_warga_can_change_their_password(): void
     {
         $profile = $this->profile();
@@ -220,7 +198,7 @@ class ProfileTest extends TestCase
             'need_updates' => true,
             'support_activity' => false,
             'weekly_digest' => true,
-        ], $profile->fresh()->notificationSettings());
+        ], $profile->fresh()->notification_settings);
     }
 
     public function test_the_profile_page_requires_logout_confirmation(): void

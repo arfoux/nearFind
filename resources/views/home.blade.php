@@ -1,4 +1,6 @@
-<x-layout title="nearFind — Peta Kebutuhan Warga" active="peta">
+@extends('layouts.app')
+@php $title = 'nearFind — Peta Kebutuhan Warga'; $active = 'peta'; @endphp
+@section('content')
     @php
         $nearFindData = [
             'categories' => $categories,
@@ -11,11 +13,11 @@
     <script type="application/json" id="nearfind-data">@json($nearFindData)</script>
 
     <div class="relative min-h-0 flex-1">
-        <main class="absolute inset-0 overflow-hidden bg-[#EAF4EC]">
-            <section class="absolute inset-0 overflow-hidden bg-[#EAF4EC]" aria-label="Peta interaktif kebutuhan warga di Sukajadi dan sekitarnya">
+        <main class="absolute inset-0 overflow-hidden">
+            <section class="absolute inset-0 overflow-hidden" aria-label="Peta interaktif kebutuhan warga di Sukajadi dan sekitarnya">
                 <div id="map" class="absolute inset-0 z-0" role="region" aria-label="Peta interaktif kebutuhan warga di Sukajadi dan sekitarnya"></div>
 
-                <x-home.map-tip />
+                @include('partials.home/map-tip', [])
 
                 <noscript>
                     <div class="absolute inset-0 z-[900] grid place-items-center bg-canvas/90 p-6 text-center text-sm font-medium text-ink">
@@ -25,22 +27,20 @@
             </section>
 
             <div class="pointer-events-none absolute inset-x-0 top-0 z-[700] px-3 pt-3 sm:px-4 lg:px-5 lg:pt-4">
-                <div class="pointer-events-none absolute inset-x-0 top-0 h-5 bg-canvas lg:h-6" aria-hidden="true"></div>
-
-                <x-home.header />
+                @include('partials.home/header', [])
 
                 <div class="mt-2.5">
-                    <x-home.category-chips :categories="$categories" />
+                    @include('partials.home/category-chips', ['categories' => $categories])
                 </div>
 
-                <x-home.map-credit />
-                <x-home.map-controls />
+                @include('partials.home/map-credit', [])
+                @include('partials.home/map-controls', [])
             </div>
 
             <aside
                 id="need-panel"
                 data-state="collapsed"
-                class="nf-need-panel nf-glass-strong absolute inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-[600] flex flex-col overflow-hidden rounded-[20px] lg:inset-x-auto lg:bottom-24 lg:right-[var(--nf-panel-right)] lg:w-[var(--nf-panel-width)]"
+                class="nf-need-panel nf-glass-strong absolute inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-[600] flex flex-col overflow-hidden rounded-[20px] lg:inset-x-auto lg:bottom-24 lg:right-5 lg:w-[390px]"
                 aria-label="Informasi kebutuhan terpilih"
             >
                 <div id="need-peek" class="flex shrink-0 items-center gap-3 px-4 py-3" aria-live="polite">
@@ -56,14 +56,14 @@
                     class="scrollbar-card min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-5 pt-3 lg:px-5 lg:pb-6"
                     aria-live="polite"
                 >
-                    <x-home.need-skeleton />
+                    @include('partials.home/need-skeleton', [])
                 </div>
             </aside>
 
-            <x-home.fab />
+            @include('partials.home/fab', [])
         </main>
     </div>
 
-    <x-home.filter-sheet :categories="$categories" />
-    <x-home.login-gate />
-</x-layout>
+    @include('partials.home/filter-sheet', ['categories' => $categories])
+    @include('partials.home/login-gate', [])
+@endsection

@@ -89,29 +89,30 @@ body.app-background {
 .nf-glass,
 .nf-glass-strong,
 .nf-glass-subtle {
-    border: 1px solid rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.78);
     box-shadow:
         0 18px 50px -30px rgba(0, 60, 55, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.65),
         0 0 0 1px rgba(0, 92, 85, 0.04);
-    backdrop-filter: blur(18px) saturate(140%);
-    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(26px) saturate(180%);
+    backdrop-filter: blur(26px) saturate(180%);
 }
 
 .nf-glass {
-    background: rgba(255, 255, 255, 0.68);
+    background: rgba(255, 255, 255, 0.22);
 }
 
 .nf-glass-strong {
-    background: rgba(255, 255, 255, 0.84);
+    background: rgba(255, 255, 255, 0.30);
 }
 
 .nf-glass-subtle {
-    background: rgba(255, 255, 255, 0.58);
+    background: rgba(255, 255, 255, 0.16);
 }
 
-.nf-header {
-    background: #fff;
-}
+/* No `background: #fff` here. `.nf-header` used to paint the header solid white
+   from AFTER the glass rules, so the header's `nf-glass-strong` never showed its
+   blur. The class survives only as a targeting hook for the markup. */
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .nf-glass,
@@ -120,6 +121,17 @@ body.app-background {
         background: rgba(255, 255, 255, 0.96);
     }
 }
+
+/* -------------------------------------------------------------------------- */
+/* Default avatars (no upload: the palette is picked from the row id)         */
+/* -------------------------------------------------------------------------- */
+
+.nf-avatar--0 { background-image: linear-gradient(135deg, #005C55, #0E8C7E); }
+.nf-avatar--1 { background-image: linear-gradient(135deg, #0B5E7A, #179BC0); }
+.nf-avatar--2 { background-image: linear-gradient(135deg, #9A4A12, #FD761A); }
+.nf-avatar--3 { background-image: linear-gradient(135deg, #4A3B8C, #7C6AE0); }
+.nf-avatar--4 { background-image: linear-gradient(135deg, #7A2E4A, #C75B85); }
+.nf-avatar--5 { background-image: linear-gradient(135deg, #2F4A3C, #6E9B7F); }
 
 /* -------------------------------------------------------------------------- */
 /* Map                                                                        */
@@ -187,8 +199,7 @@ body.app-background {
 /* Custom map markers ------------------------------------------------------- */
 
 .nf-marker-wrapper {
-    width: 0;
-    height: 0;
+    width: max-content;
     border: 0 !important;
     background: transparent !important;
 }
@@ -201,19 +212,12 @@ body.app-background {
     flex-direction: column;
     align-items: center;
     filter: drop-shadow(0 8px 12px rgba(0, 60, 55, 0.16));
-    transform: translateX(-50%);
-    transform-origin: bottom center;
     transition: transform 0.18s ease;
 }
 
 .nf-marker:hover,
 .nf-marker:focus-within {
-    transform: translateX(-50%) translateY(-1px);
-}
-
-.nf-marker-wrapper:focus-visible .nf-marker-pill {
-    outline: 3px solid rgba(15, 118, 110, 0.35);
-    outline-offset: 2px;
+    transform: translateY(-1px);
 }
 
 .nf-marker-pill {
@@ -226,8 +230,8 @@ body.app-background {
     background: rgba(255, 255, 255, 0.9);
     padding: 0 7px 0 5px;
     box-shadow: 0 8px 20px -12px rgba(0, 60, 55, 0.42);
-    backdrop-filter: blur(10px) saturate(140%);
     -webkit-backdrop-filter: blur(10px) saturate(140%);
+    backdrop-filter: blur(10px) saturate(140%);
     transition:
         background 0.18s ease,
         border-color 0.18s ease,
@@ -347,8 +351,8 @@ body.app-background {
     box-shadow:
         0 10px 24px -16px rgba(0, 60, 55, 0.55),
         0 0 0 1px rgba(0, 92, 85, 0.1);
-    backdrop-filter: blur(14px) saturate(140%);
     -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
     transition:
         background 0.18s ease,
         color 0.18s ease,
@@ -400,9 +404,9 @@ body.app-background {
     flex-shrink: 0;
     align-items: center;
     gap: 6px;
-    border: 1px solid rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.65);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.72);
+    background: rgba(255, 255, 255, 0.40);
     padding: 0 13px;
     color: var(--color-ink);
     font-size: 11px;
@@ -410,8 +414,8 @@ body.app-background {
     letter-spacing: -0.01em;
     white-space: nowrap;
     box-shadow: 0 6px 18px -12px rgba(0, 60, 55, 0.35);
-    backdrop-filter: blur(14px) saturate(140%);
     -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
     transition:
         background 0.18s ease,
         color 0.18s ease,
