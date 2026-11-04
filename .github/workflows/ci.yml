@@ -11,6 +11,10 @@ on:
 
 permissions:
   contents: read
+  # The verdict bot comments on the pull request (and edits its own comment on
+  # every push). Forks get a read-only token, so the bot skips them.
+  pull-requests: write
+  issues: write
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -65,9 +69,36 @@ jobs:
         run: npm run build
 
       - name: Prepare environment
+        run: cp .env.example .env
+
+      # A random key per run, so a pull request never builds with the production
+      # key. It must stay a VALID key (`base64:` + 32 bytes): compiling the error
+      # views boots Laravel and encrypts, and a malformed key fails the build with
+      # "Unsupported cipher or incorrect key length" (verified).
+      - name: Generate random app_key (dummy — never the production key)
         run: |
-          cp .env.example .env
-          php artisan key:generate --ansi
+          KEY="$(node -e 'process.stdout.write(require("crypto").randomBytes(32).toString("base64"))')"
+          echo "APP_KEY=base64:${KEY}" >> "$GITHUB_ENV"
+
+      # The edge gate: `--strict` exits 0 for RUNS ON THE EDGE and RUNS WITH
+      # DECLARED GAPS, and non-zero only for BLOCK findings. --no-cache is
+      # mandatory: a cache hit prints no READINESS block at all.
+      - name: Edge build (--strict)
+        run: |
+          set -o pipefail
+          npx laravel-workers build --no-cache 2>&1 | tee edge-build.log
+
+      # Verdict (action/verdict in laravel-workers): one sticky PR comment,
+      # edited in place on every push, plus the job summary. Copy is English.
+      - name: Verdict — report
+        if: always()
+        env:
+          INPUT_LOG: edge-build.log
+          GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+          GH_TOKEN: ${{ github.token }}
+        run: node .github/scripts/verdict.mjs
 
       - name: Check code style
         run: vendor/bin/pint --test --format agent

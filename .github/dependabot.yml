@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # laravel-workers is pinned exactly and bumped by PR, so the edge gate
+    # verifies every tool upgrade before it can reach a deploy.
+    groups:
+      npm-dev:
+        dependency-type: development
+
+  - package-ecosystem: composer
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

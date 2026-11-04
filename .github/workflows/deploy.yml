@@ -1,0 +1,105 @@
+name: deploy
+
+# Production only: the PR gate lives in ci.yml. `deploy --mode 3` is the whole
+# pipeline — build, database (D1 ensure + schema), then `wrangler deploy` — so
+# there is no separate database workflow to drift from it.
+#
+# The schema is stateful, not re-applied blindly: the first run against an empty
+# D1 applies dist/schema.sql (CREATE-only, from database/migrations); a D1 that
+# already has tables is skipped; a CHANGED schema against a non-empty D1 stops
+# with "schema drift" — pass `--schema=apply` deliberately when you mean it.
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build, database, deploy (production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Create this environment in Settings → Environments to require reviewers.
+    environment: production
+    env:
+      # The SAME key on every deploy: a random one would invalidate every
+      # encrypted cookie/session at each release. Env wins over `.env`, so no
+      # `key:generate` below. It must keep its `base64:` prefix verbatim —
+      # storage HMACs and the session hashKey hash the string itself.
+      APP_KEY: ${{ secrets.APP_KEY }}
+      # Production values win over .env (the same mechanism as APP_KEY). Without
+      # these the build bakes `.env.example`'s local values into
+      # dist/src/config.generated.mjs: APP_URL=http://localhost:8000 (every
+      # url()/redirect/signed URL would point there) and CACHE_STORE=file (the
+      # edge only builds the D1 cache when cache.driver is `database`).
+      APP_ENV: production
+      APP_DEBUG: 'false'
+      # The public URL, kept out of the repo (this repository is public): set it
+      # once as a repository variable, `gh variable set APP_URL`.
+      APP_URL: ${{ vars.APP_URL }}
+      CACHE_STORE: database
+      LOG_LEVEL: warning
+      # SEAL_* and NEARFIND_AUTH_* are NOT baked into the artifact (the `seal`
+      # config group is not dumped) — they are Worker secrets/vars read by the
+      # ports at request time. Set them once with `wrangler secret put`.
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, iconv, sqlite3, pdo_sqlite
+          coverage: none
+          tools: composer:v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress --no-dev
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Prepare environment
+        run: cp .env.example .env
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Build, database, deploy (mode 3)
+        run: |
+          set -o pipefail
+          if [ -z "${APP_URL}" ]; then
+            echo "APP_URL is not set (repository variable) - refusing to bake an empty URL"; exit 2
+          fi
+          # The worker URL stays out of this public repository's logs: wrangler
+          # echoes it on deploy, so the streamed copy masks it. The log file
+          # keeps the raw output for the readiness block below.
+          npx laravel-workers deploy --mode 3 --yes --no-cache 2>&1 \
+            | tee deploy.log \
+            | sed -E 's#https?://[A-Za-z0-9._-]+\.workers\.dev#https://<worker>.workers.dev#g'
+
+      - name: Publish readiness verdict
+        if: always()
+        run: |
+          {
+            echo '### edge readiness'
+            echo '```'
+            awk '/^READINESS:/{f=1} f' deploy.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
