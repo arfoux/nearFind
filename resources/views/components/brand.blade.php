@@ -1,4 +1,4 @@
-@props(['tagline' => true])
+@props(['tagline' => true, 'badge' => null])
 
 <a
     href="{{ route('home') }}"
@@ -17,7 +17,12 @@
     </span>
 
     <span class="flex min-w-0 flex-col leading-none">
-        <span class="text-[17px] font-semibold tracking-[-0.035em] text-brand-800 lg:text-[19px]">nearFind</span>
+        <span class="flex items-center gap-1.5">
+            <span class="text-[17px] font-semibold tracking-[-0.035em] text-brand-800 lg:text-[19px]">nearFind</span>
+            @if ($badge)
+                <span class="rounded-full bg-brand-50 px-1.5 py-0.5 text-[7px] font-bold uppercase tracking-[0.14em] text-brand-700 ring-1 ring-brand-700/10">{{ $badge }}</span>
+            @endif
+        </span>
         @if ($tagline)
             <span class="mt-1 text-[8.5px] font-semibold uppercase tracking-[0.15em] text-muted lg:text-[9px]">Peta kebutuhan warga</span>
         @endif
