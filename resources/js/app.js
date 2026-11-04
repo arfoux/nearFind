@@ -68,10 +68,15 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
     const toast = document.getElementById('toast');
     const toastMessage = toast?.querySelector('[data-toast-message]');
     const mapTip = document.querySelector('[data-map-tip]');
+    const needPanel = document.getElementById('need-panel');
+    const needPeekElement = document.getElementById('need-peek');
+    const mapControls = document.querySelector('[data-map-controls]');
+    const desktopQuery = window.matchMedia('(min-width: 1024px)');
     const requestedNeedId = new URLSearchParams(window.location.search).get('need');
 
     const initialNeed = needs.find((need) => need.id === requestedNeedId) ?? needs[0] ?? null;
     state.selectedId = initialNeed?.id ?? null;
+    let cardExpanded = desktopQuery.matches;
 
     const tooltip = new Popup({
         closeButton: false,
@@ -94,6 +99,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
     initMap();
     bindEvents();
     applyFilters({ fit: true, syncUrl: false });
+    setCardExpanded(cardExpanded);
 
     requestAnimationFrame(() => {
         map?.resize();
@@ -246,6 +252,11 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
 
             if (filterSheet && !filterSheet.classList.contains('hidden')) {
                 closeFilterSheet();
+                return;
+            }
+
+            if (!desktopQuery.matches && needPanel?.dataset.state === 'expanded') {
+                setCardExpanded(false);
             }
         });
 
@@ -254,6 +265,19 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         document.querySelector('[data-map-locate]')?.addEventListener('click', locateUser);
         document.querySelector('[data-map-zoom-in]')?.addEventListener('click', () => zoomBy(0.5));
         document.querySelector('[data-map-zoom-out]')?.addEventListener('click', () => zoomBy(-0.5));
+
+        needPanel?.addEventListener('click', (event) => {
+            if (!event.target.closest('[data-card-toggle]')) {
+                return;
+            }
+
+            event.preventDefault();
+            setCardExpanded(!cardExpanded);
+        });
+
+        desktopQuery.addEventListener('change', (event) => {
+            setCardExpanded(event.matches);
+        });
 
         needCardElement.addEventListener('click', (event) => {
             const supportButton = event.target.closest('[data-support-button]');
@@ -498,6 +522,27 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         loginReturnFocus = null;
     }
 
+    function setCardExpanded(expanded) {
+        if (!needPanel) {
+            return;
+        }
+
+        cardExpanded = expanded;
+        needPanel.dataset.state = expanded ? 'expanded' : 'collapsed';
+        mapControls?.classList.toggle('is-hidden', !desktopQuery.matches && expanded);
+
+        needPanel.querySelectorAll('[data-card-toggle]').forEach((toggle) => {
+            toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            toggle.setAttribute('aria-label', expanded ? 'Tutup detail kebutuhan' : 'Buka detail kebutuhan');
+
+            const label = toggle.querySelector('[data-card-toggle-label]');
+
+            if (label) {
+                label.textContent = expanded ? 'Tutup' : 'Detail';
+            }
+        });
+    }
+
     function renderMarkers() {
         if (!map) {
             return;
@@ -541,8 +586,8 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         element.className = 'nf-marker-wrapper';
         element.setAttribute('role', 'button');
         element.setAttribute('tabindex', '0');
-        element.style.width = isSelected ? '176px' : '46px';
-        element.style.height = '48px';
+        element.style.width = 'max-content';
+        element.style.height = 'auto';
         element.style.zIndex = isSelected ? '420' : '';
         element.innerHTML = markerMarkup(need, isSelected);
         updateMarkerAria(element, need);
@@ -555,22 +600,13 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         const supporters = displaySupporters(need);
         const markerStyle = `--marker-color:${category.color};--marker-soft:${category.soft_color}`;
 
-        if (isSelected) {
-            return `<div class="nf-marker" style="${markerStyle}">
-                    <div class="nf-marker-label">
-                        <span class="nf-marker-label-icon">${icon(category.icon, 'size-3.5')}</span>
-                        <span class="nf-marker-label-title">${escapeHtml(need.marker_label)}</span>
-                        <span class="nf-marker-label-count">${supporters}</span>
+        return `<div class="nf-marker ${isSelected ? 'is-selected' : ''}" style="${markerStyle}">
+                    <div class="nf-marker-pill">
+                        <span class="nf-marker-pill-icon">${icon(category.icon, 'size-3.5')}</span>
+                        <span class="nf-marker-pill-title">${escapeHtml(need.marker_label)}</span>
+                        <span class="nf-marker-pill-count">${supporters}</span>
                     </div>
                     <span class="nf-marker-tail"></span>
-                </div>`;
-        }
-
-        return `<div class="nf-marker" style="${markerStyle}">
-                    <div class="nf-marker-dot">
-                        ${icon(category.icon, 'size-4')}
-                        <span class="nf-marker-count">${supporters}</span>
-                    </div>
                 </div>`;
     }
 
@@ -608,6 +644,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
 
         state.filtered.forEach((filteredNeed) => refreshMarker(filteredNeed));
 
+        mapTip?.remove();
         renderCard({ preserveScroll });
         syncUrlSelection();
 
@@ -646,8 +683,8 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
 
         const element = marker.getElement();
         const isSelected = need.id === state.selectedId;
-        element.style.width = isSelected ? '176px' : '46px';
-        element.style.height = '48px';
+        element.style.width = 'max-content';
+        element.style.height = 'auto';
         element.style.zIndex = isSelected ? '420' : '';
         element.innerHTML = markerMarkup(need, isSelected);
         updateMarkerAria(element, need);
@@ -657,49 +694,89 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         const need = state.needs.find((item) => item.id === state.selectedId) ?? null;
         const previousScrollTop = preserveScroll ? needCardElement.scrollTop : 0;
 
+        if (needPeekElement) {
+            needPeekElement.innerHTML = need ? needPeekMarkup(need) : emptyPeekMarkup();
+        }
+
         needCardElement.innerHTML = need ? needCardMarkup(need) : emptyCardMarkup();
         needCardElement.scrollTop = previousScrollTop;
     }
 
-    function needCardMarkup(need) {
+    function needPeekMarkup(need) {
         const category = categoryById[need.category] ?? fallbackCategory;
+        const supporters = displaySupporters(need);
+
+        return `
+            <span class="flex size-10 shrink-0 items-center justify-center rounded-[14px]" style="background:${category.soft_color};color:${category.color}">
+                ${icon(category.icon, 'size-[19px]')}
+            </span>
+
+            <div class="min-w-0 flex-1">
+                <p class="flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-[0.12em]" style="color:${category.color}">
+                    <span class="truncate">${escapeHtml(category.label)}</span>
+                    <span class="text-muted/60" aria-hidden="true">•</span>
+                    <span class="normal-case tracking-normal text-muted">${supporters} dukungan</span>
+                </p>
+                <h2 class="mt-1 truncate text-[13px] font-semibold tracking-[-0.02em] text-ink">${escapeHtml(need.title)}</h2>
+            </div>
+
+            <button
+                type="button"
+                data-card-toggle
+                aria-expanded="${cardExpanded ? 'true' : 'false'}"
+                aria-controls="need-card"
+                aria-label="${cardExpanded ? 'Tutup detail kebutuhan' : 'Buka detail kebutuhan'}"
+                class="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-white/80 px-2.5 text-[9.5px] font-semibold text-brand-700 shadow-sm ring-1 ring-brand-900/10 transition hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
+            >
+                <span data-card-toggle-label>${cardExpanded ? 'Tutup' : 'Detail'}</span>
+                ${icon('chevron-down', 'nf-chevron size-3.5 transition-transform duration-200')}
+            </button>
+        `;
+    }
+
+    function emptyPeekMarkup() {
+        return `
+            <span class="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-brand-50 text-brand-700">
+                ${icon('search', 'size-5')}
+            </span>
+
+            <div class="min-w-0 flex-1">
+                <p class="text-[8px] font-semibold uppercase tracking-[0.12em] text-brand-600">Peta</p>
+                <h2 class="mt-1 truncate text-[13px] font-semibold tracking-[-0.02em] text-ink">Belum ada kebutuhan yang cocok</h2>
+            </div>
+
+            <button
+                type="button"
+                data-card-toggle
+                aria-expanded="${cardExpanded ? 'true' : 'false'}"
+                aria-controls="need-card"
+                aria-label="${cardExpanded ? 'Tutup detail kebutuhan' : 'Buka detail kebutuhan'}"
+                class="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-white/80 px-2.5 text-[9.5px] font-semibold text-brand-700 shadow-sm ring-1 ring-brand-900/10 transition hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
+            >
+                <span data-card-toggle-label>${cardExpanded ? 'Tutup' : 'Detail'}</span>
+                ${icon('chevron-down', 'nf-chevron size-3.5 transition-transform duration-200')}
+            </button>
+        `;
+    }
+
+    function needCardMarkup(need) {
         const supported = state.supported.has(need.id);
         const supporters = displaySupporters(need);
         const supportLabel = supported ? 'Kamu sudah mendukung' : 'Saya juga butuh';
         const supportClasses = supported
             ? 'bg-brand-50 text-brand-700 ring-1 ring-brand-700/15 hover:bg-brand-100'
             : 'bg-accent-500 text-white shadow-[0_14px_26px_-16px_rgba(253,118,26,0.8)] hover:bg-accent-600';
-        const area = (need.area ?? '').split(',')[0];
 
         return `
             <article class="need-card-enter">
-                <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                    <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em]" style="background:${category.soft_color};color:${category.color}">
-                        ${icon(category.icon, 'size-3')}
-                        ${escapeHtml(category.label)}
-                    </span>
-
-                    <span class="inline-flex items-center gap-1 text-[10.5px] font-medium text-muted">
-                        ${icon('clock', 'size-3')}
-                        ${escapeHtml(formatTimeAgo(need.hours_ago))}
-                    </span>
-
-                    <span class="ml-auto inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-1 text-[9px] font-semibold text-brand-700">
-                        ${icon('pin', 'size-3')}
-                        ${escapeHtml(area)}
-                    </span>
-                </div>
-
-                <h2 class="mt-2 text-[21px] font-semibold leading-[1.16] tracking-[-0.03em] text-ink">${escapeHtml(need.title)}</h2>
-
-                <div class="mt-1.5 flex items-start gap-1.5 text-[11px] font-medium leading-snug text-muted">
+                <div class="flex items-start gap-1.5 text-[11px] font-medium leading-snug text-muted">
                     ${icon('pin', 'mt-0.5 size-3.5 shrink-0 text-brand-600')}
                     <span>${escapeHtml(need.location)} <span class="text-brand-700">• ${escapeHtml(formatDistance(need.distance_km))}</span></span>
                 </div>
 
-                <p class="mt-2 line-clamp-2 text-[12.5px] leading-[1.6] text-[#4E6360] [@media(max-height:719px)]:hidden">${escapeHtml(need.description)}</p>
+                <p class="mt-2 line-clamp-3 text-[12.5px] leading-[1.6] text-[#4E6360] [@media(max-height:719px)]:line-clamp-2">${escapeHtml(need.description)}</p>
 
-                <div class="mt-2.5 flex items-center gap-3 rounded-2xl bg-[#F0F3FF] px-3 py-2">
+                <div class="mt-3 flex items-center gap-3 rounded-2xl bg-[#F0F3FF] px-3 py-2">
                     <div class="flex -space-x-2">
                         <span class="flex size-7 items-center justify-center rounded-full border-2 border-white bg-brand-100 text-[8px] font-bold text-brand-800">RW</span>
                         <span class="flex size-7 items-center justify-center rounded-full border-2 border-white bg-[#FFDBCA] text-[8px] font-bold text-[#9A3412]">+${Math.max(supporters - 1, 0)}</span>
@@ -769,13 +846,24 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
             [coordinates[0], coordinates[0]],
         );
         const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+        const mapWidth = mapElement.clientWidth || window.innerWidth;
+        const mapHeight = mapElement.clientHeight || window.innerHeight;
+        const mapCredit = document.querySelector('[data-map-credit]');
+        const mapTop = mapElement.getBoundingClientRect().top;
+        const creditBottom = mapCredit ? mapCredit.getBoundingClientRect().bottom - mapTop : 0;
+        const topPadding = Math.min(
+            Math.max(isDesktop ? 180 : 210, creditBottom + 28),
+            Math.max(120, mapHeight * 0.34),
+        );
+        const bottomPadding = Math.min(isDesktop ? 80 : 230, Math.max(60, mapHeight * 0.32));
+        const rightPadding = isDesktop ? Math.min(430, Math.max(120, mapWidth * 0.4)) : 80;
 
         map.fitBounds(bounds, {
             padding: {
-                top: isDesktop ? 118 : 104,
-                right: isDesktop ? 60 : 24,
-                bottom: isDesktop ? 50 : 40,
-                left: isDesktop ? 60 : 24,
+                top: topPadding,
+                right: rightPadding,
+                bottom: bottomPadding,
+                left: isDesktop ? 40 : 32,
             },
             maxZoom: isDesktop ? 16 : 15.5,
             linear: true,
@@ -946,20 +1034,6 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         } catch {
             // localStorage can be unavailable in private browsing; the UI still works for this session.
         }
-    }
-
-    function formatTimeAgo(hoursAgo) {
-        if (!Number.isFinite(hoursAgo) || hoursAgo < 1) {
-            return 'Baru saja';
-        }
-
-        if (hoursAgo < 24) {
-            return `${Math.floor(hoursAgo)} jam lalu`;
-        }
-
-        const days = Math.floor(hoursAgo / 24);
-
-        return days === 1 ? '1 hari lalu' : `${days} hari lalu`;
     }
 
     function formatDistance(distanceKm) {

@@ -1,6 +1,8 @@
-<x-auth-layout title="Masuk · nearFind">
+@extends('layouts.auth')
+@section('title', 'Masuk · nearFind')
+@section('content')
     <div class="flex flex-col items-center text-center">
-        <x-brand :tagline="false" />
+        @include('partials.brand', ['tagline' => false])
 
         <h1 class="mt-6 text-[26px] font-semibold tracking-[-0.035em] text-ink">Masuk ke nearFind</h1>
         <p class="mt-2 max-w-[330px] text-[12.5px] leading-relaxed text-muted">
@@ -11,14 +13,14 @@
     <div class="mt-6 rounded-[28px] bg-white p-5 shadow-[0_24px_70px_-40px_rgba(0,60,55,0.55)] ring-1 ring-brand-900/10 sm:p-6">
         @if (session('status'))
             <div class="mb-4 flex items-start gap-2.5 rounded-2xl bg-brand-50 px-3.5 py-3 text-[11.5px] font-medium text-brand-800 ring-1 ring-brand-700/10">
-                <x-icon name="check" class="mt-0.5 size-4 shrink-0" />
+                @include('partials.icon', ['name' => 'check', 'class' => 'mt-0.5 size-4 shrink-0'])
                 <span>{{ session('status') }}</span>
             </div>
         @endif
 
         @if ($errors->any())
             <div class="mb-4 flex items-start gap-2.5 rounded-2xl bg-[#FFF1F1] px-3.5 py-3 text-[11.5px] font-medium text-[#9F1D1D] ring-1 ring-[#9F1D1D]/10" role="alert">
-                <x-icon name="info" class="mt-0.5 size-4 shrink-0" />
+                @include('partials.icon', ['name' => 'info', 'class' => 'mt-0.5 size-4 shrink-0'])
                 <span>{{ $errors->first() }}</span>
             </div>
         @endif
@@ -31,7 +33,7 @@
 
                 <div class="relative mt-1.5">
                     <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
-                        <x-icon name="user" class="size-4" />
+                        @include('partials.icon', ['name' => 'user', 'class' => 'size-4'])
                     </span>
 
                     <input
@@ -54,7 +56,7 @@
 
                 <div class="relative mt-1.5">
                     <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
-                        <x-icon name="lock" class="size-4" />
+                        @include('partials.icon', ['name' => 'lock', 'class' => 'size-4'])
                     </span>
 
                     <input
@@ -75,7 +77,7 @@
                         aria-label="Tampilkan kata sandi"
                         aria-pressed="false"
                     >
-                        <x-icon name="eye" class="size-4" />
+                        @include('partials.icon', ['name' => 'eye', 'class' => 'size-4'])
                     </button>
                 </div>
             </div>
@@ -96,7 +98,7 @@
                 class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 text-[12.5px] font-semibold text-white shadow-[0_16px_30px_-18px_rgba(0,92,85,0.9)] transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 active:scale-[0.99]"
             >
                 Masuk
-                <x-icon name="arrow-right" class="size-4" />
+                @include('partials.icon', ['name' => 'arrow-right', 'class' => 'size-4'])
             </button>
         </form>
 
@@ -109,7 +111,7 @@
         href="{{ route('home') }}"
         class="mx-auto mt-5 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11.5px] font-semibold text-brand-700 transition hover:text-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
     >
-        <x-icon name="map" class="size-3.5" />
+        @include('partials.icon', ['name' => 'map', 'class' => 'size-3.5'])
         Kembali ke peta
     </a>
-</x-auth-layout>
+@endsection

@@ -6,7 +6,7 @@
         aria-label="Temukan lokasi saya"
         title="Temukan lokasi saya"
     >
-        <x-icon name="locate" class="size-[18px]" />
+        @include('partials.icon', ['name' => 'locate', 'class' => 'size-[18px]'])
     </button>
 
     <div class="flex flex-col overflow-hidden rounded-[14px] bg-white/95 shadow-[0_10px_24px_-16px_rgba(0,60,55,0.55)] ring-1 ring-brand-900/10 backdrop-blur">
@@ -17,7 +17,7 @@
             aria-label="Perbesar peta"
             title="Perbesar peta"
         >
-            <x-icon name="plus" class="size-[17px]" />
+            @include('partials.icon', ['name' => 'plus', 'class' => 'size-[17px]'])
         </button>
 
         <span class="h-px w-full bg-brand-900/10"></span>
@@ -29,7 +29,7 @@
             aria-label="Perkecil peta"
             title="Perkecil peta"
         >
-            <x-icon name="minus" class="size-[17px]" />
+            @include('partials.icon', ['name' => 'minus', 'class' => 'size-[17px]'])
         </button>
     </div>
 </div>

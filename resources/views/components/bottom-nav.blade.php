@@ -24,7 +24,7 @@
             @if ($item['route'])
                 <a href="{{ route($item['route']) }}" @if ($isActive) aria-current="page" @endif class="{{ $itemClass }}">
                     <span class="{{ $iconClass }}">
-                        <x-icon :name="$item['icon']" class="size-[21px]" stroke-width="2" />
+                        @include('partials.icon', ['name' => $item['icon'], 'class' => 'size-[21px]', 'strokeWidth' => '2'])
                     </span>
                     <span class="{{ $labelClass }}">{{ $item['label'] }}</span>
                 </a>
@@ -36,7 +36,7 @@
                     class="{{ $itemClass }}"
                 >
                     <span class="{{ $iconClass }}">
-                        <x-icon :name="$item['icon']" class="size-[21px]" stroke-width="1.8" />
+                        @include('partials.icon', ['name' => $item['icon'], 'class' => 'size-[21px]', 'strokeWidth' => '1.8'])
                     </span>
                     <span class="{{ $labelClass }}">{{ $item['label'] }}</span>
                 </button>

@@ -11,7 +11,7 @@
             >
                 @if ($category['id'] !== 'all')
                     <span class="chip-icon" style="--chip-color: {{ $category['color'] }}; --chip-soft: {{ $category['soft_color'] }};">
-                        <x-icon :name="$category['icon']" class="size-3.5" />
+                        @include('partials.icon', ['name' => $category['icon'], 'class' => 'size-3.5'])
                     </span>
                 @endif
 

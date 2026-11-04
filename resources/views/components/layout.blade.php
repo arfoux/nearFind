@@ -24,7 +24,7 @@
 
     <div id="toast" class="toast pointer-events-none fixed inset-x-0 bottom-[calc(42dvh+4.75rem)] z-[1400] flex justify-center px-4 lg:bottom-24" role="status" aria-live="polite" aria-atomic="true">
         <div class="flex max-w-[420px] items-start gap-2.5 rounded-2xl bg-brand-800 px-4 py-3 text-[12px] font-medium leading-relaxed text-white shadow-[0_18px_40px_-18px_rgba(0,60,55,0.65)] ring-1 ring-white/10">
-            <x-icon name="info" class="mt-0.5 size-4 shrink-0 text-brand-200" />
+            @include('partials.icon', ['name' => 'info', 'class' => 'mt-0.5 size-4 shrink-0 text-brand-200'])
             <span data-toast-message></span>
         </div>
     </div>

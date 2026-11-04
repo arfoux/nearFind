@@ -77,6 +77,57 @@ body.app-background {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Glass surfaces                                                             */
+/* -------------------------------------------------------------------------- */
+
+.nf-glass,
+.nf-glass-strong,
+.nf-glass-subtle {
+    border: 1px solid rgba(255, 255, 255, 0.78);
+    box-shadow:
+        0 18px 50px -30px rgba(0, 60, 55, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.65),
+        0 0 0 1px rgba(0, 92, 85, 0.04);
+    -webkit-backdrop-filter: blur(26px) saturate(180%);
+    backdrop-filter: blur(26px) saturate(180%);
+}
+
+.nf-glass {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+.nf-glass-strong {
+    background: rgba(255, 255, 255, 0.30);
+}
+
+.nf-glass-subtle {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+/* No `background: #fff` here. `.nf-header` used to paint the header solid white
+   from AFTER the glass rules, so the header's `nf-glass-strong` never showed its
+   blur. The class survives only as a targeting hook for the markup. */
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .nf-glass,
+    .nf-glass-strong,
+    .nf-glass-subtle {
+        background: rgba(255, 255, 255, 0.96);
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Default avatars (no upload: the palette is picked from the row id)         */
+/* -------------------------------------------------------------------------- */
+
+.nf-avatar--0 { background-image: linear-gradient(135deg, #005C55, #0E8C7E); }
+.nf-avatar--1 { background-image: linear-gradient(135deg, #0B5E7A, #179BC0); }
+.nf-avatar--2 { background-image: linear-gradient(135deg, #9A4A12, #FD761A); }
+.nf-avatar--3 { background-image: linear-gradient(135deg, #4A3B8C, #7C6AE0); }
+.nf-avatar--4 { background-image: linear-gradient(135deg, #7A2E4A, #C75B85); }
+.nf-avatar--5 { background-image: linear-gradient(135deg, #2F4A3C, #6E9B7F); }
+
+/* -------------------------------------------------------------------------- */
 /* Map                                                                        */
 /* -------------------------------------------------------------------------- */
 
@@ -89,7 +140,7 @@ body.app-background {
     position: absolute;
     z-index: 350;
     inset: 0;
-    background: linear-gradient(180deg, rgba(248, 246, 240, 0.42), rgba(248, 246, 240, 0.24));
+    background: linear-gradient(180deg, rgba(248, 246, 240, 0.16), rgba(248, 246, 240, 0.04));
     content: '';
     pointer-events: none;
 }
@@ -101,8 +152,8 @@ body.app-background {
 }
 
 .maplibregl-canvas {
-    filter: saturate(0.32) brightness(1.22) contrast(0.77) sepia(0.09);
-    opacity: 0.94;
+    filter: saturate(1.05) brightness(1.02) contrast(0.92) sepia(0.02);
+    opacity: 0.98;
 }
 
 .maplibregl-control-container {
@@ -142,6 +193,7 @@ body.app-background {
 /* Custom map markers ------------------------------------------------------- */
 
 .nf-marker-wrapper {
+    width: max-content;
     border: 0 !important;
     background: transparent !important;
 }
@@ -150,120 +202,103 @@ body.app-background {
     display: flex;
     flex-direction: column;
     align-items: center;
-    filter: drop-shadow(0 10px 14px rgba(0, 60, 55, 0.16));
+    filter: drop-shadow(0 8px 12px rgba(0, 60, 55, 0.16));
+    transition: transform 0.18s ease;
 }
 
-.nf-marker-dot {
-    position: relative;
+.nf-marker:hover,
+.nf-marker:focus-within {
+    transform: translateY(-1px);
+}
+
+.nf-marker-pill {
     display: flex;
-    width: 42px;
-    height: 42px;
+    height: 32px;
     align-items: center;
-    justify-content: center;
-    border: 2px solid var(--marker-color);
-    border-radius: 15px;
-    background: #fff;
-    color: var(--marker-color);
+    gap: 5px;
+    border: 1.5px solid rgba(0, 92, 85, 0.12);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 0 7px 0 5px;
+    box-shadow: 0 8px 20px -12px rgba(0, 60, 55, 0.42);
+    -webkit-backdrop-filter: blur(10px) saturate(140%);
+    backdrop-filter: blur(10px) saturate(140%);
     transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease;
+        background 0.18s ease,
+        border-color 0.18s ease,
+        box-shadow 0.18s ease;
 }
 
-.nf-marker-dot::after {
-    position: absolute;
-    bottom: -5px;
-    left: 50%;
-    width: 8px;
-    height: 8px;
-    border-right: 2px solid var(--marker-color);
-    border-bottom: 2px solid var(--marker-color);
-    border-radius: 1px;
-    background: #fff;
-    content: '';
-    transform: translateX(-50%) rotate(45deg);
+.nf-marker.is-selected .nf-marker-pill {
+    height: 36px;
+    border-color: var(--marker-color);
+    background: var(--marker-soft);
+    box-shadow:
+        0 14px 26px -14px rgba(0, 60, 55, 0.5),
+        0 0 0 2px rgba(255, 255, 255, 0.75);
 }
 
-.nf-marker:hover .nf-marker-dot,
-.nf-marker:focus-within .nf-marker-dot {
-    transform: translateY(-2px) scale(1.035);
-    box-shadow: 0 10px 18px -12px rgba(0, 60, 55, 0.45);
-}
-
-.nf-marker-count {
-    position: absolute;
-    top: -8px;
-    right: -9px;
+.nf-marker-pill-icon {
     display: flex;
-    min-width: 21px;
-    height: 21px;
+    width: 23px;
+    height: 23px;
     align-items: center;
     justify-content: center;
-    border: 2px solid #fff;
-    border-radius: 999px;
-    background: var(--marker-color);
-    padding: 0 5px;
-    color: #fff;
-    font-size: 9px;
-    font-weight: 600;
-    line-height: 1;
-}
-
-.nf-marker-label {
-    display: flex;
-    height: 40px;
-    align-items: center;
-    gap: 6px;
-    border: 2px solid var(--marker-color);
-    border-radius: 999px;
-    background: #fff;
-    padding: 0 7px 0 6px;
-    box-shadow: 0 12px 24px -12px rgba(0, 60, 55, 0.35);
-}
-
-.nf-marker-label-icon {
-    display: flex;
-    width: 27px;
-    height: 27px;
-    align-items: center;
-    justify-content: center;
-    border-radius: 9px;
+    border-radius: 8px;
     background: var(--marker-soft);
     color: var(--marker-color);
 }
 
-.nf-marker-label-title {
-    max-width: 100px;
+.nf-marker.is-selected .nf-marker-pill-icon {
+    width: 26px;
+    height: 26px;
+    background: var(--marker-color);
+    color: #fff;
+}
+
+.nf-marker-pill-title {
+    max-width: 104px;
     overflow: hidden;
     color: #0b2724;
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-.nf-marker-label-count {
+.nf-marker.is-selected .nf-marker-pill-title {
+    max-width: 128px;
+    font-size: 10.5px;
+}
+
+.nf-marker-pill-count {
     display: flex;
-    min-width: 23px;
-    height: 20px;
+    min-width: 20px;
+    height: 18px;
     align-items: center;
     justify-content: center;
     border-radius: 999px;
     background: var(--marker-color);
-    padding: 0 6px;
+    padding: 0 5px;
     color: #fff;
-    font-size: 9px;
-    font-weight: 600;
+    font-size: 8.5px;
+    font-weight: 700;
+    line-height: 1;
 }
 
 .nf-marker-tail {
-    width: 9px;
-    height: 9px;
-    margin-top: -5px;
-    border-right: 2px solid var(--marker-color);
-    border-bottom: 2px solid var(--marker-color);
+    width: 8px;
+    height: 8px;
+    margin-top: -4px;
+    border-right: 1.5px solid var(--marker-color);
+    border-bottom: 1.5px solid var(--marker-color);
     border-radius: 1px;
     background: #fff;
     transform: rotate(45deg);
+}
+
+.nf-marker.is-selected .nf-marker-tail {
+    background: var(--marker-soft);
 }
 
 .nf-user-marker {
@@ -302,11 +337,13 @@ body.app-background {
     align-items: center;
     justify-content: center;
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.96);
+    background: rgba(255, 255, 255, 0.76);
     color: var(--color-brand-700);
     box-shadow:
         0 10px 24px -16px rgba(0, 60, 55, 0.55),
         0 0 0 1px rgba(0, 92, 85, 0.1);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
     transition:
         background 0.18s ease,
         color 0.18s ease,
@@ -315,7 +352,7 @@ body.app-background {
 }
 
 .map-control:hover {
-    background: #fff;
+    background: rgba(255, 255, 255, 0.94);
     color: var(--color-brand-800);
     transform: translateY(-1px);
     box-shadow:
@@ -352,9 +389,9 @@ body.app-background {
     flex-shrink: 0;
     align-items: center;
     gap: 6px;
-    border: 1px solid rgba(0, 92, 85, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.65);
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.96);
+    background: rgba(255, 255, 255, 0.40);
     padding: 0 13px;
     color: var(--color-ink);
     font-size: 11px;
@@ -362,6 +399,8 @@ body.app-background {
     letter-spacing: -0.01em;
     white-space: nowrap;
     box-shadow: 0 6px 18px -12px rgba(0, 60, 55, 0.35);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    backdrop-filter: blur(14px) saturate(140%);
     transition:
         background 0.18s ease,
         color 0.18s ease,
@@ -370,7 +409,7 @@ body.app-background {
 }
 
 .category-chip:hover {
-    background: #fff;
+    background: rgba(255, 255, 255, 0.94);
     transform: translateY(-1px);
 }
 
@@ -443,6 +482,61 @@ body.app-background {
 
 .filter-option input:checked + .filter-sort-inner .filter-radio > span {
     background: #fff;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Map-first detail panel                                                     */
+/* -------------------------------------------------------------------------- */
+
+.nf-need-panel {
+    --nf-panel-peek: 4.75rem;
+    height: var(--nf-panel-peek);
+    background: rgba(255, 255, 255, 0.92);
+    transition: height 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nf-need-panel[data-state='expanded'] {
+    height: max(var(--nf-panel-peek), min(56dvh, calc(100dvh - 16rem), 34rem));
+    background: rgba(255, 255, 255, 0.98);
+}
+
+.nf-need-panel[data-state='collapsed'] #need-peek {
+    height: 100%;
+}
+
+.nf-need-panel[data-state='collapsed'] #need-card {
+    display: none;
+}
+
+.nf-need-panel[data-state='expanded'] [data-card-toggle] .nf-chevron {
+    transform: rotate(180deg);
+}
+
+.nf-fab {
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease,
+        background 0.18s ease;
+}
+
+.nf-map-controls.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-0.25rem);
+}
+
+@media (max-width: 1023px) {
+    .nf-need-panel[data-state='expanded'] ~ .nf-fab {
+        opacity: 0;
+        pointer-events: none;
+        transform: translate(-50%, 0.5rem);
+    }
+}
+
+@media (min-width: 1024px) {
+    .nf-need-panel[data-state='expanded'] {
+        height: max(var(--nf-panel-peek), min(calc(100dvh - 18.5rem), 24rem));
+    }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -542,5 +636,15 @@ body.app-background {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .category-chip {
+        background: rgba(255, 255, 255, 0.96);
+    }
+
+    .map-control:not(.map-control--flush) {
+        background: rgba(255, 255, 255, 0.96);
     }
 }

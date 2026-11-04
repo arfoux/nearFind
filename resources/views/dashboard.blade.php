@@ -1,4 +1,6 @@
-<x-layout title="Dasbor · nearFind" active="profil">
+@extends('layouts.app')
+@php $title = 'Dasbor · nearFind'; $active = 'profil'; @endphp
+@section('content')
     <div class="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-5 sm:px-6 lg:px-8">
         <div class="mx-auto w-full max-w-[640px]">
             <div class="flex items-center gap-3">
@@ -16,7 +18,7 @@
             <section class="mt-5 overflow-hidden rounded-[28px] bg-white p-5 shadow-[0_22px_60px_-40px_rgba(0,60,55,0.45)] ring-1 ring-brand-900/10">
                 <div class="flex flex-wrap items-center gap-2">
                     <span class="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.12em] text-brand-700">
-                        <x-icon name="check" class="size-3" />
+                        @include('partials.icon', ['name' => 'check', 'class' => 'size-3'])
                         stateless-seal
                     </span>
 
@@ -60,7 +62,7 @@
                         type="submit"
                         class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#FFF1F1] px-4 text-[12px] font-semibold text-[#9F1D1D] ring-1 ring-[#9F1D1D]/10 transition hover:bg-[#FFE4E4] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#9F1D1D]/15"
                     >
-                        <x-icon name="log-out" class="size-4" />
+                        @include('partials.icon', ['name' => 'log-out', 'class' => 'size-4'])
                         Keluar dari akun
                     </button>
                 </form>
@@ -70,9 +72,9 @@
                 href="{{ route('home') }}"
                 class="mt-4 inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-[11.5px] font-semibold text-brand-700 transition hover:text-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
             >
-                <x-icon name="map" class="size-3.5" />
+                @include('partials.icon', ['name' => 'map', 'class' => 'size-3.5'])
                 Kembali ke peta
             </a>
         </div>
     </div>
-</x-layout>
+@endsection
