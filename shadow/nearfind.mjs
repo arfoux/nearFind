@@ -55,6 +55,22 @@ export default {
         "VALUES (1, 1, 1, 'Perbaikan lampu gang 3', 'infrastruktur', 'Lampu sudah menyala kembali.', 'selesai', '2026-10-23 11:00:00', '2026-10-23 11:00:00')",
     },
   ],
+// Not compared: `GET /up`, Laravel's own health route. `withRouting(health: '/up')`
+// in bootstrap/app.php makes ApplicationBuilder register it — framework code, no
+// route file declares it — so the static scan cannot see it, and the build
+// refuses a registry.json entry for a route `route:list` does not know
+// ("registry entries not found in route:list: /up"). The build reports it as a
+// declared gap (see the readiness block), and the worker answers its own
+// `/health` for the platform. Two reasons it cannot be a shadow step today:
+//   - PHP renders `Response rendered in Nms.` from microtime() in the HTML body
+//     (verified: two consecutive requests answered 272ms and 253ms), so no build
+//     can be byte-identical there;
+//   - the edge has no handler at all (404), and this harness compares the bytes
+//     and headers of a response BOTH sides produce, so a missing side is a
+//     MISMATCH, not a documented divergence.
+// If the edge ever has to answer /up, the app first has to own the route
+// (drop `health:` from withRouting(), declare it in routes/ or a port) - that is
+// an application decision, not a build one.
   steps: [
     { label: 'GET /masuk (guest, the snapshot page)', method: 'GET', uri: '/masuk', jar: true },
     {
