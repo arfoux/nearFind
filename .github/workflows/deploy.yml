@@ -87,10 +87,15 @@ jobs:
           if [ -z "${APP_URL}" ]; then
             echo "APP_URL is not set (repository variable) - refusing to bake an empty URL"; exit 2
           fi
+          # CI has no lw-state.json (it is local deploy state), so the tool would
+          # fall back to "<worker>-db"; the committed config already names the
+          # real D1. Read its id instead of creating a second, unbindable one.
+          D1_ID="$(node -e "const s=require('fs').readFileSync('wrangler.jsonc','utf8').replace(/^\s*\/\/.*$/mg,'');process.stdout.write(JSON.parse(s).d1_databases[0].database_id)")"
+          echo "d1: ${D1_ID:0:8}… (from wrangler.jsonc)"
           # The worker URL stays out of this public repository's logs: wrangler
           # echoes it on deploy, so the streamed copy masks it. The log file
           # keeps the raw output for the readiness block below.
-          npx laravel-workers deploy --mode 3 --yes --no-cache 2>&1 \
+          npx laravel-workers deploy --mode 3 --yes --no-cache --d1-id "$D1_ID" 2>&1 \
             | tee deploy.log \
             | sed -E 's#https?://[A-Za-z0-9._-]+\.workers\.dev#https://<worker>.workers.dev#g'
 
