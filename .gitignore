@@ -34,3 +34,7 @@ Thumbs.db
 /dist/
 /wrangler.jsonc
 /.wrangler/
+# Deploy state (worker URL + D1 id) is local, like wrangler.jsonc
+/lw-state.json
+# Local worker dev secrets (wrangler dev) - never commit
+.dev.vars
