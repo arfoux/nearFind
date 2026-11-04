@@ -62,16 +62,12 @@ jobs:
           php-version: '8.3'
           extensions: mbstring, xml, ctype, iconv, sqlite3, pdo_sqlite
           coverage: none
-          tools: composer:v2
 
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
-
-      - name: Install Composer dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress --no-dev
 
       - name: Install npm dependencies
         run: npm ci
@@ -82,6 +78,9 @@ jobs:
       - name: Build assets
         run: npm run build
 
+      # No composer install: `deploy` provisions a composer-free vendor tree
+      # from composer.lock (vendor-lite) — the same path the tool's e2e job
+      # covers. require-dev is not provisioned, and nothing here runs PHPUnit.
       - name: Build, database, deploy (mode 3)
         run: |
           set -o pipefail
