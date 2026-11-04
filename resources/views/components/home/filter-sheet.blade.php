@@ -32,7 +32,7 @@
                 class="flex size-9 shrink-0 items-center justify-center rounded-full bg-canvas text-muted transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
                 aria-label="Tutup filter"
             >
-                <x-icon name="close" class="size-4" />
+                @include('partials.icon', ['name' => 'close', 'class' => 'size-4'])
             </button>
         </div>
 
@@ -53,13 +53,13 @@
 
                             <span class="filter-option-inner flex items-center gap-2 rounded-2xl border border-brand-900/10 bg-canvas px-2.5 py-2.5 transition">
                                 <span class="flex size-7 shrink-0 items-center justify-center rounded-xl" style="background: {{ $category['soft_color'] }}; color: {{ $category['color'] }};">
-                                    <x-icon :name="$category['icon']" class="size-3.5" />
+                                    @include('partials.icon', ['name' => $category['icon'], 'class' => 'size-3.5'])
                                 </span>
 
                                 <span class="min-w-0 flex-1 text-[10.5px] font-semibold leading-tight text-ink">{{ $category['label'] }}</span>
 
                                 <span class="filter-check flex size-4 shrink-0 items-center justify-center rounded-full border border-brand-900/15 text-transparent transition">
-                                    <x-icon name="check" class="size-2.5" stroke-width="2.5" />
+                                    @include('partials.icon', ['name' => 'check', 'class' => 'size-2.5', 'strokeWidth' => '2.5'])
                                 </span>
                             </span>
                         </label>

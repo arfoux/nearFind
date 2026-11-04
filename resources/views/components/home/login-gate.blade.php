@@ -12,7 +12,7 @@
 
         <div class="flex items-start gap-3">
             <span class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-700 ring-1 ring-brand-700/10">
-                <x-icon name="user" class="size-6" />
+                @include('partials.icon', ['name' => 'user', 'class' => 'size-6'])
             </span>
 
             <div class="min-w-0 flex-1">
@@ -26,7 +26,7 @@
                 class="flex size-9 shrink-0 items-center justify-center rounded-full bg-canvas text-muted transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
                 aria-label="Tutup dialog masuk"
             >
-                <x-icon name="close" class="size-4" />
+                @include('partials.icon', ['name' => 'close', 'class' => 'size-4'])
             </button>
         </div>
 
@@ -35,7 +35,7 @@
         </p>
 
         <div class="mt-4 flex items-start gap-2.5 rounded-2xl bg-canvas px-3.5 py-3 ring-1 ring-brand-900/5">
-            <x-icon name="info" class="mt-0.5 size-4 shrink-0 text-brand-600" />
+            @include('partials.icon', ['name' => 'info', 'class' => 'mt-0.5 size-4 shrink-0 text-brand-600'])
 
             <p class="text-[10.5px] leading-relaxed text-muted">
                 Dukungan dan laporan terhubung ke identitas warga supaya informasi tetap tepercaya.
@@ -57,7 +57,7 @@
                 class="inline-flex h-11 flex-[1.35] items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 text-[12px] font-semibold text-white shadow-[0_12px_24px_-16px_rgba(0,92,85,0.8)] transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
             >
                 Masuk
-                <x-icon name="arrow-right" class="size-4" />
+                @include('partials.icon', ['name' => 'arrow-right', 'class' => 'size-4'])
             </a>
         </div>
     </div>

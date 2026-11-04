@@ -101,6 +101,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
     bindEvents();
     setCardExpanded(cardExpanded);
     applyFilters({ fit: true, syncUrl: false });
+    setCardExpanded(cardExpanded);
 
     requestAnimationFrame(() => {
         map?.resize();
@@ -599,6 +600,8 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         element.className = 'nf-marker-wrapper';
         element.setAttribute('role', 'button');
         element.setAttribute('tabindex', '0');
+        element.style.width = 'max-content';
+        element.style.height = 'auto';
         element.style.zIndex = isSelected ? '420' : '';
         element.innerHTML = markerMarkup(need, isSelected);
         updateMarkerAria(element, need);
@@ -694,6 +697,8 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
 
         const element = marker.getElement();
         const isSelected = need.id === state.selectedId;
+        element.style.width = 'max-content';
+        element.style.height = 'auto';
         element.style.zIndex = isSelected ? '420' : '';
         element.innerHTML = markerMarkup(need, isSelected);
         updateMarkerAria(element, need);
@@ -783,12 +788,13 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
                     <span>${escapeHtml(need.location)} <span class="text-brand-700">• ${escapeHtml(formatDistance(need.distance_km))}</span></span>
                 </div>
 
-                <p class="mt-2 line-clamp-2 text-[12.5px] leading-[1.6] text-[#4E6360]">${escapeHtml(need.description)}</p>
+                <p class="mt-2 line-clamp-3 text-[12.5px] leading-[1.6] text-[#4E6360] [@media(max-height:719px)]:line-clamp-2">${escapeHtml(need.description)}</p>
 
                 <div class="mt-3 flex items-center gap-3 rounded-2xl bg-[#F0F3FF] px-3 py-2">
-                    <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-800">
-                        ${icon('heart', 'size-4 fill-[#E11D48] text-[#E11D48]')}
-                    </span>
+                    <div class="flex -space-x-2">
+                        <span class="flex size-7 items-center justify-center rounded-full border-2 border-white bg-brand-100 text-[8px] font-bold text-brand-800">RW</span>
+                        <span class="flex size-7 items-center justify-center rounded-full border-2 border-white bg-[#FFDBCA] text-[8px] font-bold text-[#9A3412]">+${Math.max(supporters - 1, 0)}</span>
+                    </div>
 
                     <div class="min-w-0 flex-1">
                         <p class="flex items-center gap-1 text-[11px] font-semibold leading-tight text-ink">
@@ -864,10 +870,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
             Math.max(120, mapHeight * 0.34),
         );
         const bottomPadding = Math.min(isDesktop ? 80 : 230, Math.max(60, mapHeight * 0.32));
-        const mapRect = mapElement.getBoundingClientRect();
-        const panelRect = needPanel?.getBoundingClientRect();
-        const panelPadding = panelRect ? mapRect.right - panelRect.left + 24 : 120;
-        const rightPadding = isDesktop ? Math.min(mapWidth * 0.6, Math.max(120, panelPadding)) : 80;
+        const rightPadding = isDesktop ? Math.min(430, Math.max(120, mapWidth * 0.4)) : 80;
 
         map.fitBounds(bounds, {
             padding: {

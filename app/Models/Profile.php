@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 
@@ -17,7 +16,6 @@ use Throwable;
     'username',
     'phone',
     'bio',
-    'avatar_path',
     'password_hash',
     'notification_preferences',
 ])]
@@ -53,7 +51,7 @@ class Profile extends Model
     /**
      * @return array{need_updates: bool, support_activity: bool, weekly_digest: bool}
      */
-    public function notificationSettings(): array
+    public function getNotificationSettingsAttribute(): array
     {
         return array_merge([
             'need_updates' => true,
@@ -62,31 +60,36 @@ class Profile extends Model
         ], $this->notification_preferences ?? []);
     }
 
-    public function avatarUrl(): ?string
+    /**
+     * The default avatar: one of six palettes, chosen deterministically from the
+     * row id (no upload, no storage, no asset request). The matching background
+     * lives in `resources/css/app.css` as `.nf-avatar--0..5`.
+     */
+    public function getAvatarVariantAttribute(): int
     {
-        if (! $this->avatar_path) {
-            return null;
-        }
-
-        return Storage::disk('public')->url($this->avatar_path);
+        return ((int) $this->id) % 6;
     }
 
-    public function initials(): string
+    public function getInitialsAttribute(): string
     {
-        $words = collect(preg_split('/\s+/', trim($this->name)) ?: [])
-            ->filter()
-            ->take(2);
+        $letters = '';
 
-        if ($words->isEmpty()) {
-            return 'NF';
+        foreach (explode(' ', trim((string) $this->name)) as $word) {
+            if ($word === '') {
+                continue;
+            }
+
+            $letters .= mb_strtoupper(mb_substr($word, 0, 1));
+
+            if (mb_strlen($letters) >= 2) {
+                break;
+            }
         }
 
-        return $words
-            ->map(fn (string $word): string => mb_strtoupper(mb_substr($word, 0, 1)))
-            ->implode('');
+        return $letters !== '' ? $letters : 'NF';
     }
 
-    public function displayUsername(): string
+    public function getDisplayUsernameAttribute(): string
     {
         if (is_string($this->username) && $this->username !== '') {
             return '@'.$this->username;

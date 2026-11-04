@@ -108,8 +108,7 @@ function initProfilePage(page) {
     });
 
     initActivityTabs(page);
-    initAvatarPreview();
-    initBioCounter(page);
+        initBioCounter(page);
 
     const initialModal = page.dataset.initialModal?.trim();
 
@@ -155,33 +154,6 @@ function initActivityTabs(page) {
 
     tabs.forEach((tab) => {
         tab.addEventListener('click', () => activate(tab.dataset.activityTab));
-    });
-}
-
-function initAvatarPreview() {
-    const input = document.querySelector('[data-avatar-input]');
-
-    if (!input) {
-        return;
-    }
-
-    input.addEventListener('change', () => {
-        const file = input.files?.[0];
-
-        if (!file) {
-            return;
-        }
-
-        const previewUrl = URL.createObjectURL(file);
-
-        document.querySelectorAll('[data-avatar-image]').forEach((image) => {
-            image.src = previewUrl;
-            image.classList.remove('hidden');
-        });
-
-        document.querySelectorAll('[data-avatar-initials]').forEach((initials) => {
-            initials.classList.add('hidden');
-        });
     });
 }
 

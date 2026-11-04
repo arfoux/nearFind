@@ -1,3 +1,5 @@
+@extends('layouts.app')
+@php $title = 'Profil - nearFind'; $active = 'profil'; @endphp
 @php
     $formatDate = fn ($date) => $date ? $date->copy()->locale('id')->translatedFormat('j M Y') : '-';
 
@@ -23,20 +25,19 @@
     ];
 
     $initialModal = old('_form', session('open_modal'));
-    $avatarUrl = $profile->avatarUrl();
 @endphp
 
-<x-layout title="Profil - nearFind" active="profil">
+@section('content')
     <div class="relative flex min-h-0 flex-1 flex-col">
         <header class="relative z-[700] shrink-0 bg-canvas px-4 pb-2 pt-3.5 sm:px-5 lg:px-6 lg:pb-3 lg:pt-5">
             <div class="flex items-center justify-between gap-3">
-                <x-brand />
+                @include('partials.brand')
 
                 <a
                     href="{{ route('home') }}"
                     class="inline-flex h-9 items-center gap-1.5 rounded-full bg-white px-3.5 text-[11px] font-semibold text-brand-700 ring-1 ring-brand-900/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
                 >
-                    <x-icon name="map" class="size-3.5" />
+                    @include('partials.icon', ['name' => 'map', 'class' => 'size-3.5'])
                     Kembali ke peta
                 </a>
             </div>
@@ -46,7 +47,7 @@
             <div class="mx-auto w-full max-w-[860px]" data-profile-page data-initial-modal="{{ $initialModal }}">
                 @if (session('status'))
                     <div class="mb-3 flex items-start gap-2.5 rounded-2xl bg-white px-3.5 py-3 text-[11.5px] font-medium text-brand-800 shadow-[0_12px_30px_-24px_rgba(0,60,55,0.6)] ring-1 ring-brand-700/10" role="status">
-                        <x-icon name="check" class="mt-0.5 size-4 shrink-0 text-brand-600" />
+                        @include('partials.icon', ['name' => 'check', 'class' => 'mt-0.5 size-4 shrink-0 text-brand-600'])
                         <span>{{ session('status') }}</span>
                     </div>
                 @endif
@@ -58,40 +59,24 @@
                     <div class="relative p-5 sm:p-6">
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex min-w-0 items-start gap-4">
-                                <div class="relative shrink-0">
-                                    <div class="relative flex size-20 items-center justify-center overflow-hidden rounded-[26px] bg-brand-700 text-2xl font-semibold tracking-[-0.04em] text-white ring-4 ring-white/15 sm:size-24">
-                                        <img
-                                            @if ($avatarUrl) src="{{ $avatarUrl }}" @endif
-                                            alt="Foto profil {{ $profile->name }}"
-                                            data-avatar-image
-                                            class="{{ $avatarUrl ? '' : 'hidden' }} size-full object-cover"
-                                        >
-                                        <span data-avatar-initials class="{{ $avatarUrl ? 'hidden' : '' }}">{{ $profile->initials() }}</span>
-                                    </div>
-
-                                    <button
-                                        type="button"
-                                        data-open-modal="edit-profile"
-                                        class="absolute -bottom-1.5 -right-1.5 flex size-8 items-center justify-center rounded-xl bg-accent-500 text-white shadow-[0_10px_20px_-10px_rgba(253,118,26,0.9)] ring-2 ring-brand-800 transition hover:bg-accent-600 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/25"
-                                        aria-label="Ganti foto profil"
-                                    >
-                                        <x-icon name="camera" class="size-4" />
-                                    </button>
+                                {{-- The default avatar: one of six palettes, picked from the row id. --}}
+                                <div class="nf-avatar nf-avatar--{{ $profile->avatar_variant }} relative flex size-20 shrink-0 items-center justify-center rounded-[26px] text-2xl font-semibold tracking-[-0.04em] text-white ring-4 ring-white/15 sm:size-24">
+                                    {{ $profile->initials }}
                                 </div>
 
                                 <div class="min-w-0 pt-1">
                                     <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-brand-200">Akun warga</p>
                                     <h1 class="mt-1 truncate text-[23px] font-semibold leading-tight tracking-[-0.035em] sm:text-[27px]">{{ $profile->name }}</h1>
-                                    <p class="mt-0.5 truncate text-[11.5px] font-medium text-brand-100">{{ $profile->displayUsername() }}</p>
+                                    <p class="mt-0.5 truncate text-[11.5px] font-medium text-brand-100">{{ $profile->display_username }}</p>
 
                                     <div class="mt-2 flex flex-wrap items-center gap-1.5">
                                         <span class="inline-flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[9.5px] font-semibold text-white ring-1 ring-white/15">
-                                            <x-icon name="shield-check" class="size-3" />
+                                            @include('partials.icon', ['name' => 'shield-check', 'class' => 'size-3'])
                                             Akun aktif
                                         </span>
 
                                         <span class="inline-flex min-w-0 items-center gap-1 rounded-full bg-white/10 px-2.5 py-1 text-[9.5px] font-semibold text-white ring-1 ring-white/15">
-                                            <x-icon name="mail" class="size-3 shrink-0" />
+                                            @include('partials.icon', ['name' => 'mail', 'class' => 'size-3 shrink-0'])
                                             <span class="truncate">{{ $profile->email }}</span>
                                         </span>
                                     </div>
@@ -103,7 +88,7 @@
                                 data-open-modal="edit-profile"
                                 class="hidden h-9 shrink-0 items-center gap-1.5 rounded-xl bg-white px-3.5 text-[11px] font-semibold text-brand-800 shadow-[0_12px_24px_-18px_rgba(0,0,0,0.6)] transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/25 sm:inline-flex"
                             >
-                                <x-icon name="pencil" class="size-3.5" />
+                                @include('partials.icon', ['name' => 'pencil', 'class' => 'size-3.5'])
                                 Edit Profil
                             </button>
                         </div>
@@ -117,7 +102,7 @@
                         <div class="mt-4 grid gap-2 sm:grid-cols-2">
                             <div class="flex items-center gap-2 rounded-2xl bg-white/10 px-3 py-2.5 ring-1 ring-white/10">
                                 <span class="flex size-8 shrink-0 items-center justify-center rounded-xl bg-white/10 text-brand-100">
-                                    <x-icon name="phone" class="size-4" />
+                                    @include('partials.icon', ['name' => 'phone', 'class' => 'size-4'])
                                 </span>
                                 <div class="min-w-0">
                                     <p class="text-[8.5px] font-semibold uppercase tracking-[0.14em] text-brand-200">Telepon</p>
@@ -127,7 +112,7 @@
 
                             <div class="flex items-center gap-2 rounded-2xl bg-white/10 px-3 py-2.5 ring-1 ring-white/10">
                                 <span class="flex size-8 shrink-0 items-center justify-center rounded-xl bg-white/10 text-brand-100">
-                                    <x-icon name="calendar" class="size-4" />
+                                    @include('partials.icon', ['name' => 'calendar', 'class' => 'size-4'])
                                 </span>
                                 <div class="min-w-0">
                                     <p class="text-[8.5px] font-semibold uppercase tracking-[0.14em] text-brand-200">Bergabung</p>
@@ -141,7 +126,7 @@
                             data-open-modal="edit-profile"
                             class="mt-3 inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-xl bg-white px-4 text-[11.5px] font-semibold text-brand-800 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/25 sm:hidden"
                         >
-                            <x-icon name="pencil" class="size-3.5" />
+                            @include('partials.icon', ['name' => 'pencil', 'class' => 'size-3.5'])
                             Edit Profil
                         </button>
                     </div>
@@ -150,7 +135,7 @@
                 <section class="mt-3 grid grid-cols-3 gap-2.5 sm:gap-3" aria-label="Ringkasan aktivitas">
                     <article class="rounded-[22px] bg-white p-3.5 shadow-[0_16px_40px_-34px_rgba(0,60,55,0.6)] ring-1 ring-brand-900/10 sm:p-4">
                         <span class="flex size-9 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
-                            <x-icon name="clipboard" class="size-[18px]" />
+                            @include('partials.icon', ['name' => 'clipboard', 'class' => 'size-[18px]'])
                         </span>
                         <p class="mt-3 text-[24px] font-semibold leading-none tracking-[-0.04em] text-ink">{{ $stats['submitted'] }}</p>
                         <p class="mt-1.5 text-[9.5px] font-semibold leading-tight text-muted sm:text-[10.5px]">Kebutuhan Diajukan</p>
@@ -158,7 +143,7 @@
 
                     <article class="rounded-[22px] bg-white p-3.5 shadow-[0_16px_40px_-34px_rgba(0,60,55,0.6)] ring-1 ring-brand-900/10 sm:p-4">
                         <span class="flex size-9 items-center justify-center rounded-xl bg-accent-50 text-accent-600">
-                            <x-icon name="heart" class="size-[18px]" />
+                            @include('partials.icon', ['name' => 'heart', 'class' => 'size-[18px]'])
                         </span>
                         <p class="mt-3 text-[24px] font-semibold leading-none tracking-[-0.04em] text-ink">{{ $stats['supported'] }}</p>
                         <p class="mt-1.5 text-[9.5px] font-semibold leading-tight text-muted sm:text-[10.5px]">Kebutuhan Didukung</p>
@@ -166,7 +151,7 @@
 
                     <article class="rounded-[22px] bg-white p-3.5 shadow-[0_16px_40px_-34px_rgba(0,60,55,0.6)] ring-1 ring-brand-900/10 sm:p-4">
                         <span class="flex size-9 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#4B5BB5]">
-                            <x-icon name="flag" class="size-[18px]" />
+                            @include('partials.icon', ['name' => 'flag', 'class' => 'size-[18px]'])
                         </span>
                         <p class="mt-3 text-[24px] font-semibold leading-none tracking-[-0.04em] text-ink">{{ $stats['reports'] }}</p>
                         <p class="mt-1.5 text-[9.5px] font-semibold leading-tight text-muted sm:text-[10.5px]">Laporan Saya</p>
@@ -223,13 +208,13 @@
                         <div id="activity-submitted" role="tabpanel" data-activity-panel="submitted" class="space-y-2">
                             @forelse ($submittedNeeds as $need)
                                 @php
-                                    $category = $categories->get($need->category) ?? $categories->get('all');
+                                    $category = $categories[$need->category] ?? ($categories['all'] ?? null);
                                     $statusClass = $needStatusStyles[$need->status] ?? $needStatusStyles['aktif'];
                                 @endphp
 
                                 <article class="flex items-start gap-3 rounded-2xl bg-white p-3.5 shadow-[0_14px_34px_-30px_rgba(0,60,55,0.6)] ring-1 ring-brand-900/10">
                                     <span class="flex size-10 shrink-0 items-center justify-center rounded-xl" style="background: {{ $category['soft_color'] }}; color: {{ $category['color'] }};">
-                                        <x-icon :name="$category['icon']" class="size-[18px]" />
+                                        @include('partials.icon', ['name' => $category['icon'], 'class' => 'size-[18px]'])
                                     </span>
 
                                     <div class="min-w-0 flex-1">
@@ -242,11 +227,11 @@
 
                                         <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[9.5px] font-medium text-muted">
                                             <span class="inline-flex items-center gap-1">
-                                                <x-icon name="calendar" class="size-3" />
+                                                @include('partials.icon', ['name' => 'calendar', 'class' => 'size-3'])
                                                 {{ $formatDate($need->created_at) }}
                                             </span>
                                             <span class="inline-flex items-center gap-1">
-                                                <x-icon name="heart" class="size-3" />
+                                                @include('partials.icon', ['name' => 'heart', 'class' => 'size-3'])
                                                 {{ $need->supports_count }} dukungan
                                             </span>
                                         </div>
@@ -255,7 +240,7 @@
                             @empty
                                 <div class="flex flex-col items-center rounded-[22px] bg-white px-5 py-8 text-center ring-1 ring-brand-900/10">
                                     <span class="flex size-12 items-center justify-center rounded-2xl bg-brand-50 text-brand-700">
-                                        <x-icon name="clipboard" class="size-6" />
+                                        @include('partials.icon', ['name' => 'clipboard', 'class' => 'size-6'])
                                     </span>
                                     <h3 class="mt-3 text-[13px] font-semibold text-ink">Belum ada kebutuhan diajukan</h3>
                                     <p class="mt-1 max-w-[260px] text-[10.5px] leading-relaxed text-muted">Kebutuhan yang kamu ajukan lewat peta akan muncul di sini.</p>
@@ -266,13 +251,13 @@
                         <div id="activity-supported" role="tabpanel" data-activity-panel="supported" class="hidden space-y-2">
                             @forelse ($supportedNeeds as $need)
                                 @php
-                                    $category = $categories->get($need->category) ?? $categories->get('all');
+                                    $category = $categories[$need->category] ?? ($categories['all'] ?? null);
                                     $statusClass = $needStatusStyles[$need->status] ?? $needStatusStyles['aktif'];
                                 @endphp
 
                                 <article class="flex items-start gap-3 rounded-2xl bg-white p-3.5 shadow-[0_14px_34px_-30px_rgba(0,60,55,0.6)] ring-1 ring-brand-900/10">
                                     <span class="flex size-10 shrink-0 items-center justify-center rounded-xl" style="background: {{ $category['soft_color'] }}; color: {{ $category['color'] }};">
-                                        <x-icon :name="$category['icon']" class="size-[18px]" />
+                                        @include('partials.icon', ['name' => $category['icon'], 'class' => 'size-[18px]'])
                                     </span>
 
                                     <div class="min-w-0 flex-1">
@@ -285,11 +270,11 @@
 
                                         <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[9.5px] font-medium text-muted">
                                             <span class="inline-flex items-center gap-1">
-                                                <x-icon name="calendar" class="size-3" />
+                                                @include('partials.icon', ['name' => 'calendar', 'class' => 'size-3'])
                                                 {{ $formatDate($need->pivot?->created_at) }}
                                             </span>
                                             <span class="inline-flex items-center gap-1">
-                                                <x-icon name="heart" class="size-3" />
+                                                @include('partials.icon', ['name' => 'heart', 'class' => 'size-3'])
                                                 {{ $need->supports_count }} dukungan
                                             </span>
                                         </div>
@@ -298,7 +283,7 @@
                             @empty
                                 <div class="flex flex-col items-center rounded-[22px] bg-white px-5 py-8 text-center ring-1 ring-brand-900/10">
                                     <span class="flex size-12 items-center justify-center rounded-2xl bg-accent-50 text-accent-600">
-                                        <x-icon name="heart" class="size-6" />
+                                        @include('partials.icon', ['name' => 'heart', 'class' => 'size-6'])
                                     </span>
                                     <h3 class="mt-3 text-[13px] font-semibold text-ink">Belum ada kebutuhan didukung</h3>
                                     <p class="mt-1 max-w-[260px] text-[10.5px] leading-relaxed text-muted">Dukungan yang kamu berikan pada kebutuhan warga akan tercatat di sini.</p>
@@ -309,32 +294,32 @@
                         <div id="activity-reports" role="tabpanel" data-activity-panel="reports" class="hidden space-y-2">
                             @forelse ($reports as $report)
                                 @php
-                                    $reportCategory = $report->category ?? $report->need?->category;
-                                    $category = $categories->get($reportCategory) ?? $categories->get('all');
-                                    $statusClass = $reportStatusStyles[$report->status] ?? $reportStatusStyles['diproses'];
-                                    $reportTitle = $report->need_title ?? $report->need?->title ?? 'Laporan kebutuhan';
+                                    $reportCategory = $report['category'] ?? $report['need_category'];
+                                    $category = $categories[$reportCategory] ?? ($categories['all'] ?? null);
+                                    $statusClass = $reportStatusStyles[$report['status']] ?? $reportStatusStyles['diproses'];
+                                    $reportTitle = $report['title'] ?? $report['need_title'] ?? 'Laporan kebutuhan';
                                 @endphp
 
                                 <article class="flex items-start gap-3 rounded-2xl bg-white p-3.5 shadow-[0_14px_34px_-30px_rgba(0,60,55,0.6)] ring-1 ring-brand-900/10">
                                     <span class="flex size-10 shrink-0 items-center justify-center rounded-xl" style="background: {{ $category['soft_color'] }}; color: {{ $category['color'] }};">
-                                        <x-icon name="flag" class="size-[18px]" />
+                                        @include('partials.icon', ['name' => 'flag', 'class' => 'size-[18px]'])
                                     </span>
 
                                     <div class="min-w-0 flex-1">
                                         <div class="flex items-start gap-2">
                                             <h3 class="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-ink">{{ $reportTitle }}</h3>
-                                            <span class="shrink-0 rounded-full px-2 py-0.5 text-[8.5px] font-semibold uppercase tracking-[0.08em] ring-1 {{ $statusClass }}">{{ $report->status }}</span>
+                                            <span class="shrink-0 rounded-full px-2 py-0.5 text-[8.5px] font-semibold uppercase tracking-[0.08em] ring-1 {{ $statusClass }}">{{ $report['status'] }}</span>
                                         </div>
 
-                                        <p class="mt-0.5 truncate text-[10px] font-medium text-muted">{{ $category['label'] }}@if ($report->reason) &middot; {{ $report->reason }}@endif</p>
+                                        <p class="mt-0.5 truncate text-[10px] font-medium text-muted">{{ $category['label'] }}@if ($report['reason']) &middot; {{ $report['reason'] }}@endif</p>
 
                                         <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[9.5px] font-medium text-muted">
                                             <span class="inline-flex items-center gap-1">
-                                                <x-icon name="calendar" class="size-3" />
-                                                {{ $formatDate($report->created_at) }}
+                                                @include('partials.icon', ['name' => 'calendar', 'class' => 'size-3'])
+                                                {{ $formatDate($report['created_at']) }}
                                             </span>
                                             <span class="inline-flex items-center gap-1">
-                                                <x-icon name="clipboard" class="size-3" />
+                                                @include('partials.icon', ['name' => 'clipboard', 'class' => 'size-3'])
                                                 Laporan ketidaksesuaian
                                             </span>
                                         </div>
@@ -343,7 +328,7 @@
                             @empty
                                 <div class="flex flex-col items-center rounded-[22px] bg-white px-5 py-8 text-center ring-1 ring-brand-900/10">
                                     <span class="flex size-12 items-center justify-center rounded-2xl bg-[#EEF2FF] text-[#4B5BB5]">
-                                        <x-icon name="flag" class="size-6" />
+                                        @include('partials.icon', ['name' => 'flag', 'class' => 'size-6'])
                                     </span>
                                     <h3 class="mt-3 text-[13px] font-semibold text-ink">Belum ada laporan</h3>
                                     <p class="mt-1 max-w-[260px] text-[10.5px] leading-relaxed text-muted">Laporan ketidaksesuaian yang kamu kirim akan tampil di sini.</p>
@@ -356,7 +341,7 @@
                 <section class="mt-5" aria-labelledby="settings-title">
                     <div class="flex items-center gap-2">
                         <span class="flex size-8 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
-                            <x-icon name="settings" class="size-4" />
+                            @include('partials.icon', ['name' => 'settings', 'class' => 'size-4'])
                         </span>
                         <div>
                             <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-600">Kelola akun</p>
@@ -372,7 +357,7 @@
                                 class="group flex w-full items-center gap-3 border-b border-brand-900/5 px-4 py-3 text-left transition last:border-b-0 hover:bg-canvas focus-visible:outline-none focus-visible:bg-canvas {{ ! empty($item['danger']) ? 'text-[#9F1D1D]' : 'text-ink' }}"
                             >
                                 <span class="flex size-9 shrink-0 items-center justify-center rounded-xl transition {{ ! empty($item['danger']) ? 'bg-[#FFF1F1] text-[#9F1D1D]' : 'bg-brand-50 text-brand-700 group-hover:bg-brand-100' }}">
-                                    <x-icon :name="$item['icon']" class="size-[18px]" />
+                                    @include('partials.icon', ['name' => $item['icon'], 'class' => 'size-[18px]'])
                                 </span>
 
                                 <span class="min-w-0 flex-1">
@@ -380,7 +365,7 @@
                                     <span class="mt-0.5 block truncate text-[9.5px] font-medium {{ ! empty($item['danger']) ? 'text-[#9F1D1D]/70' : 'text-muted' }}">{{ $item['description'] }}</span>
                                 </span>
 
-                                <x-icon name="chevron-right" class="size-4 shrink-0 {{ ! empty($item['danger']) ? 'text-[#9F1D1D]/50' : 'text-muted/60' }}" />
+                                @include('partials.icon', ['name' => 'chevron-right', 'class' => 'size-4 shrink-0 ' . (! empty($item['danger']) ? 'text-[#9F1D1D]/50' : 'text-muted/60')])
                             </button>
                         @endforeach
                     </div>
@@ -409,40 +394,23 @@
                 </div>
 
                 <button type="button" data-modal-close class="flex size-9 shrink-0 items-center justify-center rounded-full bg-canvas text-muted transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Tutup edit profil">
-                    <x-icon name="close" class="size-4" />
+                    @include('partials.icon', ['name' => 'close', 'class' => 'size-4'])
                 </button>
             </div>
 
-            <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="mt-5 space-y-4">
+            <form method="POST" action="{{ route('profile.update') }}" class="mt-5 space-y-4">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="_form" value="edit-profile">
 
-                <div class="flex items-center gap-4 rounded-2xl bg-canvas p-3.5 ring-1 ring-brand-900/5">
-                    <div class="relative flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-brand-700 text-lg font-semibold text-white ring-2 ring-white">
-                        <img @if ($avatarUrl) src="{{ $avatarUrl }}" @endif alt="Pratinjau foto profil" data-avatar-image class="{{ $avatarUrl ? '' : 'hidden' }} size-full object-cover">
-                        <span data-avatar-initials class="{{ $avatarUrl ? 'hidden' : '' }}">{{ $profile->initials() }}</span>
+                {{-- No avatar upload: the default avatar is derived from the row id. --}}
+                <div class="flex items-center gap-3 rounded-2xl bg-canvas p-3.5 ring-1 ring-brand-900/5">
+                    <div class="nf-avatar nf-avatar--{{ $profile->avatar_variant }} flex size-12 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold text-white ring-2 ring-white">
+                        {{ $profile->initials }}
                     </div>
-
                     <div class="min-w-0 flex-1">
-                        <label for="avatar" class="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl bg-white px-3 text-[10.5px] font-semibold text-brand-700 ring-1 ring-brand-900/10 transition hover:bg-brand-50 focus-within:ring-4 focus-within:ring-brand-500/15">
-                            <x-icon name="camera" class="size-3.5" />
-                            Pilih foto
-                        </label>
-                        <input id="avatar" name="avatar" type="file" accept="image/png,image/jpeg,image/webp" class="sr-only" data-avatar-input>
-
-                        <p class="mt-1.5 text-[9px] leading-relaxed text-muted">JPG, PNG, atau WEBP. Maksimal 2 MB.</p>
-
-                        @if ($profile->avatar_path)
-                            <label class="mt-1 flex items-center gap-1.5 text-[9.5px] font-medium text-[#9F1D1D]">
-                                <input type="checkbox" name="remove_avatar" value="1" class="size-3.5 rounded border-brand-900/20 accent-[#9F1D1D]">
-                                Hapus foto saat ini
-                            </label>
-                        @endif
-
-                        @error('avatar')
-                            <p class="mt-1 text-[10px] font-medium text-[#9F1D1D]">{{ $message }}</p>
-                        @enderror
+                        <p class="text-[10.5px] font-semibold text-brand-800">Avatar bawaan</p>
+                        <p class="mt-0.5 text-[9px] leading-relaxed text-muted">Foto profil kustom belum tersedia. Avatar dipilih otomatis dari akunmu.</p>
                     </div>
                 </div>
 
@@ -492,7 +460,7 @@
                     </button>
 
                     <button type="submit" class="inline-flex h-11 flex-[1.6] items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 text-[12px] font-semibold text-white shadow-[0_12px_24px_-16px_rgba(0,92,85,0.8)] transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20">
-                        <x-icon name="check" class="size-4" />
+                        @include('partials.icon', ['name' => 'check', 'class' => 'size-4'])
                         Simpan Perubahan
                     </button>
                 </div>
@@ -513,7 +481,7 @@
                 </div>
 
                 <button type="button" data-modal-close class="flex size-9 shrink-0 items-center justify-center rounded-full bg-canvas text-muted transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Tutup ubah password">
-                    <x-icon name="close" class="size-4" />
+                    @include('partials.icon', ['name' => 'close', 'class' => 'size-4'])
                 </button>
             </div>
 
@@ -526,11 +494,11 @@
                     <label for="current_password" class="text-[11px] font-semibold text-brand-800">Kata sandi saat ini</label>
                     <div class="relative mt-1.5">
                         <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
-                            <x-icon name="lock" class="size-4" />
+                            @include('partials.icon', ['name' => 'lock', 'class' => 'size-4'])
                         </span>
                         <input id="current_password" name="current_password" type="password" required autocomplete="current-password" data-password-input class="h-11 w-full rounded-xl border-0 bg-canvas pl-10 pr-11 text-[12.5px] text-ink ring-1 ring-brand-900/10 transition focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/40">
                         <button type="button" data-password-toggle class="absolute inset-y-0 right-1.5 my-auto flex size-8 items-center justify-center rounded-lg text-muted transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Tampilkan kata sandi" aria-pressed="false">
-                            <x-icon name="eye" class="size-4" />
+                            @include('partials.icon', ['name' => 'eye', 'class' => 'size-4'])
                         </button>
                     </div>
                     @error('current_password')
@@ -542,11 +510,11 @@
                     <label for="password" class="text-[11px] font-semibold text-brand-800">Kata sandi baru</label>
                     <div class="relative mt-1.5">
                         <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
-                            <x-icon name="lock" class="size-4" />
+                            @include('partials.icon', ['name' => 'lock', 'class' => 'size-4'])
                         </span>
                         <input id="password" name="password" type="password" required minlength="8" autocomplete="new-password" data-password-input class="h-11 w-full rounded-xl border-0 bg-canvas pl-10 pr-11 text-[12.5px] text-ink ring-1 ring-brand-900/10 transition focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/40">
                         <button type="button" data-password-toggle class="absolute inset-y-0 right-1.5 my-auto flex size-8 items-center justify-center rounded-lg text-muted transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Tampilkan kata sandi" aria-pressed="false">
-                            <x-icon name="eye" class="size-4" />
+                            @include('partials.icon', ['name' => 'eye', 'class' => 'size-4'])
                         </button>
                     </div>
                     @error('password')
@@ -558,17 +526,17 @@
                     <label for="password_confirmation" class="text-[11px] font-semibold text-brand-800">Ulangi kata sandi baru</label>
                     <div class="relative mt-1.5">
                         <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
-                            <x-icon name="lock" class="size-4" />
+                            @include('partials.icon', ['name' => 'lock', 'class' => 'size-4'])
                         </span>
                         <input id="password_confirmation" name="password_confirmation" type="password" required minlength="8" autocomplete="new-password" data-password-input class="h-11 w-full rounded-xl border-0 bg-canvas pl-10 pr-11 text-[12.5px] text-ink ring-1 ring-brand-900/10 transition focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/40">
                         <button type="button" data-password-toggle class="absolute inset-y-0 right-1.5 my-auto flex size-8 items-center justify-center rounded-lg text-muted transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Tampilkan kata sandi" aria-pressed="false">
-                            <x-icon name="eye" class="size-4" />
+                            @include('partials.icon', ['name' => 'eye', 'class' => 'size-4'])
                         </button>
                     </div>
                 </div>
 
                 <div class="flex items-start gap-2.5 rounded-2xl bg-canvas px-3.5 py-3 ring-1 ring-brand-900/5">
-                    <x-icon name="info" class="mt-0.5 size-4 shrink-0 text-brand-600" />
+                    @include('partials.icon', ['name' => 'info', 'class' => 'mt-0.5 size-4 shrink-0 text-brand-600'])
                     <p class="text-[10px] leading-relaxed text-muted">Gunakan minimal 8 karakter dan hindari kata sandi yang sama dengan akun lain.</p>
                 </div>
 
@@ -578,7 +546,7 @@
                     </button>
 
                     <button type="submit" class="inline-flex h-11 flex-[1.6] items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 text-[12px] font-semibold text-white shadow-[0_12px_24px_-16px_rgba(0,92,85,0.8)] transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20">
-                        <x-icon name="lock" class="size-4" />
+                        @include('partials.icon', ['name' => 'lock', 'class' => 'size-4'])
                         Simpan Kata Sandi
                     </button>
                 </div>
@@ -599,7 +567,7 @@
                 </div>
 
                 <button type="button" data-modal-close class="flex size-9 shrink-0 items-center justify-center rounded-full bg-canvas text-muted transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Tutup pengaturan notifikasi">
-                    <x-icon name="close" class="size-4" />
+                    @include('partials.icon', ['name' => 'close', 'class' => 'size-4'])
                 </button>
             </div>
 
@@ -609,7 +577,7 @@
 
                 <label class="flex cursor-pointer items-start gap-3 rounded-2xl bg-canvas p-3.5 ring-1 ring-brand-900/5 transition hover:bg-brand-50/60">
                     <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
-                        <x-icon name="bell" class="size-[18px]" />
+                        @include('partials.icon', ['name' => 'bell', 'class' => 'size-[18px]'])
                     </span>
                     <span class="min-w-0 flex-1">
                         <span class="block text-[11.5px] font-semibold text-ink">Kabar kebutuhan sekitar</span>
@@ -620,7 +588,7 @@
 
                 <label class="flex cursor-pointer items-start gap-3 rounded-2xl bg-canvas p-3.5 ring-1 ring-brand-900/5 transition hover:bg-brand-50/60">
                     <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-50 text-accent-600">
-                        <x-icon name="heart" class="size-[18px]" />
+                        @include('partials.icon', ['name' => 'heart', 'class' => 'size-[18px]'])
                     </span>
                     <span class="min-w-0 flex-1">
                         <span class="block text-[11.5px] font-semibold text-ink">Aktivitas dukungan</span>
@@ -631,7 +599,7 @@
 
                 <label class="flex cursor-pointer items-start gap-3 rounded-2xl bg-canvas p-3.5 ring-1 ring-brand-900/5 transition hover:bg-brand-50/60">
                     <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#4B5BB5]">
-                        <x-icon name="clipboard" class="size-[18px]" />
+                        @include('partials.icon', ['name' => 'clipboard', 'class' => 'size-[18px]'])
                     </span>
                     <span class="min-w-0 flex-1">
                         <span class="block text-[11.5px] font-semibold text-ink">Rangkuman mingguan</span>
@@ -646,7 +614,7 @@
                     </button>
 
                     <button type="submit" class="inline-flex h-11 flex-[1.6] items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 text-[12px] font-semibold text-white shadow-[0_12px_24px_-16px_rgba(0,92,85,0.8)] transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20">
-                        <x-icon name="check" class="size-4" />
+                        @include('partials.icon', ['name' => 'check', 'class' => 'size-4'])
                         Simpan Pengaturan
                     </button>
                 </div>
@@ -667,14 +635,14 @@
                 </div>
 
                 <button type="button" data-modal-close class="flex size-9 shrink-0 items-center justify-center rounded-full bg-canvas text-muted transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Tutup bantuan">
-                    <x-icon name="close" class="size-4" />
+                    @include('partials.icon', ['name' => 'close', 'class' => 'size-4'])
                 </button>
             </div>
 
             <div class="mt-5 space-y-2.5">
                 <div class="flex items-start gap-3 rounded-2xl bg-canvas p-3.5 ring-1 ring-brand-900/5">
                     <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
-                        <x-icon name="map" class="size-[18px]" />
+                        @include('partials.icon', ['name' => 'map', 'class' => 'size-[18px]'])
                     </span>
                     <div>
                         <p class="text-[11.5px] font-semibold text-ink">Menjelajah kebutuhan</p>
@@ -684,7 +652,7 @@
 
                 <div class="flex items-start gap-3 rounded-2xl bg-canvas p-3.5 ring-1 ring-brand-900/5">
                     <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-accent-50 text-accent-600">
-                        <x-icon name="heart" class="size-[18px]" />
+                        @include('partials.icon', ['name' => 'heart', 'class' => 'size-[18px]'])
                     </span>
                     <div>
                         <p class="text-[11.5px] font-semibold text-ink">Mendukung kebutuhan</p>
@@ -694,7 +662,7 @@
 
                 <div class="flex items-start gap-3 rounded-2xl bg-canvas p-3.5 ring-1 ring-brand-900/5">
                     <span class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#4B5BB5]">
-                        <x-icon name="flag" class="size-[18px]" />
+                        @include('partials.icon', ['name' => 'flag', 'class' => 'size-[18px]'])
                     </span>
                     <div>
                         <p class="text-[11.5px] font-semibold text-ink">Melaporkan ketidaksesuaian</p>
@@ -707,7 +675,7 @@
                 <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-200">Butuh bantuan lain?</p>
                 <p class="mt-1 text-[11.5px] font-semibold">Hubungi pengurus RW nearFind</p>
                 <a href="mailto:halo@nearfind.id" class="mt-2 inline-flex items-center gap-1.5 rounded-lg text-[10.5px] font-semibold text-accent-100 transition hover:text-white">
-                    <x-icon name="mail" class="size-3.5" />
+                    @include('partials.icon', ['name' => 'mail', 'class' => 'size-3.5'])
                     halo@nearfind.id
                 </a>
             </div>
@@ -726,7 +694,7 @@
 
             <div class="flex items-start gap-3">
                 <span class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-[#FFF1F1] text-[#9F1D1D] ring-1 ring-[#9F1D1D]/10">
-                    <x-icon name="log-out" class="size-6" />
+                    @include('partials.icon', ['name' => 'log-out', 'class' => 'size-6'])
                 </span>
 
                 <div class="min-w-0 flex-1">
@@ -735,7 +703,7 @@
                 </div>
 
                 <button type="button" data-modal-close class="flex size-9 shrink-0 items-center justify-center rounded-full bg-canvas text-muted transition hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Tutup konfirmasi logout">
-                    <x-icon name="close" class="size-4" />
+                    @include('partials.icon', ['name' => 'close', 'class' => 'size-4'])
                 </button>
             </div>
 
@@ -749,10 +717,10 @@
                 </button>
 
                 <button type="submit" class="inline-flex h-11 flex-[1.35] items-center justify-center gap-2 rounded-xl bg-[#9F1D1D] px-4 text-[12px] font-semibold text-white shadow-[0_14px_26px_-16px_rgba(159,29,29,0.8)] transition hover:bg-[#861919] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#9F1D1D]/20">
-                    <x-icon name="log-out" class="size-4" />
+                    @include('partials.icon', ['name' => 'log-out', 'class' => 'size-4'])
                     Keluar
                 </button>
             </form>
         </div>
     </div>
-</x-layout>
+@endsection
