@@ -26,7 +26,7 @@
         id="toast"
         @class([
             'toast pointer-events-none fixed inset-x-0 z-[1400] flex justify-center px-4',
-            'bottom-[calc(18.5rem+env(safe-area-inset-bottom))] lg:bottom-24' => $active === 'peta',
+            'bottom-[calc(13.75rem+env(safe-area-inset-bottom))] lg:bottom-24' => $active === 'peta',
             'bottom-24' => $active !== 'peta',
         ])
         role="status"

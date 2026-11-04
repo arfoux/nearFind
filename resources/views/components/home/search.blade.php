@@ -9,7 +9,7 @@
             type="search"
             inputmode="search"
             autocomplete="off"
-            placeholder="Cari area, kelurahan, atau peluang jasa..."
+            placeholder="Cari area, kelurahan, atau kebutuhan"
             class="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-ink outline-none placeholder:text-muted/80 lg:text-sm"
         >
 
