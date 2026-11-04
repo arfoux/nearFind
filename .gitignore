@@ -32,9 +32,13 @@ Thumbs.db
 # laravel-workers build output
 /.cache/
 /dist/
-/wrangler.jsonc
+# A build that could not swap dist/ (locked by wrangler dev/editor) leaves the
+# finished result here; it is not a deploy input.
+/dist.building/
+# wrangler.jsonc IS committed: `wrangler deploy` in CI needs the same config the
+# operator runs locally (name/main/assets/d1 binding). It holds no secret.
 /.wrangler/
-# Deploy state (worker URL + D1 id) is local, like wrangler.jsonc
+# Deploy state (worker URL + D1 id) stays local.
 /lw-state.json
 # Local worker dev secrets (wrangler dev) - never commit
 .dev.vars
