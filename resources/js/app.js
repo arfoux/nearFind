@@ -57,6 +57,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
     };
 
     const searchInput = document.getElementById('need-search');
+    const searchForm = document.querySelector('[data-search-form]');
     const searchClear = document.querySelector('[data-search-clear]');
     const filterDot = document.querySelector('[data-filter-dot]');
     const filterSheet = document.getElementById('filter-sheet');
@@ -98,6 +99,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
 
     initMap();
     bindEvents();
+    setCardExpanded(cardExpanded);
     applyFilters({ fit: true, syncUrl: false });
     setCardExpanded(cardExpanded);
 
@@ -156,6 +158,18 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
             if (event.key === 'Escape' && searchInput.value !== '') {
                 clearSearch();
             }
+        });
+
+        searchForm?.addEventListener('submit', (event) => {
+            event.preventDefault();
+
+            if (!searchInput) {
+                return;
+            }
+
+            window.clearTimeout(searchDebounce);
+            state.query = searchInput.value.trim();
+            applyFilters({ fit: true });
         });
 
         searchClear?.addEventListener('click', clearSearch);

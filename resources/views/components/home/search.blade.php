@@ -1,15 +1,16 @@
-<div class="relative">
-    <label for="need-search" class="sr-only">Cari area, kelurahan, atau kebutuhan</label>
+<form role="search" data-search-form class="relative">
+    <label for="need-search" class="sr-only">Cari judul, lokasi, atau kategori</label>
 
     <div class="flex h-12 items-center gap-2.5 rounded-full border border-brand-900/10 bg-white px-3.5 shadow-[0_12px_30px_-22px_rgba(0,60,55,0.65)] transition focus-within:border-brand-500/40 focus-within:ring-4 focus-within:ring-brand-500/10 lg:h-[52px] lg:gap-3 lg:px-5">
         @include('partials.icon', ['name' => 'search', 'class' => 'size-[19px] shrink-0 text-brand-600 lg:size-5'])
 
         <input
             id="need-search"
+            name="q"
             type="search"
             inputmode="search"
             autocomplete="off"
-            placeholder="Cari area, kelurahan, atau peluang jasa..."
+            placeholder="Cari judul, lokasi, atau kategori"
             class="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-ink outline-none placeholder:text-muted/80 lg:text-sm"
         >
 
@@ -36,4 +37,4 @@
             <span data-filter-dot class="absolute right-1 top-1 hidden size-2 rounded-full bg-accent-500 ring-2 ring-white"></span>
         </button>
     </div>
-</div>
+</form>

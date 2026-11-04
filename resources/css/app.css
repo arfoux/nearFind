@@ -31,6 +31,12 @@
     --shadow-soft: 0 18px 45px -30px rgba(0, 60, 55, 0.45);
 }
 
+:root {
+    --nf-panel-width: 24.375rem;
+    --nf-panel-right: 1.25rem;
+    --nf-panel-gap: 1.5rem;
+}
+
 @layer base {
     html {
         -webkit-text-size-adjust: 100%;
@@ -199,6 +205,9 @@ body.app-background {
 }
 
 .nf-marker {
+    position: absolute;
+    bottom: 0;
+    left: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -377,6 +386,12 @@ body.app-background {
     background: var(--color-brand-50);
     transform: none;
     box-shadow: none;
+}
+
+@media (min-width: 1024px) {
+    .nf-map-controls {
+        right: calc(var(--nf-panel-width) + var(--nf-panel-right) + var(--nf-panel-gap));
+    }
 }
 
 /* -------------------------------------------------------------------------- */

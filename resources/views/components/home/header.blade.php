@@ -1,6 +1,6 @@
-<header class="relative z-[700] shrink-0 bg-canvas px-4 pb-3 pt-3.5 sm:px-5 lg:px-6 lg:pb-4 lg:pt-5">
+<header class="nf-glass-strong nf-header pointer-events-auto relative z-[700] rounded-[22px] px-3.5 py-3 sm:px-4 lg:px-5 lg:py-3.5">
     <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-x-8">
-        <x-brand class="col-start-1 row-start-1 justify-self-start" />
+        <x-brand badge="WARGA" class="col-start-1 row-start-1 justify-self-start" />
 
         @auth('seal')
             @php($sealUser = auth('seal')->user())
@@ -18,8 +18,9 @@
         @else
             <a
                 href="{{ route('login') }}"
-                class="col-start-2 row-start-1 inline-flex h-9 items-center justify-center rounded-full bg-brand-100 px-4 text-[11.5px] font-semibold text-brand-800 ring-1 ring-brand-700/10 transition hover:bg-brand-200/70 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 active:scale-[0.98] lg:col-start-3 lg:h-10 lg:px-5 lg:text-xs"
+                class="col-start-2 row-start-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-white/75 px-3.5 text-[11.5px] font-semibold text-brand-800 shadow-sm ring-1 ring-brand-900/10 transition hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 active:scale-[0.98] lg:col-start-3 lg:h-10 lg:px-4 lg:text-xs"
             >
+                <x-icon name="user" class="size-3.5" />
                 Masuk
             </a>
         @endauth

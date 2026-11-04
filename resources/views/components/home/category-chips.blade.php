@@ -15,8 +15,7 @@
                     </span>
                 @endif
 
-                <span>{{ $category['label'] }}</span>
-            </button>
-        @endforeach
-    </div>
+            <span>{{ $category['label'] }}</span>
+        </button>
+    @endforeach
 </div>

@@ -19,10 +19,20 @@
     <div class="relative mx-auto flex h-dvh w-full flex-col overflow-hidden bg-canvas sm:my-4 sm:h-[calc(100dvh-2rem)] sm:max-w-[600px] sm:rounded-[2.25rem] sm:shadow-[0_30px_90px_-40px_rgba(0,60,55,0.55)] sm:ring-1 sm:ring-brand-900/10 lg:my-6 lg:h-[calc(100dvh-3rem)] lg:max-w-[1180px]">
         {{ $slot }}
 
-        <x-bottom-nav :active="$active" />
+        <x-bottom-nav :active="$active" :floating="$active === 'peta'" />
     </div>
 
-    <div id="toast" class="toast pointer-events-none fixed inset-x-0 bottom-[calc(42dvh+4.75rem)] z-[1400] flex justify-center px-4 lg:bottom-24" role="status" aria-live="polite" aria-atomic="true">
+    <div
+        id="toast"
+        @class([
+            'toast pointer-events-none fixed inset-x-0 z-[1400] flex justify-center px-4',
+            'bottom-[calc(13.75rem+env(safe-area-inset-bottom))] lg:bottom-24' => $active === 'peta',
+            'bottom-24' => $active !== 'peta',
+        ])
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+    >
         <div class="flex max-w-[420px] items-start gap-2.5 rounded-2xl bg-brand-800 px-4 py-3 text-[12px] font-medium leading-relaxed text-white shadow-[0_18px_40px_-18px_rgba(0,60,55,0.65)] ring-1 ring-white/10">
             @include('partials.icon', ['name' => 'info', 'class' => 'mt-0.5 size-4 shrink-0 text-brand-200'])
             <span data-toast-message></span>
