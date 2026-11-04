@@ -41,9 +41,10 @@ jobs:
       # edge only builds the D1 cache when cache.driver is `database`).
       APP_ENV: production
       APP_DEBUG: 'false'
-      # The public URL, kept out of the repo (this repository is public): set it
-      # once as a repository variable, `gh variable set APP_URL`.
-      APP_URL: ${{ vars.APP_URL }}
+      # The public URL, kept out of this public repository and out of its logs.
+      # A SECRET (not a variable): GitHub echoes every job-env value in each
+      # step header; secrets are masked to *** there.
+      APP_URL: ${{ secrets.APP_URL }}
       CACHE_STORE: database
       LOG_LEVEL: warning
       # SEAL_* and NEARFIND_AUTH_* are NOT baked into the artifact (the `seal`
