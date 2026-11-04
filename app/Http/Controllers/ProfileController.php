@@ -227,5 +227,4 @@ class ProfileController extends Controller
 
         return $username;
     }
-
 }
