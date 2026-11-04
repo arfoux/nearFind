@@ -31,6 +31,12 @@
     --shadow-soft: 0 18px 45px -30px rgba(0, 60, 55, 0.45);
 }
 
+:root {
+    --nf-panel-width: 24.375rem;
+    --nf-panel-right: 1.25rem;
+    --nf-panel-gap: 1.5rem;
+}
+
 @layer base {
     html {
         -webkit-text-size-adjust: 100%;
@@ -181,22 +187,33 @@ body.app-background {
 /* Custom map markers ------------------------------------------------------- */
 
 .nf-marker-wrapper {
-    width: max-content;
+    width: 0;
+    height: 0;
     border: 0 !important;
     background: transparent !important;
 }
 
 .nf-marker {
+    position: absolute;
+    bottom: 0;
+    left: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     filter: drop-shadow(0 8px 12px rgba(0, 60, 55, 0.16));
+    transform: translateX(-50%);
+    transform-origin: bottom center;
     transition: transform 0.18s ease;
 }
 
 .nf-marker:hover,
 .nf-marker:focus-within {
-    transform: translateY(-1px);
+    transform: translateX(-50%) translateY(-1px);
+}
+
+.nf-marker-wrapper:focus-visible .nf-marker-pill {
+    outline: 3px solid rgba(15, 118, 110, 0.35);
+    outline-offset: 2px;
 }
 
 .nf-marker-pill {
@@ -365,6 +382,12 @@ body.app-background {
     background: var(--color-brand-50);
     transform: none;
     box-shadow: none;
+}
+
+@media (min-width: 1024px) {
+    .nf-map-controls {
+        right: calc(var(--nf-panel-width) + var(--nf-panel-right) + var(--nf-panel-gap));
+    }
 }
 
 /* -------------------------------------------------------------------------- */

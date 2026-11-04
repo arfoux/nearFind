@@ -40,7 +40,7 @@
             <aside
                 id="need-panel"
                 data-state="collapsed"
-                class="nf-need-panel nf-glass-strong absolute inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-[600] flex flex-col overflow-hidden rounded-[20px] lg:inset-x-auto lg:bottom-24 lg:right-5 lg:w-[390px]"
+                class="nf-need-panel nf-glass-strong absolute inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-[600] flex flex-col overflow-hidden rounded-[20px] lg:inset-x-auto lg:bottom-24 lg:right-[var(--nf-panel-right)] lg:w-[var(--nf-panel-width)]"
                 aria-label="Informasi kebutuhan terpilih"
             >
                 <div id="need-peek" class="flex shrink-0 items-center gap-3 px-4 py-3" aria-live="polite">

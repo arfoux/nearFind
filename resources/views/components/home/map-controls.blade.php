@@ -1,4 +1,4 @@
-<div data-map-controls class="nf-map-controls pointer-events-auto absolute right-3 top-full z-[530] mt-2 flex flex-col items-end gap-2 transition-[opacity,transform] duration-200 lg:right-[calc(390px+3.5rem)]">
+<div data-map-controls class="nf-map-controls pointer-events-auto absolute right-3 top-full z-[530] mt-2 flex flex-col items-end gap-2 transition-[opacity,transform] duration-200">
     <button
         type="button"
         data-map-locate
