@@ -11,8 +11,10 @@ updates:
     # laravel-workers is pinned exactly and bumped by PR, so the edge gate
     # verifies every tool upgrade before it can reach a deploy.
     groups:
-      npm:
-        patterns: ['*']
+      npm-prod:
+        dependency-type: production
+      npm-dev:
+        dependency-type: development
 
   - package-ecosystem: composer
     directory: /
@@ -20,8 +22,12 @@ updates:
       interval: weekly
     open-pull-requests-limit: 2
     groups:
-      composer:
-        patterns: ['*']
+      # Prod and dev are separate PRs: one failing dev bump (e.g. a PHPUnit
+      # major that needs another PHP) must not hold the runtime bump hostage.
+      composer-prod:
+        dependency-type: production
+      composer-dev:
+        dependency-type: development
     ignore:
       # PHPUnit 13 needs PHP >= 8.4; the app's CI (and the build) runs 8.3,
       # so the bump can only fail on install. Revisit when the runtime moves.
