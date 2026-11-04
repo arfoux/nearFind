@@ -44,7 +44,7 @@ jobs:
           cache: npm
 
       - name: Cache Composer dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.composer/cache/files
           key: composer-${{ runner.os }}-${{ hashFiles('composer.lock') }}
@@ -58,7 +58,7 @@ jobs:
         run: npm ci
 
       - name: Cache downloaded fonts
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: node_modules/.cache/laravel-vite-plugin/fonts
           key: fonts-${{ runner.os }}-${{ hashFiles('vite.config.js', 'package-lock.json') }}
