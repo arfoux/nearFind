@@ -7,6 +7,7 @@
     <meta name="description" content="Masuk ke nearFind untuk mendukung dan melaporkan kebutuhan warga di sekitarmu.">
 
     <link rel="icon" href="{{ url('/favicon.svg') }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ url('/apple-touch-icon.png') }}">
 
     <title>@yield('title', 'Masuk · nearFind')</title>
 

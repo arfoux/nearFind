@@ -25,6 +25,7 @@
     {{-- The tab icon is the same mark as partials/brand.blade.php; favicon.ico is
          a 0-byte placeholder, so without this the tab shows nothing. --}}
     <link rel="icon" href="{{ url('/favicon.svg') }}" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="{{ url('/apple-touch-icon.png') }}">
 
     <title>{{ $title }}</title>
 
