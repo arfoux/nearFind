@@ -6,6 +6,8 @@
     <meta name="theme-color" content="#F5F8F6">
     <meta name="description" content="Masuk ke nearFind untuk mendukung dan melaporkan kebutuhan warga di sekitarmu.">
 
+    <link rel="icon" href="{{ url('/favicon.svg') }}" type="image/svg+xml">
+
     <title>@yield('title', 'Masuk · nearFind')</title>
 
     @fonts

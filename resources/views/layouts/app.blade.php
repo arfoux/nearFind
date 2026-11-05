@@ -22,6 +22,10 @@
     <meta name="theme-color" content="#F5F8F6">
     <meta name="description" content="nearFind membantu warga menemukan dan melaporkan kebutuhan di sekitar, sekaligus membuka peluang usaha bagi pelaku usaha lokal.">
 
+    {{-- The tab icon is the same mark as partials/brand.blade.php; favicon.ico is
+         a 0-byte placeholder, so without this the tab shows nothing. --}}
+    <link rel="icon" href="{{ url('/favicon.svg') }}" type="image/svg+xml">
+
     <title>{{ $title }}</title>
 
     @fonts
