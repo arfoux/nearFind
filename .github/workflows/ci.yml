@@ -88,17 +88,21 @@ jobs:
           set -o pipefail
           npx laravel-workers build --no-cache 2>&1 | tee edge-build.log
 
-      # Verdict (action/verdict in laravel-workers): one sticky PR comment,
-      # edited in place on every push, plus the job summary. Copy is English.
+      # Verdict ships as an action in laravel-workers, pinned by commit: one
+      # sticky PR comment, edited in place on every push, plus the job summary,
+      # carrying the project mark. Pinning the commit (not a branch) means the
+      # reporter cannot change under us between runs; bump it deliberately.
+      #
+      # `GITHUB_SHA` is overridden on purpose: on a pull_request event the
+      # runner sets it to the merge commit, and the comment should name the
+      # commit under review.
       - name: Verdict — report
         if: always()
+        uses: arfoux/laravel-workers/action/verdict@9b329c0453cf26aa9f525c9fa2f67ff85c57a279
         env:
-          INPUT_LOG: edge-build.log
           GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
-          GH_TOKEN: ${{ github.token }}
-        run: node .github/scripts/verdict.mjs
+        with:
+          log: edge-build.log
 
       - name: Check code style
         run: vendor/bin/pint --test --format agent
