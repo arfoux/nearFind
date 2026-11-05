@@ -98,7 +98,7 @@ jobs:
       # commit under review.
       - name: Verdict — report
         if: always()
-        uses: arfoux/laravel-workers/action/verdict@main
+        uses: arfoux/laravel-workers/action/verdict@9b329c0453cf26aa9f525c9fa2f67ff85c57a279
         env:
           GITHUB_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         with:
