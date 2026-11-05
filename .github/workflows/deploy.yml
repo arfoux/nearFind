@@ -99,12 +99,15 @@ jobs:
             | tee deploy.log \
             | sed -E 's#https?://[A-Za-z0-9._-]+\.workers\.dev#https://<worker>.workers.dev#g'
 
-      - name: Publish readiness verdict
+      # The same reporter as the PR gate, not a second, hand-rolled one: the
+      # action reads the READINESS block out of the log and writes the job
+      # summary (carrying the project mark). On a push there is no pull request,
+      # so `comment: 'false'` states that this surface is the summary only.
+      # `GITHUB_STEP_SUMMARY` is written unconditionally, so `if: always()` is
+      # what keeps the summary alive when the deploy itself fails.
+      - name: Verdict — readiness
         if: always()
-        run: |
-          {
-            echo '### edge readiness'
-            echo '```'
-            awk '/^READINESS:/{f=1} f' deploy.log
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+        uses: arfoux/laravel-workers/action/verdict@9b329c0453cf26aa9f525c9fa2f67ff85c57a279
+        with:
+          log: deploy.log
+          comment: 'false'
