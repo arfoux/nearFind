@@ -10,7 +10,7 @@
                 class="category-chip {{ $category['id'] === 'all' ? 'is-active' : '' }}"
             >
                 @if ($category['id'] !== 'all')
-                    <span class="chip-icon" style="--chip-color: {{ $category['color'] }}; --chip-soft: {{ $category['soft_color'] }};">
+                    <span class="chip-icon" style="--chip-color: {{ $category['color'] }}">
                         @include('partials.icon', ['name' => $category['icon'], 'class' => 'size-3.5'])
                     </span>
                 @endif

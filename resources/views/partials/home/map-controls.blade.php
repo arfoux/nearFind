@@ -20,7 +20,7 @@
             @include('partials.icon', ['name' => 'plus', 'class' => 'size-[17px]'])
         </button>
 
-        <span class="h-px w-full bg-brand-900/10"></span>
+        <span class="h-px w-full bg-white/10"></span>
 
         <button
             type="button"

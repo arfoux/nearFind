@@ -4,7 +4,7 @@ import './profile.js';
 
 setWorkerUrl(workerUrl);
 
-const DEFAULT_MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
+const DEFAULT_MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
 
 const dataElement = document.getElementById('nearfind-data');
 const needCardElement = document.getElementById('need-card');
@@ -612,7 +612,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
     function markerMarkup(need, isSelected) {
         const category = categoryById[need.category] ?? fallbackCategory;
         const supporters = displaySupporters(need);
-        const markerStyle = `--marker-color:${category.color};--marker-soft:${category.soft_color}`;
+        const markerStyle = `--marker-color:${category.color}`;
 
         return `<div class="nf-marker ${isSelected ? 'is-selected' : ''}" style="${markerStyle}">
                     <div class="nf-marker-pill">
@@ -740,7 +740,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
                 aria-expanded="${cardExpanded ? 'true' : 'false'}"
                 aria-controls="need-card"
                 aria-label="${cardExpanded ? 'Tutup detail kebutuhan' : 'Buka detail kebutuhan'}"
-                class="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-white/80 px-2.5 text-[9.5px] font-semibold text-brand-700 shadow-sm ring-1 ring-brand-900/10 transition hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
+                class="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-surface/80 px-2.5 text-[9.5px] font-semibold text-brand-200 shadow-sm ring-1 ring-white/10 transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
             >
                 <span data-card-toggle-label>${cardExpanded ? 'Tutup' : 'Detail'}</span>
                 ${icon('chevron-down', 'nf-chevron size-3.5 transition-transform duration-200')}
@@ -750,12 +750,12 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
 
     function emptyPeekMarkup() {
         return `
-            <span class="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-brand-50 text-brand-700">
+            <span class="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-brand-50 text-brand-200">
                 ${icon('search', 'size-5')}
             </span>
 
             <div class="min-w-0 flex-1">
-                <p class="text-[8px] font-semibold uppercase tracking-[0.12em] text-brand-600">Peta</p>
+                <p class="text-[8px] font-semibold uppercase tracking-[0.12em] text-brand-300">Peta</p>
                 <h2 class="mt-1 truncate text-[13px] font-semibold tracking-[-0.02em] text-ink">Belum ada kebutuhan yang cocok</h2>
             </div>
 
@@ -765,7 +765,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
                 aria-expanded="${cardExpanded ? 'true' : 'false'}"
                 aria-controls="need-card"
                 aria-label="${cardExpanded ? 'Tutup detail kebutuhan' : 'Buka detail kebutuhan'}"
-                class="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-white/80 px-2.5 text-[9.5px] font-semibold text-brand-700 shadow-sm ring-1 ring-brand-900/10 transition hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
+                class="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-surface/80 px-2.5 text-[9.5px] font-semibold text-brand-200 shadow-sm ring-1 ring-white/10 transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
             >
                 <span data-card-toggle-label>${cardExpanded ? 'Tutup' : 'Detail'}</span>
                 ${icon('chevron-down', 'nf-chevron size-3.5 transition-transform duration-200')}
@@ -778,33 +778,33 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         const supporters = displaySupporters(need);
         const supportLabel = supported ? 'Kamu sudah mendukung' : 'Saya juga butuh';
         const supportClasses = supported
-            ? 'bg-brand-50 text-brand-700 ring-1 ring-brand-700/15 hover:bg-brand-100'
-            : 'bg-accent-500 text-white shadow-[0_14px_26px_-16px_rgba(253,118,26,0.8)] hover:bg-accent-600';
+            ? 'bg-brand-50 text-brand-200 ring-1 ring-white/15 hover:bg-brand-100'
+            : 'bg-accent-500 text-canvas shadow-[0_14px_26px_-16px_rgba(253,118,26,0.8)] hover:bg-accent-600';
 
         return `
             <article class="need-card-enter">
                 <div class="flex items-start gap-1.5 text-[11px] font-medium leading-snug text-muted">
-                    ${icon('pin', 'mt-0.5 size-3.5 shrink-0 text-brand-600')}
-                    <span>${escapeHtml(need.location)} <span class="text-brand-700">• ${escapeHtml(formatDistance(need.distance_km))}</span></span>
+                    ${icon('pin', 'mt-0.5 size-3.5 shrink-0 text-brand-300')}
+                    <span>${escapeHtml(need.location)} <span class="text-brand-200">• ${escapeHtml(formatDistance(need.distance_km))}</span></span>
                 </div>
 
-                <p class="mt-2 line-clamp-3 text-[12.5px] leading-[1.6] text-[#4E6360] [@media(max-height:719px)]:line-clamp-2">${escapeHtml(need.description)}</p>
+                <p class="mt-2 line-clamp-3 text-[12.5px] leading-[1.6] text-muted [@media(max-height:719px)]:line-clamp-2">${escapeHtml(need.description)}</p>
 
-                <div class="mt-3 flex items-center gap-3 rounded-2xl bg-[#F0F3FF] px-3 py-2">
+                <div class="mt-3 flex items-center gap-3 rounded-2xl bg-white/5 px-3 py-2">
                     <div class="flex -space-x-2">
-                        <span class="flex size-7 items-center justify-center rounded-full border-2 border-white bg-brand-100 text-[8px] font-bold text-brand-800">RW</span>
-                        <span class="flex size-7 items-center justify-center rounded-full border-2 border-white bg-[#FFDBCA] text-[8px] font-bold text-[#9A3412]">+${Math.max(supporters - 1, 0)}</span>
+                        <span class="flex size-7 items-center justify-center rounded-full border-2 border-surface bg-brand-100 text-[8px] font-bold text-brand-200">RW</span>
+                        <span class="flex size-7 items-center justify-center rounded-full border-2 border-surface bg-[#FFDBCA] text-[8px] font-bold text-[#9A3412]">+${Math.max(supporters - 1, 0)}</span>
                     </div>
 
                     <div class="min-w-0 flex-1">
                         <p class="flex items-center gap-1 text-[11px] font-semibold leading-tight text-ink">
-                            ${icon('heart', 'size-3.5 shrink-0 fill-[#E11D48] text-[#E11D48]')}
+                            ${icon('heart', 'size-3.5 shrink-0 fill-[#FB7185] text-[#FB7185]')}
                             <span><span data-support-count>${supporters}</span> warga mendukung</span>
                         </p>
                         <p class="mt-0.5 text-[9.5px] text-muted">kebutuhan ini</p>
                     </div>
 
-                    ${need.opportunity ? '<span class="shrink-0 rounded-lg bg-white/75 px-2 py-1 text-[8.5px] font-semibold text-[#4B5BB5]">Peluang Usaha</span>' : ''}
+                    ${need.opportunity ? '<span class="shrink-0 rounded-lg bg-surface/80 px-2 py-1 text-[8.5px] font-semibold text-brand-200">Peluang Usaha</span>' : ''}
                 </div>
 
                 <div class="mt-2.5 flex gap-2">
@@ -813,14 +813,14 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
                         <span data-support-label>${supportLabel}</span>
                     </button>
 
-                    <button type="button" data-share-button class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#EEF2FF] text-[#4B5BB5] transition hover:bg-[#E2E8FF] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#4B5BB5]/20" aria-label="Bagikan ${escapeHtml(need.title)}">
+                    <button type="button" data-share-button class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-200 transition hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/25" aria-label="Bagikan ${escapeHtml(need.title)}">
                         ${icon('share', 'size-[18px]')}
                     </button>
                 </div>
 
                 <p class="mx-auto mt-1.5 max-w-[300px] text-center text-[9.5px] leading-[1.5] text-muted [@media(max-height:779px)]:hidden">Klik untuk mendukung. Kamu akan diminta masuk terlebih dahulu.</p>
 
-                <button type="button" data-report-button class="mt-1 flex w-full items-center justify-start gap-1.5 py-1 pl-1 text-left text-[10px] font-medium text-muted/80 transition hover:text-brand-700 lg:justify-center lg:pl-0">
+                <button type="button" data-report-button class="mt-1 flex w-full items-center justify-start gap-1.5 py-1 pl-1 text-left text-[10px] font-medium text-muted/80 transition hover:text-brand-200 lg:justify-center lg:pl-0">
                     ${icon('flag', 'size-3')}
                     Laporkan ketidaksesuaian
                 </button>
@@ -831,14 +831,14 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
     function emptyCardMarkup() {
         return `
             <article class="need-card-enter flex min-h-[260px] flex-col items-center justify-center px-4 py-8 text-center">
-                <span class="flex size-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-700">
+                <span class="flex size-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-200">
                     ${icon('search', 'size-7')}
                 </span>
 
                 <h2 class="mt-4 text-[17px] font-semibold tracking-[-0.02em] text-ink">Belum ada kebutuhan yang cocok</h2>
                 <p class="mt-1.5 max-w-[250px] text-[11.5px] leading-relaxed text-muted">Coba kata kunci lain atau tampilkan kembali semua kategori di sekitar Sukajadi.</p>
 
-                <button type="button" data-reset-filters class="mt-4 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-brand-700 px-4 text-[11px] font-semibold text-white shadow-[0_12px_24px_-16px_rgba(0,92,85,0.8)] transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20">
+                <button type="button" data-reset-filters class="mt-4 inline-flex h-10 items-center justify-center gap-1.5 rounded-xl bg-brand-700 px-4 text-[11px] font-semibold text-canvas shadow-[0_12px_24px_-16px_rgba(0,0,0,0.8)] transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20">
                     ${icon('map', 'size-3.5')}
                     Tampilkan semua
                 </button>

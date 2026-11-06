@@ -5,7 +5,7 @@
 Aplikasi peta: daftar kebutuhan (`config/needs.php`) per kategori ditampilkan di atas peta
 [MapLibre GL](https://maplibre.org/). Laravel 13 (PHP 8.3+) di-compile
 [laravel-workers](https://github.com/arfoux/laravel-workers) menjadi satu Cloudflare Worker; Vite +
-Tailwind di klien. Gaya peta diambil dari `NEARFIND_MAP_STYLE_URL` (default: OpenFreeMap Positron).
+Tailwind di klien. Gaya peta diambil dari `NEARFIND_MAP_STYLE_URL` (default: OpenFreeMap Dark).
 
 ## Menjalankan di lokal
 
