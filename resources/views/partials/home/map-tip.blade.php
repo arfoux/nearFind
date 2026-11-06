@@ -1,8 +1,8 @@
 <div
     data-map-tip
-    class="nf-glass absolute inset-x-3 bottom-7 z-[525] hidden items-center gap-2.5 rounded-2xl px-3 py-2.5 shadow-[0_14px_30px_-20px_rgba(0,60,55,0.5)] lg:inset-x-4 lg:bottom-24 lg:flex lg:max-w-[370px]"
+    class="nf-glass absolute inset-x-3 bottom-7 z-[525] hidden items-center gap-2.5 rounded-2xl px-3 py-2.5 shadow-[0_14px_30px_-20px_rgba(0,0,0,0.5)] lg:inset-x-4 lg:bottom-24 lg:flex lg:max-w-[370px]"
 >
-    <span class="flex size-8 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-700">
+    <span class="flex size-8 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-200">
         @include('partials.icon', ['name' => 'pin', 'class' => 'size-4'])
     </span>
 
@@ -13,7 +13,7 @@
     <button
         type="button"
         data-dismiss-tip
-        class="flex size-6 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-canvas hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30"
+        class="flex size-6 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-canvas hover:text-brand-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30"
         aria-label="Tutup petunjuk peta"
     >
         @include('partials.icon', ['name' => 'close', 'class' => 'size-3.5'])

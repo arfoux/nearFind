@@ -7,7 +7,7 @@
         href="https://openfreemap.org"
         target="_blank"
         rel="noopener noreferrer"
-        class="transition hover:text-brand-700"
+        class="transition hover:text-brand-200"
     >
         OpenFreeMap
     </a>
@@ -16,7 +16,7 @@
         href="https://openmaptiles.org"
         target="_blank"
         rel="noopener noreferrer"
-        class="transition hover:text-brand-700"
+        class="transition hover:text-brand-200"
     >
         OpenMapTiles
     </a>
@@ -25,7 +25,7 @@
         href="https://www.openstreetmap.org/copyright"
         target="_blank"
         rel="noopener noreferrer"
-        class="transition hover:text-brand-700"
+        class="transition hover:text-brand-200"
     >
         OpenStreetMap
     </a>

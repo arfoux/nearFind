@@ -13,7 +13,7 @@ return [
     */
 
     'map' => [
-        'style_url' => env('NEARFIND_MAP_STYLE_URL', 'https://tiles.openfreemap.org/styles/positron'),
+        'style_url' => env('NEARFIND_MAP_STYLE_URL', 'https://tiles.openfreemap.org/styles/dark'),
     ],
 
     /*
@@ -32,43 +32,43 @@ return [
             'id' => 'all',
             'label' => 'Semua',
             'icon' => 'grid',
-            'color' => '#005C55',
-            'soft_color' => '#E3F3EF',
+            'color' => '#A78BFA',
+            'soft_color' => 'rgba(139, 92, 246, 0.22)',
         ],
         [
             'id' => 'household',
             'label' => 'Jasa Rumah Tangga',
             'icon' => 'home',
-            'color' => '#C2410C',
-            'soft_color' => '#FFE8D9',
+            'color' => '#FB923C',
+            'soft_color' => 'rgba(251, 146, 60, 0.22)',
         ],
         [
             'id' => 'repair',
             'label' => 'Servis & Reparasi',
             'icon' => 'wrench',
-            'color' => '#1D4ED8',
-            'soft_color' => '#E7EDFF',
+            'color' => '#60A5FA',
+            'soft_color' => 'rgba(96, 165, 250, 0.22)',
         ],
         [
             'id' => 'culinary',
             'label' => 'Kuliner',
             'icon' => 'utensils',
-            'color' => '#BE123C',
-            'soft_color' => '#FFE4EA',
+            'color' => '#FB7185',
+            'soft_color' => 'rgba(251, 113, 133, 0.22)',
         ],
         [
             'id' => 'retail',
             'label' => 'Retail',
             'icon' => 'bag',
-            'color' => '#047857',
-            'soft_color' => '#DFF5E8',
+            'color' => '#F0ABFC',
+            'soft_color' => 'rgba(240, 171, 252, 0.22)',
         ],
         [
             'id' => 'health',
             'label' => 'Kesehatan',
             'icon' => 'cross',
-            'color' => '#B91C1C',
-            'soft_color' => '#FFE4E4',
+            'color' => '#F87171',
+            'soft_color' => 'rgba(248, 113, 113, 0.22)',
         ],
     ],
 

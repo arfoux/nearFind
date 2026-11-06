@@ -13,7 +13,7 @@
         <div class="h-3 w-2/3 rounded-full bg-canvas"></div>
     </div>
 
-    <div class="mt-4 h-[66px] rounded-2xl bg-[#F0F3FF]"></div>
+    <div class="mt-4 h-[66px] rounded-2xl bg-white/5"></div>
     <div class="mt-4 h-11 rounded-xl bg-accent-100/70"></div>
     <div class="mx-auto mt-3 h-2.5 w-3/4 rounded-full bg-canvas"></div>
 </div>

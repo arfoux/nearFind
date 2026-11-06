@@ -44,7 +44,7 @@
                 aria-label="Informasi kebutuhan terpilih"
             >
                 <div id="need-peek" class="flex shrink-0 items-center gap-3 px-4 py-3" aria-live="polite">
-                    <span class="flex size-10 shrink-0 animate-pulse items-center justify-center rounded-[14px] bg-brand-50 text-brand-700"></span>
+                    <span class="flex size-10 shrink-0 animate-pulse items-center justify-center rounded-[14px] bg-brand-50 text-brand-200"></span>
                     <div class="min-w-0 flex-1 space-y-2">
                         <span class="block h-2 w-24 animate-pulse rounded-full bg-brand-50"></span>
                         <span class="block h-3 w-40 animate-pulse rounded-full bg-canvas"></span>
