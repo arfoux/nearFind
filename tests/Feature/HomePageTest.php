@@ -23,10 +23,29 @@ class HomePageTest extends TestCase
         $response->assertSee('Masuk untuk melanjutkan');
     }
 
-    public function test_only_planned_pages_are_unavailable(): void
+    public function test_explore_and_report_pages_render_and_are_linked_from_the_nav(): void
     {
-        $this->get('/jelajahi')->assertNotFound();
-        $this->get('/laporan')->assertNotFound();
+        $explore = $this->get('/jelajah');
+
+        $explore->assertOk();
+        $explore->assertSee('Kebutuhan di sekitarmu');
+        $explore->assertSee('Jasa Laundry Kiloan');
+        $explore->assertSee('data-needs-list', false);
+        $explore->assertSee('data-list-search', false);
+        $explore->assertSee(route('needs.index'), false);
+        $explore->assertSee(route('needs.report'), false);
+        $explore->assertDontSee('nav-placeholder');
+        $explore->assertDontSee('segera hadir');
+
+        $report = $this->get('/laporan');
+
+        $report->assertOk();
+        $report->assertSee('Laporan kebutuhan warga');
+        $report->assertSee('Per kategori');
+        $report->assertSee('Paling didukung');
+        $report->assertSee('Peluang usaha');
+        $report->assertSee(route('needs.report'), false);
+
         $this->get('/profil')->assertRedirect(route('login'));
     }
 }

@@ -16,8 +16,8 @@
 
     $items = [
         ['key' => 'peta', 'label' => 'Peta', 'icon' => 'map', 'route' => 'home'],
-        ['key' => 'jelajahi', 'label' => 'Jelajahi', 'icon' => 'compass', 'route' => null],
-        ['key' => 'laporan', 'label' => 'Laporan', 'icon' => 'clipboard', 'route' => null],
+        ['key' => 'jelajahi', 'label' => 'Jelajahi', 'icon' => 'compass', 'route' => 'needs.index'],
+        ['key' => 'laporan', 'label' => 'Laporan', 'icon' => 'clipboard', 'route' => 'needs.report'],
         ['key' => 'profil', 'label' => 'Profil', 'icon' => 'user', 'route' => $isAuthenticated ? 'profile.index' : 'login'],
     ];
 @endphp
@@ -32,26 +32,12 @@
                 $labelClass = 'text-[10px] font-semibold tracking-[0.01em] '.($isActive ? 'text-brand-200' : 'text-muted group-hover:text-brand-200');
             @endphp
 
-            @if ($item['route'])
-                <a href="{{ route($item['route']) }}" @if ($isActive) aria-current="page" @endif class="{{ $itemClass }}">
-                    <span class="{{ $iconClass }}">
-                        @include('partials.icon', ['name' => $item['icon'], 'class' => 'size-[21px]', 'strokeWidth' => '2'])
-                    </span>
-                    <span class="{{ $labelClass }}">{{ $item['label'] }}</span>
-                </a>
-            @else
-                <button
-                    type="button"
-                    data-action="nav-placeholder"
-                    data-nav-label="{{ $item['label'] }}"
-                    class="{{ $itemClass }}"
-                >
-                    <span class="{{ $iconClass }}">
-                        @include('partials.icon', ['name' => $item['icon'], 'class' => 'size-[21px]', 'strokeWidth' => '1.8'])
-                    </span>
-                    <span class="{{ $labelClass }}">{{ $item['label'] }}</span>
-                </button>
-            @endif
+            <a href="{{ route($item['route']) }}" @if ($isActive) aria-current="page" @endif class="{{ $itemClass }}">
+                <span class="{{ $iconClass }}">
+                    @include('partials.icon', ['name' => $item['icon'], 'class' => 'size-[21px]', 'strokeWidth' => '2'])
+                </span>
+                <span class="{{ $labelClass }}">{{ $item['label'] }}</span>
+            </a>
         @endforeach
     </div>
 </nav>

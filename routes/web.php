@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NeedsController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,6 +14,10 @@ Route::get('/', function () {
         'authenticated' => auth()->check(),
     ]);
 })->name('home');
+
+Route::get('/jelajah', [NeedsController::class, 'index'])->name('needs.index');
+
+Route::get('/laporan', [NeedsController::class, 'report'])->name('needs.report');
 
 Route::middleware('guest:seal')->group(function (): void {
     Route::get('/masuk', [LoginController::class, 'create'])->name('login');
