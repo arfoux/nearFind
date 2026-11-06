@@ -34,6 +34,7 @@ class HomePageTest extends TestCase
         $explore->assertSee('data-list-search', false);
         $explore->assertSee(route('needs.index'), false);
         $explore->assertSee(route('needs.report'), false);
+        $explore->assertSee('?need=laundry-kiloan', false);
         $explore->assertDontSee('nav-placeholder');
         $explore->assertDontSee('segera hadir');
 
@@ -45,6 +46,7 @@ class HomePageTest extends TestCase
         $report->assertSee('Paling didukung');
         $report->assertSee('Peluang usaha');
         $report->assertSee(route('needs.report'), false);
+        $report->assertSee('?need=klinik-24-jam', false);
 
         $this->get('/profil')->assertRedirect(route('login'));
     }
