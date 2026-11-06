@@ -48,6 +48,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # `gh` resolves the repository from the git remote, so every step below
+      # fails inside an empty workspace ("not a git repository").
+      - uses: actions/checkout@v7
+
       - name: Inspect pull request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
