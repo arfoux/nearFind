@@ -19,6 +19,7 @@ if (dataElement && needCardElement && mapElement) {
 }
 
 initPasswordToggles();
+initNeedsList();
 
 function initPasswordToggles() {
     document.querySelectorAll('[data-password-toggle]').forEach((toggle) => {
@@ -37,6 +38,73 @@ function initPasswordToggles() {
             toggle.querySelector('use')?.setAttribute('href', reveal ? '#nf-eye-off' : '#nf-eye');
         });
     });
+}
+
+// The Jelajahi page renders every need on the server; the search box and the
+// category chips filter that list in place.
+function initNeedsList() {
+    const list = document.querySelector('[data-needs-list]');
+
+    if (!list) {
+        return;
+    }
+
+    const searchInput = document.querySelector('[data-list-search]');
+    const clearButton = document.querySelector('[data-list-clear]');
+    const emptyState = document.querySelector('[data-list-empty]');
+    const chips = [...document.querySelectorAll('[data-list-category]')];
+    const rows = [...list.querySelectorAll('[data-need-row]')];
+    const state = { category: 'all', query: '' };
+
+    const applyFilters = () => {
+        let visible = 0;
+
+        rows.forEach((row) => {
+            const matchesCategory = state.category === 'all' || row.dataset.category === state.category;
+            const matchesQuery = state.query === '' || (row.dataset.search ?? '').includes(state.query);
+            const show = matchesCategory && matchesQuery;
+
+            row.hidden = !show;
+            visible += show ? 1 : 0;
+        });
+
+        if (emptyState) {
+            emptyState.hidden = visible > 0;
+        }
+
+        if (clearButton) {
+            clearButton.hidden = state.query === '';
+        }
+    };
+
+    chips.forEach((chip) => {
+        chip.addEventListener('click', () => {
+            state.category = chip.dataset.listCategory ?? 'all';
+
+            chips.forEach((candidate) => {
+                const isActive = candidate === chip;
+
+                candidate.classList.toggle('is-active', isActive);
+                candidate.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            });
+
+            applyFilters();
+        });
+    });
+
+    searchInput?.addEventListener('input', () => {
+        state.query = searchInput.value.trim().toLowerCase();
+        applyFilters();
+    });
+
+    clearButton?.addEventListener('click', () => {
+        searchInput.value = '';
+        state.query = '';
+        searchInput.focus();
+        applyFilters();
+    });
+
+    applyFilters();
 }
 
 function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = DEFAULT_MAP_STYLE_URL }) {
@@ -197,9 +265,6 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
                     break;
                 case 'submit-need':
                     requireLogin('submit-need', actionElement);
-                    break;
-                case 'nav-placeholder':
-                    showToast(`Halaman ${actionElement.dataset.navLabel ?? 'ini'} segera hadir.`);
                     break;
             }
         });

@@ -22,8 +22,8 @@
     <meta name="theme-color" content="#0B0E12">
     <meta name="description" content="nearFind membantu warga menemukan dan melaporkan kebutuhan di sekitar, sekaligus membuka peluang usaha bagi pelaku usaha lokal.">
 
-    {{-- The tab icon is the same mark as partials/brand.blade.php; favicon.ico is
-         a 0-byte placeholder, so without this the tab shows nothing. --}}
+    {{-- The tab icon is the same mark as partials/brand.blade.php: browsers that
+         understand SVG pick favicon.svg, the rest fall back to favicon.ico. --}}
     <link rel="icon" href="{{ url('/favicon.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ url('/apple-touch-icon.png') }}">
 
