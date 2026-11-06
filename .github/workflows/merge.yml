@@ -1,0 +1,81 @@
+name: merge
+
+# Merges a pull request on demand, then starts the pipelines that depend on it.
+# `ci.yml` and `deploy.yml` both hang off `push` to `main`; a push made with the
+# workflow `GITHUB_TOKEN` does not emit that event, so the follow-up runs are
+# requested explicitly here.
+#
+# Usage:
+#   gh workflow run merge.yml -f pr=52
+#   gh workflow run merge.yml -f pr=52 -f mode=squash -f deploy=false
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number
+        required: true
+        type: string
+      mode:
+        description: Merge method
+        required: false
+        default: rebase
+        type: choice
+        options:
+          - rebase
+          - squash
+      deploy:
+        description: Start deploy.yml afterwards
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write   # required for `gh workflow run`
+
+concurrency:
+  group: merge
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    name: Merge pull request
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Inspect pull request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh pr view "${{ inputs.pr }}" \
+            --json number,title,headRefName,mergeable,mergeStateStatus,statusCheckRollup \
+            --jq '{number,title,head:.headRefName,mergeable,state:.mergeStateStatus,
+                   checks:[.statusCheckRollup[]?|{name,conclusion}]}'
+
+      - name: Merge (${{ inputs.mode }})
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh pr merge "${{ inputs.pr }}" --${{ inputs.mode }} --delete-branch=false
+
+      - name: Start ci.yml
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run ci.yml --ref main
+
+      - name: Start deploy.yml
+        if: inputs.deploy == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow run deploy.yml --ref main
+
+      - name: Summary
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "pull request: $(gh pr view "${{ inputs.pr }}" --json url --jq .url)"
+          echo "main: $(gh api repos/${{ github.repository }}/commits/main --jq '.sha[0:7] + " " + .commit.committer.name')"
