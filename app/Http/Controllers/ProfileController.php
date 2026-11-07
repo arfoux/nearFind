@@ -105,7 +105,7 @@ class ProfileController extends Controller
 
             if ($taken !== null && $taken->id !== $profile->id) {
                 throw ValidationException::withMessages([
-                    'username' => 'Username ini sudah dipakai warga lain.',
+                    'username' => 'Username ini sudah dipakai.',
                 ]);
             }
         }
@@ -194,11 +194,15 @@ class ProfileController extends Controller
         ]);
     }
 
+    /**
+     * A unique handle for a profile created lazily at the edge. Same shape as
+     * `Profile::usernameFromEmail()`, plus a numeric suffix while the base is
+     * taken; written with an inline `where()` (the compiled surface) so the
+     * controller never calls a static helper the transpiler would refuse.
+     */
     private function uniqueUsername(string $email): string
     {
-        // The same shape as Profile::usernameFromEmail(), written with the
-        // compiled surface: lowercase, keep [a-z0-9._-], trim, 24 chars.
-        $raw = strtolower(Str::before((string) $email, '@'));
+        $raw = strtolower(Str::before($email, '@'));
         $base = '';
 
         for ($i = 0; $i < strlen($raw); $i++) {
@@ -212,7 +216,7 @@ class ProfileController extends Controller
         $base = trim($base, '._-');
 
         if ($base === '') {
-            $base = 'warga';
+            $base = 'pengguna';
         }
 
         $base = substr($base, 0, 24);

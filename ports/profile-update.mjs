@@ -13,7 +13,7 @@ const MESSAGES = {
   'name.max': 'Nama lengkap maksimal 100 karakter.',
   'username.max': 'Username maksimal 30 karakter.',
   'username.regex': 'Username hanya boleh berisi huruf, angka, titik, garis bawah, dan tanda hubung.',
-  'username.unique': 'Username ini sudah dipakai warga lain.',
+  'username.unique': 'Username ini sudah dipakai.',
   'phone.max': 'Nomor telepon terlalu panjang.',
   'phone.regex': 'Format nomor telepon tidak valid.',
   'bio.max': 'Bio maksimal 300 karakter.',

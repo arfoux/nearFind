@@ -24,9 +24,9 @@ export default async function handle(ctx) {
   if (session && typeof session.regenerateToken === 'function') session.regenerateToken();
 
   if (session && typeof session.flash === 'function') {
-    session.flash('status', 'Kamu sudah keluar dari akun warga.');
+    session.flash('status', 'Kamu sudah keluar dari akunmu.');
   } else if (session && typeof session.put === 'function') {
-    session.put('status', 'Kamu sudah keluar dari akun warga.');
+    session.put('status', 'Kamu sudah keluar dari akunmu.');
   }
 
   let location = '/';

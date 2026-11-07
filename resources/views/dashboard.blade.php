@@ -9,7 +9,7 @@
                 </span>
 
                 <div class="min-w-0">
-                    <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-300">Akun warga</p>
+                    <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-300">Akun nearFind</p>
                     <h1 class="truncate text-xl font-semibold tracking-[-0.03em] text-ink">Halo, {{ $user->name }}</h1>
                     <p class="truncate text-[11px] font-medium text-muted">{{ $user->email }}</p>
                 </div>
