@@ -47,6 +47,14 @@ jobs:
       APP_URL: ${{ secrets.APP_URL }}
       CACHE_STORE: database
       LOG_LEVEL: warning
+      # Verification mail goes out over Resend from the domain verified in the
+      # Resend dashboard. `resend` is baked into dist/src/config.generated.mjs
+      # (mail.driver/mail.from); the API key is NOT baked — the Worker reads it at
+      # request time from the secret RESEND_API_KEY (`wrangler secret put`), and a
+      # missing key fails the send, not the build.
+      MAIL_MAILER: resend
+      MAIL_FROM_ADDRESS: noreply@nietzsc.de
+      MAIL_FROM_NAME: nearFind
       # SEAL_* and NEARFIND_AUTH_* are NOT baked into the artifact (the `seal`
       # config group is not dumped) — they are Worker secrets/vars read by the
       # ports at request time. Set them once with `wrangler secret put`.
