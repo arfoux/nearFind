@@ -95,6 +95,75 @@ async function clear(ctx, key) {
   await cache.forget(key + ':timer');
 }
 
+/** The `<!--lw-flash-->` slot `resources/views/auth/login.blade.php` leaves for the edge. */
+const FLASH_MARKER = '<!--lw-flash-->';
+
+/** The banner icon markup of `partials/icon`. */
+function iconMarkup(name, iconClass) {
+  return (
+    '<svg class="' + iconClass + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"' +
+    ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' +
+    '<use href="#nf-' + name + '"></use></svg>'
+  );
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * `GET /masuk` is a prerendered asset, so the Blade `@error`/`session('status')`
+ * blocks cannot see the POST's flash - the page was rendered at build time.
+ * Fill the `<!--lw-flash-->` slot the view leaves for this, then consume the
+ * flash, exactly the one-shot lifetime Laravel gives
+ * `redirect()->withErrors()` / `redirect()->with('status')`.
+ */
+function injectFlash(ctx, html) {
+  const session = ctx.session;
+  if (!session || typeof session.get !== 'function') return html;
+
+  const stored = session.get('errors');
+  const messages = [];
+  if (stored && typeof stored === 'object') {
+    for (const value of Object.values(stored)) {
+      if (typeof value === 'string' && value !== '') messages.push(value);
+      else if (Array.isArray(value)) for (const item of value) if (typeof item === 'string' && item !== '') messages.push(item);
+    }
+  }
+  const status = session.get('status');
+  const old = session.get('_old_input');
+  const email = old && typeof old === 'object' && typeof old.email === 'string' ? old.email : '';
+
+  let out = html;
+  const statusBanner =
+    typeof status === 'string' && status !== ''
+      ? '<div class="mb-4 flex items-start gap-2.5 rounded-2xl bg-brand-50 px-3.5 py-3 text-[11.5px] font-medium text-brand-200 ring-1 ring-white/10">' +
+        iconMarkup('check', 'mt-0.5 size-4 shrink-0') +
+        '<span>' + escapeHtml(status) + '</span></div>'
+      : '';
+  const errorBanner =
+    messages.length > 0
+      ? '<div class="mb-4 flex items-start gap-2.5 rounded-2xl bg-brand-50/10 px-3.5 py-3 text-[11.5px] font-medium text-[#FF9B9B] ring-1 ring-[#FF9B9B]/15" role="alert">' +
+        iconMarkup('flag', 'mt-0.5 size-4 shrink-0') +
+        '<span>' + messages.map(escapeHtml).join('<br>') + '</span></div>'
+      : '';
+  if (statusBanner !== '' || errorBanner !== '') {
+    out = out.replace(FLASH_MARKER, statusBanner + errorBanner);
+  }
+  if (email !== '') {
+    out = out.replace(/(name="email"[^>]*?value=")[^"]*(")/, (match, open, close) => open + escapeHtml(email) + close);
+  }
+  if ((statusBanner !== '' || errorBanner !== '' || email !== '') && typeof session.forget === 'function') {
+    session.forget(['errors', '_old_input', 'status']);
+  }
+  return out;
+}
+
 export default async function handle(ctx, env) {
   const verb = String(ctx.method || '').toUpperCase();
 
@@ -120,6 +189,7 @@ export default async function handle(ctx, env) {
     if (token) {
       page.body = page.body.replace(/(name="_token"[^>]*?value=")[^"]*(")/g, '$1' + String(token) + '$2');
     }
+    page.body = injectFlash(ctx, page.body);
     return page;
   }
   if (verb !== 'POST') return methodNotAllowed(['GET', 'HEAD', 'POST']);
@@ -146,23 +216,35 @@ export default async function handle(ctx, env) {
 
   const profile = await findProfileByEmail(ctx.db, email);
   const configuredEmail = normalizeEmail(str(env && env.NEARFIND_AUTH_EMAIL));
-  const storedHash = (profile && str(profile.password_hash)) || str(env && env.NEARFIND_AUTH_PASSWORD_HASH);
+  const configuredHash = str(env && env.NEARFIND_AUTH_PASSWORD_HASH);
+  const profileHash = profile ? str(profile.password_hash) : '';
 
-  // PHP (LoginController::store, :32-37):
-  //   $valid = $configuredEmail !== ''
-  //         && $passwordHash !== ''
-  //         && hash_equals($configuredEmail, $request->email())
-  //         && Hash::check($password, $passwordHash);
-  // The configured email is a REQUIRED half of the credential. An earlier
-  // version also accepted "profile row has a hash and the env email is unset",
-  // which PHP never allows — that path is removed: unset = nobody logs in.
-  let accepted = false;
-  if (configuredEmail !== '' && storedHash !== '' && configuredEmail === email) {
+  // PHP (LoginController::store, :30-52): two ways in, one credential each.
+  //   - the deployment credential: `NEARFIND_AUTH_EMAIL` (the config group the
+  //     build does not dump) + `NEARFIND_AUTH_PASSWORD_HASH`; the email is half
+  //     of it, so the row's hash can never shadow it;
+  //   - a row created by /daftar: its own email + hash, and only once the mailed
+  //     link set `email_verified_at`. An unverified row answers the same message
+  //     Laravel's MustVerifyEmail flow does, after a correct password.
+  const passwordMatches = async (hash) => {
+    if (hash === '') return false;
     try {
-      accepted = await bcrypt.compare(password, storedHash);
+      return await bcrypt.compare(password, hash);
     } catch {
-      accepted = false;
+      return false;
     }
+  };
+
+  let accepted = false;
+  if (configuredEmail !== '' && configuredHash !== '' && configuredEmail === email) {
+    accepted = await passwordMatches(configuredHash);
+  } else if (profileHash !== '' && await passwordMatches(profileHash)) {
+    if (str(profile.email_verified_at) === '') {
+      return redirectBack(ctx, {
+        email: 'Email belum diverifikasi. Buka tautan verifikasi yang kami kirim ke ' + str(profile.email) + '.',
+      });
+    }
+    accepted = true;
   }
 
   if (!accepted) {
@@ -174,7 +256,7 @@ export default async function handle(ctx, env) {
   if (session && typeof session.regenerate === 'function') await session.regenerate();
   if (session && typeof session.put === 'function') {
     session.put('seal_email', email);
-    session.put('seal_name', (profile && str(profile.name)) || str(env && env.NEARFIND_AUTH_NAME) || 'Warga nearFind');
+    session.put('seal_name', (profile && str(profile.name)) || str(env && env.NEARFIND_AUTH_NAME) || 'nearFind');
   }
 
   const ttlMs =
@@ -194,7 +276,7 @@ export default async function handle(ctx, env) {
     ttlMs,
     data: {
       email,
-      name: (profile && str(profile.name)) || str(env.NEARFIND_AUTH_NAME) || 'Warga nearFind',
+      name: (profile && str(profile.name)) || str(env.NEARFIND_AUTH_NAME) || 'nearFind',
     },
   });
 

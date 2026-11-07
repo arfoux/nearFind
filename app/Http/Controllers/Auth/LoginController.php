@@ -29,12 +29,27 @@ class LoginController extends Controller
         $configuredEmail = Str::lower(trim((string) config('seal.auth.email')));
         $configuredHash = trim((string) config('seal.auth.password_hash'));
         $profile = Profile::findByEmail($request->email());
-        $passwordHash = $profile?->password_hash ?: $configuredHash;
 
-        $valid = $configuredEmail !== ''
-            && $passwordHash !== ''
-            && hash_equals($configuredEmail, $request->email())
-            && Hash::check((string) $request->input('password'), $passwordHash);
+        // Two ways in, one of them new with registration:
+        //  - the deployment credential (the `seal.auth` binding): its email is
+        //    part of the credential, as before;
+        //  - an account row created by /daftar: its own email + hash, and only
+        //    once the mailed link activated it.
+        $valid = false;
+
+        if ($configuredEmail !== '' && $configuredHash !== '' && hash_equals($configuredEmail, $request->email())
+            && Hash::check((string) $request->input('password'), $configuredHash)) {
+            $valid = true;
+        } elseif ($profile !== null && $profile->password_hash
+            && Hash::check((string) $request->input('password'), (string) $profile->password_hash)) {
+            if (! $profile->hasVerifiedEmail()) {
+                throw ValidationException::withMessages([
+                    'email' => 'Email belum diverifikasi. Buka tautan verifikasi yang kami kirim ke '.$profile->email.'.',
+                ]);
+            }
+
+            $valid = true;
+        }
 
         if (! $valid) {
             $request->hitRateLimiter();
@@ -80,7 +95,7 @@ class LoginController extends Controller
 
         return redirect()
             ->route('login')
-            ->with('status', 'Kamu sudah keluar dari akun warga.')
+            ->with('status', 'Kamu sudah keluar dari akunmu.')
             ->withCookie(cookie()->forget((string) config('seal.session.cookie')));
     }
 }
