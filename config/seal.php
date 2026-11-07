@@ -32,7 +32,7 @@ return [
     ],
     'auth' => [
         'email' => env('NEARFIND_AUTH_EMAIL'),
-        'name' => env('NEARFIND_AUTH_NAME', 'Warga nearFind'),
+        'name' => env('NEARFIND_AUTH_NAME', 'nearFind'),
         'password_hash' => env('NEARFIND_AUTH_PASSWORD_HASH'),
     ],
 ];

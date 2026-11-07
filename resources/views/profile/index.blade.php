@@ -18,10 +18,10 @@
 
     $settingsItems = [
         ['modal' => 'edit-profile', 'icon' => 'pencil', 'title' => 'Informasi Pribadi', 'description' => 'Nama lengkap, username, telepon, dan bio'],
-        ['modal' => 'password', 'icon' => 'lock', 'title' => 'Ubah Password', 'description' => 'Perbarui kata sandi akun wargamu'],
+        ['modal' => 'password', 'icon' => 'lock', 'title' => 'Ubah Password', 'description' => 'Perbarui kata sandi akunmu'],
         ['modal' => 'notifications', 'icon' => 'bell', 'title' => 'Pengaturan Notifikasi', 'description' => 'Atur kabar aktivitas dan rangkuman mingguan'],
         ['modal' => 'help', 'icon' => 'help', 'title' => 'Bantuan', 'description' => 'Panduan singkat dan kontak pengurus RW'],
-        ['modal' => 'logout', 'icon' => 'log-out', 'title' => 'Logout', 'description' => 'Keluar dari akun warga nearFind', 'danger' => true],
+        ['modal' => 'logout', 'icon' => 'log-out', 'title' => 'Logout', 'description' => 'Keluar dari akun nearFind', 'danger' => true],
     ];
 
     $initialModal = old('_form', session('open_modal'));
@@ -65,7 +65,7 @@
                                 </div>
 
                                 <div class="min-w-0 pt-1">
-                                    <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-brand-200">Akun warga</p>
+                                    <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-brand-200">Akun nearFind</p>
                                     <h1 class="mt-1 truncate text-[23px] font-semibold leading-tight tracking-[-0.035em] sm:text-[27px]">{{ $profile->name }}</h1>
                                     <p class="mt-0.5 truncate text-[11.5px] font-medium text-brand-200">{{ $profile->display_username }}</p>
 
@@ -96,7 +96,7 @@
                         @if ($profile->bio)
                             <p class="mt-4 max-w-[620px] text-[12px] leading-relaxed text-brand-200">{{ $profile->bio }}</p>
                         @else
-                            <p class="mt-4 max-w-[620px] text-[12px] leading-relaxed text-brand-200/80">Tambahkan bio singkat supaya warga lain mengenalmu.</p>
+                            <p class="mt-4 max-w-[620px] text-[12px] leading-relaxed text-brand-200/80">Tambahkan bio singkat supaya orang lain mengenalmu.</p>
                         @endif
 
                         <div class="mt-4 grid gap-2 sm:grid-cols-2">
@@ -427,7 +427,7 @@
                         <label for="username" class="text-[11px] font-semibold text-brand-200">Username</label>
                         <div class="relative mt-1.5">
                             <span class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-[12.5px] font-medium text-muted">@</span>
-                            <input id="username" name="username" type="text" value="{{ old('username', $profile->username) }}" maxlength="30" autocomplete="username" placeholder="nama.warga" class="h-11 w-full rounded-xl border-0 bg-canvas pl-8 pr-3 text-[12.5px] text-ink ring-1 ring-white/10 transition placeholder:text-muted/70 focus:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-brand-500/40">
+                            <input id="username" name="username" type="text" value="{{ old('username', $profile->username) }}" maxlength="30" autocomplete="username" placeholder="nama.pengguna" class="h-11 w-full rounded-xl border-0 bg-canvas pl-8 pr-3 text-[12.5px] text-ink ring-1 ring-white/10 transition placeholder:text-muted/70 focus:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-brand-500/40">
                         </div>
                         @error('username')
                             <p class="mt-1 text-[10px] font-medium text-[#FF9B9B]">{{ $message }}</p>
@@ -630,7 +630,7 @@
 
             <div class="flex items-start justify-between gap-4">
                 <div>
-                    <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-300">Panduan warga</p>
+                    <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-300">Panduan</p>
                     <h2 id="help-title" class="mt-1 text-lg font-semibold tracking-[-0.02em] text-ink">Bantuan</h2>
                 </div>
 
@@ -656,7 +656,7 @@
                     </span>
                     <div>
                         <p class="text-[11.5px] font-semibold text-ink">Mendukung kebutuhan</p>
-                        <p class="mt-0.5 text-[10px] leading-relaxed text-muted">Tekan tombol dukungan pada kartu kebutuhan agar prioritas warga terlihat.</p>
+                        <p class="mt-0.5 text-[10px] leading-relaxed text-muted">Tekan tombol dukungan pada kartu kebutuhan agar prioritasnya terlihat.</p>
                     </div>
                 </div>
 

@@ -43,7 +43,7 @@ class LoginTest extends TestCase
         $this->get(route('login'))
             ->assertOk()
             ->assertSee('Masuk ke nearFind')
-            ->assertSee('Email warga')
+            ->assertSee('Email')
             ->assertSee('Kata sandi');
     }
 

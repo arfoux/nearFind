@@ -18,18 +18,30 @@
             </div>
         @endif
 
-        @if ($errors->any())
-            <div class="mb-4 flex items-start gap-2.5 rounded-2xl bg-[#3A1518] px-3.5 py-3 text-[11.5px] font-medium text-[#FF9B9B] ring-1 ring-[#FF9B9B]/15" role="alert">
-                @include('partials.icon', ['name' => 'info', 'class' => 'mt-0.5 size-4 shrink-0'])
-                <span>{{ $errors->first() }}</span>
-            </div>
-        @endif
+        {{--
+            Slot for the edge runtime. `GET /masuk` is a prerendered static page
+            (see ports/login.mjs), so the `@error` blocks below cannot fire for a
+            POST handled by the port: the marker below is what the port replaces
+            with the one-shot error banner. It is an empty comment in the
+            prerendered asset and in the `php artisan serve` render, where the
+            `@error` blocks above do the work instead.
+        --}}
+        <!--lw-flash-->
+
+        {{--
+            `$errors` here is the kernel's ViewErrorBag (getBag/hasBag/any/count);
+            a bare `$errors->first()` compiles to a call the class does not have
+            (500), and even with the bag, `first()` without a key answers ''.
+            The `@error` directive compiles to `$errors->getBag('default')->has()`
+            /`first()`, which is the supported shape — so each field shows its own
+            message.
+        --}}
 
         <form method="POST" action="{{ route('login.store') }}" class="space-y-4">
             @csrf
 
             <div>
-                <label for="email" class="text-[11px] font-semibold text-brand-200">Email warga</label>
+                <label for="email" class="text-[11px] font-semibold text-brand-200">Email</label>
 
                 <div class="relative mt-1.5">
                     <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
@@ -49,6 +61,10 @@
                         class="h-11 w-full rounded-xl border-0 bg-canvas pl-10 pr-3 text-[12.5px] text-ink ring-1 ring-white/10 transition placeholder:text-muted/70 focus:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
                     >
                 </div>
+
+                @error('email')
+                    <p class="mt-1 text-[10px] font-medium text-[#FF9B9B]">{{ $message }}</p>
+                @enderror
             </div>
 
             <div>
@@ -80,6 +96,10 @@
                         @include('partials.icon', ['name' => 'eye', 'class' => 'size-4'])
                     </button>
                 </div>
+
+                @error('password')
+                    <p class="mt-1 text-[10px] font-medium text-[#FF9B9B]">{{ $message }}</p>
+                @enderror
             </div>
 
             <label class="flex items-center gap-2.5 text-[11.5px] font-medium text-muted">
@@ -103,7 +123,8 @@
         </form>
 
         <p class="mt-4 text-center text-[10.5px] leading-relaxed text-muted">
-            Belum punya akses? Hubungi pengurus RW untuk mendapatkan akun warga.
+            Belum punya akun?
+            <a href="{{ route('register') }}" class="font-semibold text-brand-200 underline-offset-2 hover:underline">Daftar</a>
         </p>
     </div>
 

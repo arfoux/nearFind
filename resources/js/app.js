@@ -261,7 +261,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
                     openFilterSheet();
                     break;
                 case 'login':
-                    openLoginGate('Masuk untuk mengakses akun warga nearFind.', actionElement);
+                    openLoginGate('Masuk untuk mengakses akun nearFind.', actionElement);
                     break;
                 case 'submit-need':
                     requireLogin('submit-need', actionElement);

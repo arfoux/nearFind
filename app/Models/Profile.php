@@ -29,7 +29,13 @@ class Profile extends Model
     {
         return [
             'notification_preferences' => 'array',
+            'email_verified_at' => 'datetime',
         ];
+    }
+
+    public function hasVerifiedEmail(): bool
+    {
+        return $this->email_verified_at !== null;
     }
 
     public function needs(): HasMany
@@ -123,6 +129,6 @@ class Profile extends Model
             ->limit(24, '')
             ->value();
 
-        return $base !== '' ? $base : 'warga';
+        return $base !== '' ? $base : 'pengguna';
     }
 }

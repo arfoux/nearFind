@@ -16,7 +16,7 @@ class SealPasswordCommand extends Command
         $password = $this->option('password');
 
         if (! is_string($password) || $password === '') {
-            $password = (string) $this->secret('Kata sandi akun warga');
+            $password = (string) $this->secret('Kata sandi akun');
         }
 
         if ($password === '') {

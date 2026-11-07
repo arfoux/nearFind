@@ -275,10 +275,27 @@ export function input(ctx) {
   return {};
 }
 
-/** `session()->put('errors', ...)` + `_old_input`, then the referer redirect. */
+/**
+ * `redirect()->withErrors($errors)->withInput()`, then the referer redirect.
+ *
+ * Authed by the session, not by a database: `errors` and `_old_input` are the
+ * one-shot flash bags Laravel's `withErrors()`/`withInput()` write, so the
+ * next request reads them and the one after that does not. `_lib.redirectBack`
+ * used to `put()` them (they stayed in the session forever, re-rendering on
+ * every later page); the ports' GET handlers also consume the flash when they
+ * render a prerendered page (see `ports/login.mjs`).
+ */
 export function redirectBack(ctx, errors, options = {}) {
   const session = ctx.session;
-  if (session && typeof session.put === 'function') {
+  if (session && typeof session.flash === 'function') {
+    if (errors && Object.keys(errors).length > 0) session.flash('errors', errors);
+    if (options.withInput !== false) {
+      const all = input(ctx);
+      const keep = {};
+      for (const key of Object.keys(all)) if (key !== 'password') keep[key] = all[key];
+      session.flash('_old_input', keep);
+    }
+  } else if (session && typeof session.put === 'function') {
     const current = (typeof session.get === 'function' && session.get('errors')) || {};
     session.put('errors', { ...current, ...errors });
     if (options.withInput !== false) {
@@ -287,8 +304,6 @@ export function redirectBack(ctx, errors, options = {}) {
       for (const key of Object.keys(all)) if (key !== 'password') keep[key] = all[key];
       session.put('_old_input', keep);
     }
-  } else if (session && typeof session.flash === 'function') {
-    session.flash('errors', errors);
   }
 
   const headers = (ctx.request && typeof ctx.request.headers === 'function' ? ctx.request.headers() : null) || {};

@@ -1,6 +1,6 @@
 <header class="nf-glass-strong nf-header pointer-events-auto relative z-[700] rounded-[22px] px-3.5 py-3 sm:px-4 lg:px-5 lg:py-3.5">
     <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-x-8">
-        @include('partials.brand', ['class' => 'col-start-1 row-start-1 justify-self-start', 'badge' => 'WARGA'])
+        @include('partials.brand', ['class' => 'col-start-1 row-start-1 justify-self-start'])
 
         @auth('seal')
             @php($sealUser = auth('seal')->user())

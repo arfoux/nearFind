@@ -16,7 +16,7 @@
             </span>
 
             <div class="min-w-0 flex-1">
-                <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-300">Akses warga</p>
+                <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-300">Akun nearFind</p>
                 <h2 id="login-gate-title" class="mt-1 text-xl font-semibold tracking-[-0.025em] text-ink">Masuk untuk melanjutkan</h2>
             </div>
 
@@ -31,14 +31,14 @@
         </div>
 
         <p id="login-gate-description" data-login-message class="mt-3 text-[12px] leading-relaxed text-muted">
-            Masuk ke akun warga untuk melanjutkan.
+            Masuk ke akunmu untuk melanjutkan.
         </p>
 
         <div class="mt-4 flex items-start gap-2.5 rounded-2xl bg-canvas px-3.5 py-3 ring-1 ring-white/5">
             @include('partials.icon', ['name' => 'info', 'class' => 'mt-0.5 size-4 shrink-0 text-brand-300'])
 
             <p class="text-[10.5px] leading-relaxed text-muted">
-                Dukungan dan laporan terhubung ke identitas warga supaya informasi tetap tepercaya.
+                Dukungan dan laporan terhubung ke identitasmu supaya informasi tetap tepercaya.
             </p>
         </div>
 
