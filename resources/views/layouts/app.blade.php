@@ -3,15 +3,19 @@
     $active = $active ?? 'peta';
 
     // The map page IS the canvas: the MapLibre surface runs edge to edge under a
-    // full-bleed shell and every control floats on glass above it. No framed
-    // card, no page background behind it. Every other page keeps the card.
+    // full-bleed shell and every control floats on glass above it. Jelajahi and
+    // Laporan share that full-bleed shell so their content owns the whole
+    // viewport. The remaining account pages keep the framed card.
     $isMap = $active === 'peta';
+    $isFullBleed = $isMap || in_array($active, ['jelajahi', 'laporan'], true);
     $bodyClass = $isMap
-        ? 'h-dvh overflow-hidden bg-transparent text-ink antialiased'
-        : 'app-background h-dvh overflow-hidden text-ink antialiased';
-    $shellClass = $isMap
-        ? 'relative mx-auto flex h-dvh w-full flex-col overflow-hidden'
-        : 'relative mx-auto flex h-dvh w-full flex-col overflow-hidden bg-canvas sm:my-4 sm:h-[calc(100dvh-2rem)] sm:max-w-[600px] sm:rounded-[2.25rem] sm:shadow-[0_30px_90px_-40px_rgba(0,0,0,0.55)] sm:ring-1 sm:ring-white/10 lg:my-6 lg:h-[calc(100dvh-3rem)] lg:max-w-[1180px]';
+        ? 'h-dvh w-full overflow-hidden bg-transparent text-ink antialiased'
+        : 'app-background h-dvh w-full overflow-hidden text-ink antialiased';
+    $shellClass = match (true) {
+        $isMap => 'relative flex h-dvh min-h-dvh w-full flex-col overflow-hidden',
+        $isFullBleed => 'relative flex h-dvh min-h-dvh w-full flex-col overflow-hidden bg-canvas',
+        default => 'relative mx-auto flex h-dvh w-full flex-col overflow-hidden bg-canvas sm:my-4 sm:h-[calc(100dvh-2rem)] sm:max-w-[600px] sm:rounded-[2.25rem] sm:shadow-[0_30px_90px_-40px_rgba(0,0,0,0.55)] sm:ring-1 sm:ring-white/10 lg:my-6 lg:h-[calc(100dvh-3rem)] lg:max-w-[1180px]',
+    };
 @endphp
 
 <!DOCTYPE html>
