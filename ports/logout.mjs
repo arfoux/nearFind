@@ -8,7 +8,7 @@
 //   3. redirect to the login route with `status` flashed and the session cookie
 //      expired (`cookie()->forget()`).
 //
-// The redirect target is the app's own `login` route, so it is looked up in
+// The redirect target is the app's own `auth` route, so it is looked up in
 // ctx.routeRegistry (the same registry the compiled rung builds its URLs from)
 // instead of being hard-coded.
 
@@ -33,7 +33,7 @@ export default async function handle(ctx) {
   try {
     const registry = ctx.routeRegistry;
     if (registry && typeof registry.route === 'function') {
-      const uri = registry.route('login');
+      const uri = registry.route('auth');
       if (typeof uri === 'string' && uri !== '') location = uri;
     }
   } catch {

@@ -42,18 +42,18 @@ class RegisterTest extends TestCase
         ]);
     }
 
-    public function test_register_page_is_rendered_for_guests(): void
+    public function test_the_auth_page_opens_the_register_tab_for_guests(): void
     {
-        $this->get(route('register'))
+        $this->get(route('auth', ['mode' => 'daftar']))
             ->assertOk()
-            ->assertSee('Daftar akun')
+            ->assertSee('data-auth-initial="register"', false)
             ->assertSee('Ulangi kata sandi');
     }
 
-    public function test_guests_are_redirected_away_from_the_register_page_when_signed_in(): void
+    public function test_guests_are_redirected_away_from_the_auth_page_when_signed_in(): void
     {
         $this->withUnencryptedCookie(self::COOKIE, $this->bootstrapToken())
-            ->get(route('register'))
+            ->get(route('auth', ['mode' => 'daftar']))
             ->assertRedirect(route('home'));
     }
 
@@ -61,12 +61,12 @@ class RegisterTest extends TestCase
     {
         Mail::fake();
 
-        $this->post(route('register.store'), [
+        $this->post(route('auth.register'), [
             'name' => 'Siti Rahma',
             'email' => 'Siti.Rahma@Example.ID',
             'password' => self::PASSWORD,
             'password_confirmation' => self::PASSWORD,
-        ])->assertRedirect(route('login'));
+        ])->assertRedirect(route('auth'));
 
         $profile = Profile::where('email', 'siti.rahma@example.id')->first();
         $this->assertNotNull($profile);
@@ -84,7 +84,7 @@ class RegisterTest extends TestCase
     {
         Mail::fake();
 
-        $this->post(route('register.store'), [
+        $this->post(route('auth.register'), [
             'name' => 'Siti Rahma',
             'email' => 'siti@example.id',
             'password' => self::PASSWORD,
@@ -95,13 +95,13 @@ class RegisterTest extends TestCase
         $this->assertNotSame('', $token);
 
         $this->get(route('register.verify', ['token' => $token]))
-            ->assertRedirect(route('login'));
+            ->assertRedirect(route('auth'));
 
         $profile = Profile::where('email', 'siti@example.id')->first();
         $this->assertTrue($profile->hasVerifiedEmail());
         $this->assertNull($profile->email_verification_token);
 
-        $this->post(route('login.store'), ['email' => 'siti@example.id', 'password' => self::PASSWORD])
+        $this->post(route('auth.login'), ['email' => 'siti@example.id', 'password' => self::PASSWORD])
             ->assertRedirect(route('home'))
             ->assertCookie(self::COOKIE);
     }
@@ -110,7 +110,7 @@ class RegisterTest extends TestCase
     {
         Mail::fake();
 
-        $this->post(route('register.store'), [
+        $this->post(route('auth.register'), [
             'name' => 'Siti Rahma',
             'email' => 'siti@example.id',
             'password' => self::PASSWORD,
@@ -119,12 +119,12 @@ class RegisterTest extends TestCase
 
         $token = (string) Profile::where('email', 'siti@example.id')->first()->email_verification_token;
 
-        $this->get(route('register.verify', ['token' => $token]))->assertRedirect(route('login'));
+        $this->get(route('register.verify', ['token' => $token]))->assertRedirect(route('auth'));
 
         // A token that was already consumed is not recognised: a leaked mail
         // cannot re-open or re-activate the row.
         $this->get(route('register.verify', ['token' => $token]))
-            ->assertRedirect(route('login'))
+            ->assertRedirect(route('auth'))
             ->assertSessionHas('status', 'Tautan verifikasi tidak dikenali atau sudah dipakai.');
     }
 
@@ -132,14 +132,14 @@ class RegisterTest extends TestCase
     {
         Mail::fake();
 
-        $this->post(route('register.store'), [
+        $this->post(route('auth.register'), [
             'name' => 'Siti Rahma',
             'email' => 'siti@example.id',
             'password' => self::PASSWORD,
             'password_confirmation' => self::PASSWORD,
         ]);
 
-        $this->post(route('login.store'), ['email' => 'siti@example.id', 'password' => self::PASSWORD])
+        $this->post(route('auth.login'), ['email' => 'siti@example.id', 'password' => self::PASSWORD])
             ->assertSessionHasErrors('email');
 
         $this->assertGuest('seal');
@@ -147,7 +147,7 @@ class RegisterTest extends TestCase
 
     public function test_the_bootstrap_credential_still_signs_in(): void
     {
-        $this->post(route('login.store'), [
+        $this->post(route('auth.login'), [
             'email' => self::BOOTSTRAP_EMAIL,
             'password' => 'kata-sandi-pengurus',
         ])->assertRedirect(route('home'))->assertCookie(self::COOKIE);
@@ -160,24 +160,24 @@ class RegisterTest extends TestCase
         // Registering that address is allowed on purpose: the compiled register
         // path cannot read the `seal` group to refuse it. The row is inert —
         // login answers the deployment binding first for its own address.
-        $this->post(route('register.store'), [
+        $this->post(route('auth.register'), [
             'name' => 'Penyusup',
             'email' => self::BOOTSTRAP_EMAIL,
             'password' => self::PASSWORD,
             'password_confirmation' => self::PASSWORD,
-        ])->assertRedirect(route('login'));
+        ])->assertRedirect(route('auth'));
 
         $this->assertSame(1, Profile::where('email', self::BOOTSTRAP_EMAIL)->count());
         Mail::assertSent(VerifyEmail::class, 1);
 
         // The squatter's password never authenticates...
-        $this->post(route('login.store'), [
+        $this->post(route('auth.login'), [
             'email' => self::BOOTSTRAP_EMAIL,
             'password' => self::PASSWORD,
         ])->assertSessionHasErrors('email');
 
         // ...and the deployment credential still does.
-        $this->post(route('login.store'), [
+        $this->post(route('auth.login'), [
             'email' => self::BOOTSTRAP_EMAIL,
             'password' => 'kata-sandi-pengurus',
         ])->assertRedirect(route('home'))->assertCookie(self::COOKIE);
@@ -187,7 +187,7 @@ class RegisterTest extends TestCase
     {
         Mail::fake();
 
-        $this->post(route('register.store'), [
+        $this->post(route('auth.register'), [
             'name' => 'Siti Rahma',
             'email' => 'siti@example.id',
             'password' => self::PASSWORD,
@@ -198,12 +198,12 @@ class RegisterTest extends TestCase
 
         // Same person, same password: the lost mail must not lock the address
         // out of its own registration.
-        $this->post(route('register.store'), [
+        $this->post(route('auth.register'), [
             'name' => 'Siti Rahma',
             'email' => 'SITI@example.id',
             'password' => self::PASSWORD,
             'password_confirmation' => self::PASSWORD,
-        ])->assertRedirect(route('login'));
+        ])->assertRedirect(route('auth'));
 
         $this->assertSame(1, Profile::where('email', 'siti@example.id')->count());
 
@@ -216,14 +216,14 @@ class RegisterTest extends TestCase
     {
         Mail::fake();
 
-        $this->post(route('register.store'), [
+        $this->post(route('auth.register'), [
             'name' => 'Siti Rahma',
             'email' => 'siti@example.id',
             'password' => self::PASSWORD,
             'password_confirmation' => self::PASSWORD,
         ]);
 
-        $this->post(route('register.store'), [
+        $this->post(route('auth.register'), [
             'name' => 'Siti Lain',
             'email' => 'SITI@example.id',
             'password' => 'lain-sekali',
@@ -245,12 +245,12 @@ class RegisterTest extends TestCase
             'password_confirmation' => self::PASSWORD,
         ];
 
-        $this->post(route('register.store'), $payload);
+        $this->post(route('auth.register'), $payload);
 
         $token = (string) Profile::where('email', 'siti@example.id')->first()->email_verification_token;
         $this->get(route('register.verify', ['token' => $token]));
 
-        $this->post(route('register.store'), $payload)->assertSessionHasErrors('email');
+        $this->post(route('auth.register'), $payload)->assertSessionHasErrors('email');
         $this->assertSame(1, Profile::where('email', 'siti@example.id')->count());
     }
 
@@ -258,7 +258,7 @@ class RegisterTest extends TestCase
     {
         Mail::fake();
 
-        $this->post(route('register.store'), [
+        $this->post(route('auth.register'), [
             'name' => 'Siti Rahma',
             'email' => 'siti@example.id',
             'password' => self::PASSWORD,

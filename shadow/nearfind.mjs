@@ -73,11 +73,11 @@ export default {
 // an application decision, not a build one.
   steps: [
     { label: 'GET / (guest map page)', method: 'GET', uri: '/', jar: true, expectBody: 'id="login-gate"' },
-    { label: 'GET /masuk (guest, the snapshot page)', method: 'GET', uri: '/masuk', jar: true },
+    { label: 'GET /auth (guest, the snapshot page)', method: 'GET', uri: '/auth', jar: true },
     {
-      label: 'POST /masuk (authenticates)',
+      label: 'POST /auth (authenticates)',
       method: 'POST',
-      uri: '/masuk',
+      uri: '/auth',
       jar: true,
       form: { _token: '@token', email: EMAIL, password: PASSWORD },
     },

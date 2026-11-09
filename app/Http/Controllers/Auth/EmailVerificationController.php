@@ -21,7 +21,7 @@ class EmailVerificationController extends Controller
 
         if ($profile === null) {
             return redirect()
-                ->route('login')
+                ->route('auth')
                 ->with('status', 'Tautan verifikasi tidak dikenali atau sudah dipakai.');
         }
 
@@ -30,7 +30,7 @@ class EmailVerificationController extends Controller
         $profile->save();
 
         return redirect()
-            ->route('login')
+            ->route('auth')
             ->with('status', 'Email '.$profile->email.' terverifikasi. Silakan masuk.');
     }
 }

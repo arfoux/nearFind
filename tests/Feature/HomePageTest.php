@@ -48,6 +48,6 @@ class HomePageTest extends TestCase
         $report->assertSee(route('needs.report'), false);
         $report->assertSee('?need=klinik-24-jam', false);
 
-        $this->get('/profil')->assertRedirect(route('login'));
+        $this->get('/profil')->assertRedirect(route('auth'));
     }
 }

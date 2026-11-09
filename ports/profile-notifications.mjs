@@ -13,7 +13,7 @@ function bool(value) {
 
 export default async function handle(ctx) {
   const profile = await profileForSession(ctx);
-  if (!profile) return redirect('/masuk');
+  if (!profile) return redirect('/auth');
 
   const body = (ctx.request && typeof ctx.request.input === 'function' ? ctx.request.input() : null) || {};
 
