@@ -19,6 +19,7 @@ if (dataElement && needCardElement && mapElement) {
 }
 
 initPasswordToggles();
+initAuthTabs();
 initNeedsList();
 
 function initPasswordToggles() {
@@ -38,6 +39,83 @@ function initPasswordToggles() {
             toggle.querySelector('use')?.setAttribute('href', reveal ? '#nf-eye-off' : '#nf-eye');
         });
     });
+}
+
+// The auth page renders both forms and switches between them client-side. The
+// register form is reachable by URL too (`/auth?mode=daftar`), which is what a
+// failed registration redirects back to.
+function initAuthTabs() {
+    const root = document.querySelector('[data-auth]');
+
+    if (!root) {
+        return;
+    }
+
+    const tabs = [...root.querySelectorAll('[data-auth-tab]')];
+    const panels = [...root.querySelectorAll('[data-auth-panel]')];
+    const params = new URLSearchParams(window.location.search);
+    const requestedMode = params.get('mode');
+    const startsAsRegister =
+        requestedMode === 'daftar' ||
+        requestedMode === 'register' ||
+        window.location.hash === '#daftar' ||
+        root.dataset.authInitial === 'register';
+    let mode = startsAsRegister ? 'register' : 'login';
+
+    const applyMode = ({ updateUrl = false, focusPanel = false } = {}) => {
+        tabs.forEach((tab) => {
+            const isActive = tab.dataset.authTab === mode;
+
+            if (tab.getAttribute('role') === 'tab') {
+                tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                tab.tabIndex = isActive ? 0 : -1;
+            }
+        });
+
+        panels.forEach((panel) => {
+            const isActive = panel.dataset.authPanel === mode;
+            panel.hidden = !isActive;
+
+            if (isActive && focusPanel) {
+                panel.querySelector('input:not([type="hidden"]), button, a')?.focus({ preventScroll: true });
+            }
+        });
+
+        if (updateUrl) {
+            const url = new URL(window.location.href);
+
+            if (mode === 'register') {
+                url.searchParams.set('mode', 'daftar');
+            } else {
+                url.searchParams.delete('mode');
+            }
+
+            url.hash = '';
+            window.history.replaceState({}, '', url);
+        }
+    };
+
+    tabs.forEach((tab) => {
+        tab.addEventListener('click', (event) => {
+            event.preventDefault();
+            mode = tab.dataset.authTab === 'register' ? 'register' : 'login';
+            applyMode({ updateUrl: true, focusPanel: tab.getAttribute('role') !== 'tab' });
+        });
+    });
+
+    root.querySelector('[role="tablist"]')?.addEventListener('keydown', (event) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') {
+            return;
+        }
+
+        event.preventDefault();
+        mode = mode === 'login' ? 'register' : 'login';
+        applyMode({ updateUrl: true });
+
+        tabs.find((tab) => tab.dataset.authTab === mode && tab.getAttribute('role') === 'tab')?.focus();
+    });
+
+    applyMode();
 }
 
 // The Jelajahi page renders every need on the server; the search box and the

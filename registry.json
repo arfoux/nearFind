@@ -3,11 +3,11 @@
     "seal": "seal-guard"
   },
   "ports": {
-    "/masuk": "login",
+    "/auth": "login",
     "/keluar": "logout"
   },
   "static": {
-    "/masuk": "masuk/index.html"
+    "/auth": "auth/index.html"
   },
   "config": [
     "needs"

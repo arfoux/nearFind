@@ -86,7 +86,7 @@ export default async function handle(ctx) {
   if (!profile) {
     // `auth:seal` guards this route in PHP; a session without a profile row has
     // nothing to update, and answering 302 keeps the browser flow honest.
-    return redirect('/masuk');
+    return redirect('/auth');
   }
 
   const body = (ctx.request && typeof ctx.request.input === 'function' ? ctx.request.input() : null) || {};

@@ -1,4 +1,4 @@
-@props(['title' => 'Masuk · nearFind'])
+@props(['title' => 'Masuk atau daftar · nearFind'])
 
 <!DOCTYPE html>
 <html lang="id" class="h-full">
@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#F5F8F6">
-    <meta name="description" content="Masuk ke nearFind untuk mendukung dan melaporkan kebutuhan warga di sekitarmu.">
+    <meta name="description" content="Masuk atau daftar akun nearFind untuk mendukung dan melaporkan kebutuhan warga di sekitarmu.">
 
     <title>{{ $title }}</title>
 

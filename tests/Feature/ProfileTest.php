@@ -42,7 +42,7 @@ class ProfileTest extends TestCase
 
     public function test_guests_are_redirected_to_login_from_the_profile_page(): void
     {
-        $this->get(route('profile.index'))->assertRedirect(route('login'));
+        $this->get(route('profile.index'))->assertRedirect(route('auth'));
     }
 
     public function test_the_profile_page_only_shows_the_authenticated_users_activity(): void

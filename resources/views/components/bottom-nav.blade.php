@@ -7,7 +7,7 @@
         ['key' => 'peta', 'label' => 'Peta', 'icon' => 'map', 'route' => 'home'],
         ['key' => 'jelajahi', 'label' => 'Jelajahi', 'icon' => 'compass', 'route' => null],
         ['key' => 'laporan', 'label' => 'Laporan', 'icon' => 'clipboard', 'route' => null],
-        ['key' => 'profil', 'label' => 'Profil', 'icon' => 'user', 'route' => $isAuthenticated ? 'profile.index' : 'login'],
+        ['key' => 'profil', 'label' => 'Profil', 'icon' => 'user', 'route' => $isAuthenticated ? 'profile.index' : 'auth'],
     ];
 @endphp
 

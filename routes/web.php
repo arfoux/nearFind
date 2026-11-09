@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -20,10 +21,9 @@ Route::post('/kebutuhan', [NeedsController::class, 'store'])
     ->name('needs.store');
 
 Route::middleware('guest:seal')->group(function (): void {
-    Route::get('/masuk', [LoginController::class, 'create'])->name('login');
-    Route::post('/masuk', [LoginController::class, 'store'])->name('login.store');
-    Route::get('/daftar', [RegisterController::class, 'create'])->name('register');
-    Route::post('/daftar', [RegisterController::class, 'store'])->name('register.store');
+    Route::get('/auth', [AuthController::class, 'create'])->name('auth');
+    Route::post('/auth', [LoginController::class, 'store'])->name('auth.login');
+    Route::post('/auth/daftar', [RegisterController::class, 'store'])->name('auth.register');
 });
 
 // Public on purpose: an already signed-in visitor may still activate a second

@@ -11,16 +11,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
 
 class LoginController extends Controller
 {
     public function __construct(private readonly Sealer $sealer) {}
-
-    public function create(): View
-    {
-        return view('auth.login');
-    }
 
     public function store(LoginRequest $request): RedirectResponse
     {
@@ -33,7 +27,7 @@ class LoginController extends Controller
         // Two ways in, one of them new with registration:
         //  - the deployment credential (the `seal.auth` binding): its email is
         //    part of the credential, as before;
-        //  - an account row created by /daftar: its own email + hash, and only
+        //  - an account row created by /auth/daftar: its own email + hash, and only
         //    once the mailed link activated it.
         $valid = false;
 
@@ -94,7 +88,7 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()
-            ->route('login')
+            ->route('auth')
             ->with('status', 'Kamu sudah keluar dari akunmu.')
             ->withCookie(cookie()->forget((string) config('seal.session.cookie')));
     }

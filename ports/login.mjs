@@ -1,4 +1,4 @@
-// `POST /masuk` — LoginController::store().
+// `POST /auth` — LoginController::store().
 //
 // Not compiled: the constructor injects the app service App\Support\Seal\Sealer
 // and the body calls `Sealer::durationToMilliseconds()` + `cookie()`. The port
@@ -95,7 +95,7 @@ async function clear(ctx, key) {
   await cache.forget(key + ':timer');
 }
 
-/** The `<!--lw-flash-->` slot `resources/views/auth/login.blade.php` leaves for the edge. */
+/** The `<!--lw-flash-->` slot `resources/views/auth/index.blade.php` leaves for the edge. */
 const FLASH_MARKER = '<!--lw-flash-->';
 
 /** The banner icon markup of `partials/icon`. */
@@ -117,7 +117,7 @@ function escapeHtml(value) {
 }
 
 /**
- * `GET /masuk` is a prerendered asset, so the Blade `@error`/`session('status')`
+ * `GET /auth` is a prerendered asset, so the Blade `@error`/`session('status')`
  * blocks cannot see the POST's flash - the page was rendered at build time.
  * Fill the `<!--lw-flash-->` slot the view leaves for this, then consume the
  * flash, exactly the one-shot lifetime Laravel gives
@@ -138,6 +138,11 @@ function injectFlash(ctx, html) {
   const status = session.get('status');
   const old = session.get('_old_input');
   const email = old && typeof old === 'object' && typeof old.email === 'string' ? old.email : '';
+  const errorKeys = stored && typeof stored === 'object' ? Object.keys(stored) : [];
+  const registerMode =
+    (old && typeof old === 'object' && Object.prototype.hasOwnProperty.call(old, 'name')) ||
+    errorKeys.includes('name') ||
+    errorKeys.includes('password_confirmation');
 
   let out = html;
   const statusBanner =
@@ -155,10 +160,18 @@ function injectFlash(ctx, html) {
   if (statusBanner !== '' || errorBanner !== '') {
     out = out.replace(FLASH_MARKER, statusBanner + errorBanner);
   }
-  if (email !== '') {
-    out = out.replace(/(name="email"[^>]*?value=")[^"]*(")/, (match, open, close) => open + escapeHtml(email) + close);
+  if (registerMode) {
+    // The static page ships on the login tab; a register POST that failed
+    // validation must come back with its own tab open.
+    out = out.replace('data-auth-initial="login"', 'data-auth-initial="register"');
   }
-  if ((statusBanner !== '' || errorBanner !== '' || email !== '') && typeof session.forget === 'function') {
+  if (email !== '') {
+    out = out.replace(
+      /(name="email"[^>]*?value=")[^"]*(")/g,
+      (match, open, close) => open + escapeHtml(email) + close
+    );
+  }
+  if ((statusBanner !== '' || errorBanner !== '' || email !== '' || registerMode) && typeof session.forget === 'function') {
     session.forget(['errors', '_old_input', 'status']);
   }
   return out;
@@ -167,7 +180,7 @@ function injectFlash(ctx, html) {
 export default async function handle(ctx, env) {
   const verb = String(ctx.method || '').toUpperCase();
 
-  // GET /masuk is a prerendered page. The route is in `_routes.json` include
+  // GET /auth is a prerendered page. The route is in `_routes.json` include
   // because POST is a port, so the asset layer never sees the GET: the port
   // answers it from the ASSETS binding, exactly the bytes the build wrote.
   //
@@ -178,8 +191,8 @@ export default async function handle(ctx, env) {
   if (verb === 'GET' || verb === 'HEAD') {
     // Fetch the FILE, not the directory: the asset layer's auto-trailing-slash
     // handling answers a directory request with a 307 to the same path, which the
-    // port used to pass through (PHP answers /masuk with 200, not a redirect).
-    const page = await serveStatic(env, '/masuk/index.html');
+    // port used to pass through (PHP answers /auth with 200, not a redirect).
+    const page = await serveStatic(env, '/auth/index.html');
     if (!page) return methodNotAllowed(['GET', 'HEAD']);
     let token = ctx.session && typeof ctx.session.token === 'function' ? ctx.session.token() : null;
     if (!token && ctx.session && typeof ctx.session.regenerateToken === 'function') {
@@ -223,7 +236,7 @@ export default async function handle(ctx, env) {
   //   - the deployment credential: `NEARFIND_AUTH_EMAIL` (the config group the
   //     build does not dump) + `NEARFIND_AUTH_PASSWORD_HASH`; the email is half
   //     of it, so the row's hash can never shadow it;
-  //   - a row created by /daftar: its own email + hash, and only once the mailed
+  //   - a row created by /auth/daftar: its own email + hash, and only once the mailed
   //     link set `email_verified_at`. An unverified row answers the same message
   //     Laravel's MustVerifyEmail flow does, after a correct password.
   const passwordMatches = async (hash) => {
@@ -285,7 +298,7 @@ export default async function handle(ctx, env) {
 
 /**
  * `redirect()->intended(route('home'))` (LoginController::store:75): the URL the
- * auth middleware stashed when it bounced the visitor to /masuk wins, then the
+ * auth middleware stashed when it bounced the visitor to /auth wins, then the
  * home route. The stashed value is a FULL url (kernel/http.mjs:1236), which is
  * what Laravel's `intended()` returns as well.
  */

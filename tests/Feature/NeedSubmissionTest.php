@@ -56,7 +56,7 @@ class NeedSubmissionTest extends TestCase
         $this->post(route('needs.store'), [
             'title' => 'Jasa servis kipas angin',
             'category' => 'repair',
-        ])->assertRedirect(route('login'));
+        ])->assertRedirect(route('auth'));
 
         $this->assertDatabaseCount('needs', 0);
     }

@@ -11,15 +11,9 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Illuminate\View\View;
 
 class RegisterController extends Controller
 {
-    public function create(): View
-    {
-        return view('auth.register');
-    }
-
     public function store(RegisterRequest $request): RedirectResponse
     {
         $email = Str::lower(trim((string) $request->input('email')));
@@ -55,7 +49,7 @@ class RegisterController extends Controller
             $this->sendVerification($existing);
 
             return redirect()
-                ->route('login')
+                ->route('auth')
                 ->with('status', 'Tautan verifikasi baru sudah dikirim ke '.$existing->email.'.');
         }
 
@@ -78,7 +72,7 @@ class RegisterController extends Controller
         $this->sendVerification($profile);
 
         return redirect()
-            ->route('login')
+            ->route('auth')
             ->with('status', 'Akun dibuat. Buka tautan verifikasi di email '.$profile->email.' untuk mengaktifkannya.');
     }
 
