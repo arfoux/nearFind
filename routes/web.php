@@ -4,22 +4,20 @@ use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\NeedsController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('home', [
-        'categories' => config('needs.categories'),
-        'needs' => config('needs.needs'),
-        'mapStyleUrl' => config('needs.map.style_url'),
-        'authenticated' => auth()->check(),
-    ]);
-})->name('home');
+Route::get('/', HomeController::class)->name('home');
 
 Route::get('/jelajah', [NeedsController::class, 'index'])->name('needs.index');
 
 Route::get('/laporan', [NeedsController::class, 'report'])->name('needs.report');
+
+Route::post('/kebutuhan', [NeedsController::class, 'store'])
+    ->middleware('auth:seal')
+    ->name('needs.store');
 
 Route::middleware('guest:seal')->group(function (): void {
     Route::get('/masuk', [LoginController::class, 'create'])->name('login');
