@@ -6,21 +6,200 @@ setWorkerUrl(workerUrl);
 
 const DEFAULT_MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
 
-const dataElement = document.getElementById('nearfind-data');
-const needCardElement = document.getElementById('need-card');
-const mapElement = document.getElementById('map');
+// The four tabs are separate endpoints, but they share one shell. Navigating
+// between them is a fetch + swap (with a skeleton in between) instead of a fresh
+// document, so the map/list state only changes where the page actually re-inits.
+const SPA_PATHS = new Set(['/', '/jelajahi', '/laporan', '/profil']);
 
-if (dataElement && needCardElement && mapElement) {
+let disposeCurrentPage = null;
+let isNavigating = false;
+
+initSpaNavigation();
+initPage();
+
+function initPage() {
+    initPasswordToggles();
+    initAuthTabs();
+    initNeedsList();
+    initMapPage();
+}
+
+function initMapPage() {
+    const dataElement = document.getElementById('nearfind-data');
+    const needCardElement = document.getElementById('need-card');
+    const mapElement = document.getElementById('map');
+
+    if (!dataElement || !needCardElement || !mapElement) {
+        return;
+    }
+
     try {
-        initNearFind(JSON.parse(dataElement.textContent));
+        disposeCurrentPage = initNearFind(JSON.parse(dataElement.textContent), {
+            mapElement,
+            needCardElement,
+        });
     } catch (error) {
         console.error('nearFind: gagal menginisialisasi halaman.', error);
     }
 }
 
-initPasswordToggles();
-initAuthTabs();
-initNeedsList();
+function disposePage() {
+    if (typeof disposeCurrentPage === 'function') {
+        try {
+            disposeCurrentPage();
+        } catch (error) {
+            console.error('nearFind: gagal membersihkan halaman.', error);
+        }
+    }
+
+    disposeCurrentPage = null;
+}
+
+function initSpaNavigation() {
+    document.addEventListener('click', (event) => {
+        if (
+            event.defaultPrevented ||
+            event.button !== 0 ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey
+        ) {
+            return;
+        }
+
+        const link = event.target.closest('[data-nav-link], [data-app-link]');
+
+        if (!link || link.target === '_blank' || link.hasAttribute('download')) {
+            return;
+        }
+
+        const url = new URL(link.href, window.location.href);
+
+        if (url.origin !== window.location.origin || !isSpaPath(url.pathname)) {
+            return;
+        }
+
+        if (url.pathname === window.location.pathname && url.search === window.location.search) {
+            event.preventDefault();
+            return;
+        }
+
+        event.preventDefault();
+        navigateTo(url.href);
+    });
+
+    window.addEventListener('popstate', () => {
+        if (isSpaPath(window.location.pathname)) {
+            navigateTo(window.location.href, { pushState: false });
+        }
+    });
+}
+
+function isSpaPath(pathname) {
+    return SPA_PATHS.has(pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname);
+}
+
+async function navigateTo(url, { pushState = true } = {}) {
+    if (isNavigating) {
+        return;
+    }
+
+    const shell = document.querySelector('[data-app-shell]');
+    const content = document.querySelector('[data-page-content]');
+
+    if (!shell || !content) {
+        window.location.href = url;
+
+        return;
+    }
+
+    isNavigating = true;
+
+    if (pushState) {
+        window.history.pushState({ nearfind: true }, '', url);
+    }
+
+    disposePage();
+    content.setAttribute('aria-busy', 'true');
+    content.innerHTML = skeletonMarkup(new URL(url).pathname);
+
+    try {
+        const response = await fetch(url, {
+            cache: 'no-store',
+            credentials: 'same-origin',
+            headers: { Accept: 'text/html' },
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const parsed = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const nextShell = parsed.querySelector('[data-app-shell]');
+        const nextContent = parsed.querySelector('[data-page-content]');
+        const nextToast = parsed.querySelector('#toast');
+
+        if (!nextShell || !nextContent) {
+            throw new Error('Halaman tujuan tidak memiliki kerangka aplikasi.');
+        }
+
+        document.body.className = parsed.body.className;
+        shell.className = nextShell.className;
+        shell.innerHTML = nextShell.innerHTML;
+
+        if (nextToast) {
+            document.querySelector('#toast')?.setAttribute('class', nextToast.className);
+        }
+
+        document.title = parsed.title;
+        initPage();
+    } catch (error) {
+        console.error('nearFind: navigasi gagal, memuat ulang halaman.', error);
+        window.location.href = url;
+
+        return;
+    } finally {
+        isNavigating = false;
+    }
+}
+
+function skeletonMarkup(pathname) {
+    const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
+
+    if (path === '/') {
+        return `
+            <div class="relative min-h-0 flex-1 overflow-hidden bg-canvas" aria-hidden="true">
+                <div class="absolute inset-0 animate-pulse bg-surface/35"></div>
+                <div class="absolute inset-x-3 top-3 h-24 animate-pulse rounded-[22px] bg-surface/70"></div>
+                <div class="absolute inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] h-20 animate-pulse rounded-[20px] bg-surface/80"></div>
+            </div>
+        `;
+    }
+
+    const stats = path === '/laporan'
+        ? `<div class="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                <div class="h-[68px] animate-pulse rounded-2xl bg-surface"></div>
+                <div class="h-[68px] animate-pulse rounded-2xl bg-surface"></div>
+                <div class="h-[68px] animate-pulse rounded-2xl bg-surface"></div>
+            </div>`
+        : '';
+
+    return `
+        <div class="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-5 sm:px-6 lg:px-8" aria-hidden="true">
+            <div class="mx-auto w-full max-w-7xl space-y-3">
+                <div class="h-3 w-24 animate-pulse rounded-full bg-surface"></div>
+                <div class="h-6 w-56 animate-pulse rounded-full bg-surface"></div>
+                <div class="h-4 w-full max-w-[420px] animate-pulse rounded-full bg-surface"></div>
+                ${stats}
+                <div class="h-11 w-full animate-pulse rounded-2xl bg-surface"></div>
+                <div class="h-28 w-full animate-pulse rounded-[24px] bg-surface"></div>
+                <div class="h-28 w-full animate-pulse rounded-[24px] bg-surface"></div>
+                <div class="h-28 w-full animate-pulse rounded-[24px] bg-surface"></div>
+            </div>
+        </div>
+    `;
+}
 
 function initPasswordToggles() {
     document.querySelectorAll('[data-password-toggle]').forEach((toggle) => {
@@ -185,13 +364,24 @@ function initNeedsList() {
     applyFilters();
 }
 
-function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = DEFAULT_MAP_STYLE_URL }) {
+function initNearFind(
+    { categories, needs, authenticated = false, mapStyleUrl = DEFAULT_MAP_STYLE_URL },
+    { mapElement, needCardElement },
+) {
     const categoryById = Object.fromEntries(categories.map((category) => [category.id, category]));
     const fallbackCategory = categoryById.all ?? categories[0];
+    const needsList = Array.isArray(needs) ? needs : [];
+    const mappableNeeds = needsList.filter(
+        (need) => Number.isFinite(Number(need.latitude)) && Number.isFinite(Number(need.longitude)),
+    );
+
+    if (mappableNeeds.length !== needsList.length) {
+        console.warn('nearFind: melewati kebutuhan tanpa koordinat yang valid.', needsList.length - mappableNeeds.length);
+    }
 
     const state = {
         categories,
-        needs,
+        needs: mappableNeeds,
         category: 'all',
         query: '',
         sort: 'relevance',
@@ -244,6 +434,10 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
     let mapErrors = 0;
     let mapErrorShown = false;
     let submitReturnFocus = null;
+    let resizeObserver = null;
+    let disposed = false;
+    const controller = new AbortController();
+    const listenerOptions = { signal: controller.signal };
 
     initMap();
     bindEvents();
@@ -256,6 +450,10 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
     }
 
     requestAnimationFrame(() => {
+        if (disposed) {
+            return;
+        }
+
         map?.resize();
         fitMapToFiltered();
         locateUser({ silent: true });
@@ -300,7 +498,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         });
 
         if ('ResizeObserver' in window) {
-            const resizeObserver = new ResizeObserver(() => map?.resize());
+            resizeObserver = new ResizeObserver(() => map?.resize());
             resizeObserver.observe(mapElement);
         }
     }
@@ -354,7 +552,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
                     }
                     break;
             }
-        });
+        }, listenerOptions);
 
         filterSheet?.querySelectorAll('[data-filter-close]').forEach((button) => {
             button.addEventListener('click', closeFilterSheet);
@@ -459,7 +657,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
             if (!desktopQuery.matches && needPanel?.dataset.state === 'expanded') {
                 setCardExpanded(false);
             }
-        });
+        }, listenerOptions);
 
         document.querySelector('[data-dismiss-tip]')?.addEventListener('click', () => mapTip?.remove());
 
@@ -478,7 +676,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
 
         desktopQuery.addEventListener('change', (event) => {
             setCardExpanded(event.matches);
-        });
+        }, listenerOptions);
 
         needCardElement.addEventListener('click', (event) => {
             const supportButton = event.target.closest('[data-support-button]');
@@ -1298,4 +1496,31 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
             return entities[character];
         });
     }
+
+    return () => {
+        disposed = true;
+
+        try {
+            controller.abort();
+        } catch {
+            // An already-aborted controller is harmless.
+        }
+
+        resizeObserver?.disconnect();
+        tooltip.remove();
+        window.clearTimeout(searchDebounce);
+        window.clearTimeout(toastTimeout);
+
+        if (map) {
+            try {
+                map.remove();
+            } catch {
+                // The container may already be detached by the swap.
+            }
+
+            map = null;
+        }
+
+        userMarker = null;
+    };
 }

@@ -14,7 +14,7 @@
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="app-background min-h-dvh text-ink antialiased">
+<body class="min-h-dvh bg-canvas text-ink antialiased">
     @include('partials.icon-sprite')
 
     <main class="relative mx-auto flex min-h-dvh w-full max-w-[460px] flex-col justify-center px-4 py-8 sm:px-6">

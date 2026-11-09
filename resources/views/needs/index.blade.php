@@ -107,6 +107,7 @@
 
                             <a
                                 href="{{ url('/') }}?need={{ $need['id'] }}"
+                                data-app-link
                                 class="inline-flex h-9 items-center gap-1.5 rounded-xl bg-brand-50 px-3 text-[11px] font-semibold text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
                             >
                                 @include('partials.icon', ['name' => 'map', 'class' => 'size-3.5'])
@@ -130,6 +131,7 @@
 
             <a
                 href="{{ route('home') }}"
+                data-app-link
                 class="mt-4 inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-[11.5px] font-semibold text-brand-200 transition hover:text-brand-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
             >
                 @include('partials.icon', ['name' => 'map', 'class' => 'size-3.5'])

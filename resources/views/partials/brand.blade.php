@@ -8,7 +8,7 @@
     aria-label="nearFind — kembali ke peta kebutuhan"
 >
     <span class="relative flex size-10 shrink-0 items-center justify-center transition-transform duration-200 group-hover:-rotate-3 group-hover:scale-[1.03] lg:size-[44px]">
-        <svg viewBox="0 0 44 44" class="size-full drop-shadow-[0_8px_14px_rgba(0,0,0, 0.55)]" aria-hidden="true">
+        <svg viewBox="0 0 44 44" width="44" height="44" class="size-full drop-shadow-[0_8px_14px_rgba(0,0,0, 0.55)]" aria-hidden="true">
             <rect width="44" height="44" rx="14" fill="#6D4AFF" />
             <path d="M22 8.5c-5.7 0-10.2 4.2-10.2 9.5 0 6.7 10.2 16.1 10.2 16.1s10.2-9.4 10.2-16.1c0-5.3-4.5-9.5-10.2-9.5Z" fill="#FFFFFF" />
             <circle cx="22" cy="18" r="3.7" fill="#FF8A3D" />
