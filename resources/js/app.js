@@ -134,6 +134,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
     const loginGate = document.getElementById('login-gate');
     const loginMessage = loginGate?.querySelector('[data-login-message]');
     const loginSubmit = loginGate?.querySelector('[data-login-submit]');
+    const submitSheet = document.getElementById('submit-sheet');
     const toast = document.getElementById('toast');
     const toastMessage = toast?.querySelector('[data-toast-message]');
     const mapTip = document.querySelector('[data-map-tip]');
@@ -164,6 +165,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
     let loginReturnFocus = null;
     let mapErrors = 0;
     let mapErrorShown = false;
+    let submitReturnFocus = null;
 
     initMap();
     bindEvents();
@@ -171,9 +173,14 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
     applyFilters({ fit: true, syncUrl: false });
     setCardExpanded(cardExpanded);
 
+    if (submitSheet?.dataset.initialOpen === 'true') {
+        openSubmitSheet();
+    }
+
     requestAnimationFrame(() => {
         map?.resize();
         fitMapToFiltered();
+        locateUser({ silent: true });
     });
 
     function initMap() {
@@ -264,7 +271,9 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
                     openLoginGate('Masuk untuk mengakses akun nearFind.', actionElement);
                     break;
                 case 'submit-need':
-                    requireLogin('submit-need', actionElement);
+                    if (requireLogin('submit-need', actionElement)) {
+                        openSubmitSheet(actionElement);
+                    }
                     break;
             }
         });
@@ -280,6 +289,36 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         });
 
         loginGate?.querySelector('[data-login-backdrop]')?.addEventListener('click', closeLoginGate);
+
+        submitSheet?.querySelectorAll('[data-submit-close]').forEach((button) => {
+            button.addEventListener('click', closeSubmitSheet);
+        });
+
+        submitSheet?.querySelector('[data-submit-backdrop]')?.addEventListener('click', closeSubmitSheet);
+
+        submitSheet?.addEventListener('keydown', (event) => {
+            if (event.key !== 'Tab') {
+                return;
+            }
+
+            const focusable = [...submitSheet.querySelectorAll('button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+                .filter((element) => element.offsetParent !== null);
+
+            if (focusable.length === 0) {
+                return;
+            }
+
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+
+            if (event.shiftKey && document.activeElement === first) {
+                event.preventDefault();
+                last.focus();
+            } else if (!event.shiftKey && document.activeElement === last) {
+                event.preventDefault();
+                first.focus();
+            }
+        });
 
         loginGate?.addEventListener('keydown', (event) => {
             if (event.key !== 'Tab') {
@@ -329,6 +368,11 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
                 return;
             }
 
+            if (submitSheet && !submitSheet.classList.contains('hidden')) {
+                closeSubmitSheet();
+                return;
+            }
+
             if (filterSheet && !filterSheet.classList.contains('hidden')) {
                 closeFilterSheet();
                 return;
@@ -341,7 +385,7 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
 
         document.querySelector('[data-dismiss-tip]')?.addEventListener('click', () => mapTip?.remove());
 
-        document.querySelector('[data-map-locate]')?.addEventListener('click', locateUser);
+        document.querySelector('[data-map-locate]')?.addEventListener('click', () => locateUser());
         document.querySelector('[data-map-zoom-in]')?.addEventListener('click', () => zoomBy(0.5));
         document.querySelector('[data-map-zoom-out]')?.addEventListener('click', () => zoomBy(-0.5));
 
@@ -599,6 +643,37 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         }
 
         loginReturnFocus = null;
+    }
+
+    function openSubmitSheet(trigger = null) {
+        if (!submitSheet) {
+            return;
+        }
+
+        closeFilterSheet();
+        submitReturnFocus = trigger instanceof HTMLElement ? trigger : document.activeElement;
+
+        submitSheet.classList.remove('hidden');
+        submitSheet.classList.add('flex');
+
+        requestAnimationFrame(() => {
+            submitSheet.querySelector('#need-title')?.focus({ preventScroll: true });
+        });
+    }
+
+    function closeSubmitSheet() {
+        if (!submitSheet || submitSheet.classList.contains('hidden')) {
+            return;
+        }
+
+        submitSheet.classList.add('hidden');
+        submitSheet.classList.remove('flex');
+
+        if (submitReturnFocus instanceof HTMLElement) {
+            submitReturnFocus.focus({ preventScroll: true });
+        }
+
+        submitReturnFocus = null;
     }
 
     function setCardExpanded(expanded) {
@@ -1014,13 +1089,16 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
         }
     }
 
-    function locateUser() {
+    function locateUser({ silent = false } = {}) {
         if (!map) {
             return;
         }
 
         if (!('geolocation' in navigator)) {
-            showToast('Browser ini tidak mendukung fitur lokasi.');
+            if (!silent) {
+                showToast('Browser ini tidak mendukung fitur lokasi.');
+            }
+
             return;
         }
 
@@ -1049,13 +1127,19 @@ function initNearFind({ categories, needs, authenticated = false, mapStyleUrl = 
                     .addTo(map);
 
                 map.flyTo({ center: location, zoom: 16, duration: 600 });
-                showToast('Lokasi kamu ditemukan.');
+
+                if (!silent) {
+                    showToast('Lokasi kamu ditemukan.');
+                }
 
                 button?.removeAttribute('aria-busy');
                 button?.classList.remove('opacity-60');
             },
             () => {
-                showToast('Lokasi tidak dapat diakses. Izinkan akses lokasi di browser.');
+                if (!silent) {
+                    showToast('Lokasi tidak dapat diakses. Izinkan akses lokasi di browser.');
+                }
+
                 button?.removeAttribute('aria-busy');
                 button?.classList.remove('opacity-60');
             },

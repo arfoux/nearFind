@@ -27,7 +27,7 @@
             </section>
 
             <div class="pointer-events-none absolute inset-x-0 top-0 z-[700] px-3 pt-3 sm:px-4 lg:px-5 lg:pt-4">
-                @include('partials.home/header', [])
+                @include('partials.home/header', ['sealUser' => $sealUser])
 
                 <div class="mt-2.5">
                     @include('partials.home/category-chips', ['categories' => $categories])
@@ -65,5 +65,10 @@
     </div>
 
     @include('partials.home/filter-sheet', ['categories' => $categories])
-    @include('partials.home/login-gate', [])
+
+    @if ($authenticated)
+        @include('partials.home/submit-sheet', ['categories' => $categories])
+    @else
+        @include('partials.home/login-gate', [])
+    @endif
 @endsection

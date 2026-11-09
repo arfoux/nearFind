@@ -35,9 +35,9 @@ export default {
   fixtures: [
     {
       sql:
-        "INSERT INTO profiles (id, email, name, username, phone, bio, password_hash, notification_preferences, created_at, updated_at) " +
+        "INSERT INTO profiles (id, email, name, username, phone, bio, password_hash, notification_preferences, email_verified_at, created_at, updated_at) " +
         "VALUES (1, '" + EMAIL + "', 'Warga Uji', 'warga_uji', '081234567890', 'Warga RW 05 yang aktif.', '" + HASH + "', " +
-        "'{\"need_updates\":true,\"support_activity\":true,\"weekly_digest\":false}', '2026-10-20 08:00:00', '2026-10-20 08:00:00')",
+        "'{\"need_updates\":true,\"support_activity\":true,\"weekly_digest\":false}', '2026-10-20 08:00:00', '2026-10-20 08:00:00', '2026-10-20 08:00:00')",
     },
     {
       sql:
@@ -72,6 +72,7 @@ export default {
 // (drop `health:` from withRouting(), declare it in routes/ or a port) - that is
 // an application decision, not a build one.
   steps: [
+    { label: 'GET / (guest map page)', method: 'GET', uri: '/', jar: true, expectBody: 'id="login-gate"' },
     { label: 'GET /masuk (guest, the snapshot page)', method: 'GET', uri: '/masuk', jar: true },
     {
       label: 'POST /masuk (authenticates)',
@@ -80,7 +81,29 @@ export default {
       jar: true,
       form: { _token: '@token', email: EMAIL, password: PASSWORD },
     },
+    { label: 'GET / (signed-in map page)', method: 'GET', uri: '/', jar: true, expectBody: 'id="submit-sheet"' },
     { label: 'GET /profil (compiled page)', method: 'GET', uri: '/profil', jar: true, expectBody: 'Perbaikan lampu gang 3' },
+    {
+      label: 'POST /kebutuhan (submit a need)',
+      method: 'POST',
+      uri: '/kebutuhan',
+      jar: true,
+      form: {
+        _token: '@token',
+        title: 'Kebutuhan dari peta',
+        category: 'repair',
+        location: 'Sukajadi',
+      },
+      expectStatus: 302,
+    },
+    {
+      label: 'GET /profil (after the submission)',
+      method: 'GET',
+      uri: '/profil',
+      jar: true,
+      expectBody: 'Kebutuhan berhasil diajukan.',
+    },
+    { label: 'GET /profil (the submitted need)', method: 'GET', uri: '/profil', jar: true, expectBody: 'Kebutuhan dari peta' },
     {
       label: 'PUT /profil (update the row)',
       method: 'PUT',
