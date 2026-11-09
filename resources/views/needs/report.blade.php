@@ -2,7 +2,7 @@
 @php $title = 'Laporan · nearFind'; $active = 'laporan'; @endphp
 @section('content')
     <div class="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-5 sm:px-6 lg:px-8">
-        <div class="mx-auto w-full max-w-[720px]">
+        <div class="mx-auto w-full max-w-7xl">
             <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-300">Laporan warga</p>
             <h1 class="mt-1 text-xl font-semibold tracking-[-0.03em] text-ink">Laporan kebutuhan warga</h1>
             <p class="mt-1 text-[11.5px] leading-relaxed text-muted">
