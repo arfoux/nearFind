@@ -6,10 +6,10 @@
     // view stays inside the compiled surface.
     $navClass = $floating
         ? 'pointer-events-none absolute inset-x-0 bottom-0 z-[1000] w-full border-t border-white/10 bg-surface/70 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-18px_45px_-30px_rgba(0,0,0,0.45)] backdrop-blur-2xl'
-        : 'relative z-[1000] w-full shrink-0 border-t border-white/10 bg-surface/95 pb-[max(0.4rem,env(safe-area-inset-bottom))] pt-2 shadow-[0_-10px_32px_-28px_rgba(0,0,0,0.5)] backdrop-blur-xl';
-    $navInnerClass = $floating
-        ? 'pointer-events-auto mx-auto flex w-full max-w-[560px] items-stretch justify-around px-2.5'
-        : 'flex w-full items-stretch justify-around gap-1 px-3 sm:px-6 lg:px-8';
+        : 'relative z-[1000] w-full shrink-0 border-t border-white/10 bg-surface/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-10px_32px_-28px_rgba(0,0,0,0.5)] backdrop-blur-xl';
+    // The same inner track on every page keeps the four tabs in the exact same
+    // spots whether the nav floats over the map or sits in the flex column.
+    $navInnerClass = 'pointer-events-auto mx-auto flex w-full max-w-[560px] items-stretch justify-around px-2.5';
 @endphp
 @php
     $isAuthenticated = auth('seal')->check();
@@ -32,7 +32,13 @@
                 $labelClass = 'text-[10px] font-semibold tracking-[0.01em] '.($isActive ? 'text-brand-200' : 'text-muted group-hover:text-brand-200');
             @endphp
 
-            <a href="{{ route($item['route']) }}" @if ($isActive) aria-current="page" @endif class="{{ $itemClass }}">
+            <a
+                href="{{ route($item['route']) }}"
+                data-nav-link
+                data-nav-key="{{ $item['key'] }}"
+                @if ($isActive) aria-current="page" @endif
+                class="{{ $itemClass }}"
+            >
                 <span class="{{ $iconClass }}">
                     @include('partials.icon', ['name' => $item['icon'], 'class' => 'size-[21px]', 'strokeWidth' => '2'])
                 </span>

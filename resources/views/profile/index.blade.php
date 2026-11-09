@@ -35,6 +35,7 @@
 
                 <a
                     href="{{ route('home') }}"
+                    data-app-link
                     class="inline-flex h-9 items-center gap-1.5 rounded-full bg-surface px-3.5 text-[11px] font-semibold text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
                 >
                     @include('partials.icon', ['name' => 'map', 'class' => 'size-3.5'])

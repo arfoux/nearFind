@@ -39,8 +39,10 @@
 <body class="{{ $bodyClass }}">
     @include('partials.icon-sprite')
 
-    <div class="{{ $shellClass }}">
-        @yield('content')
+    <div class="{{ $shellClass }}" data-app-shell>
+        <div class="flex min-h-0 flex-1 flex-col" data-page-content>
+            @yield('content')
+        </div>
 
         @include('partials.bottom-nav', ['active' => $active, 'floating' => $active === 'peta'])
     </div>

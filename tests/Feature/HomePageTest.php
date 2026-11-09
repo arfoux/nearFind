@@ -50,4 +50,30 @@ class HomePageTest extends TestCase
 
         $this->get('/profil')->assertRedirect(route('auth'));
     }
+
+    public function test_the_profile_tab_points_guests_at_the_auth_page(): void
+    {
+        $response = $this->get('/');
+
+        $response->assertOk();
+
+        $this->assertSame(1, preg_match('/<a\b[^>]*data-nav-key="profil"[^>]*>/', (string) $response->getContent(), $match));
+        $this->assertStringContainsString('href="'.route('auth').'"', $match[0]);
+        $this->assertStringNotContainsString(route('profile.index'), $match[0]);
+    }
+
+    public function test_every_tab_shares_the_same_app_shell_and_nav_track(): void
+    {
+        $track = 'pointer-events-auto mx-auto flex w-full max-w-[560px] items-stretch justify-around px-2.5';
+
+        foreach (['/', '/jelajah', '/laporan'] as $path) {
+            $response = $this->get($path);
+
+            $response->assertOk();
+            $response->assertSee('data-app-shell', false);
+            $response->assertSee('data-page-content', false);
+            $response->assertSee('data-nav-link', false);
+            $response->assertSee($track, false);
+        }
+    }
 }

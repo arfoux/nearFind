@@ -72,7 +72,7 @@
                         <li class="flex items-center gap-3 py-2.5">
                             <span class="flex size-7 shrink-0 items-center justify-center rounded-xl bg-canvas text-[11px] font-semibold text-muted">{{ $rank }}</span>
 
-                            <a href="{{ url('/') }}?need={{ $need['id'] }}" class="min-w-0 flex-1 group">
+                            <a href="{{ url('/') }}?need={{ $need['id'] }}" data-app-link class="min-w-0 flex-1 group">
                                 <span class="block truncate text-[12.5px] font-semibold text-ink transition group-hover:text-brand-200">{{ $need['title'] }}</span>
                                 <span class="mt-0.5 block truncate text-[10.5px] font-medium text-muted">
                                     {{ $need['location'] }} • {{ str_replace('.', ',', (string) $need['distance_km']) }} km
@@ -90,6 +90,7 @@
 
             <a
                 href="{{ route('home') }}"
+                data-app-link
                 class="mt-4 inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-[11.5px] font-semibold text-brand-200 transition hover:text-brand-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
             >
                 @include('partials.icon', ['name' => 'map', 'class' => 'size-3.5'])

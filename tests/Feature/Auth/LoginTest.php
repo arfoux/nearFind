@@ -56,6 +56,25 @@ class LoginTest extends TestCase
             ->assertSee('data-auth-initial="register"', false);
     }
 
+    public function test_the_auth_page_uses_the_flat_canvas_background(): void
+    {
+        $response = $this->get(route('auth'));
+
+        $response->assertOk();
+        $response->assertSee('class="min-h-dvh bg-canvas', false);
+        $response->assertDontSee('class="app-background', false);
+    }
+
+    public function test_the_profile_tab_points_signed_in_visitors_at_the_profile_page(): void
+    {
+        $response = $this->withUnencryptedCookie(self::COOKIE, $this->validToken())->get(route('home'));
+
+        $response->assertOk();
+
+        $this->assertSame(1, preg_match('/<a\b[^>]*data-nav-key="profil"[^>]*>/', (string) $response->getContent(), $match));
+        $this->assertStringContainsString('href="'.route('profile.index').'"', $match[0]);
+    }
+
     public function test_guests_are_redirected_to_the_auth_page_from_the_dashboard(): void
     {
         $this->get(route('dashboard'))->assertRedirect(route('auth'));
