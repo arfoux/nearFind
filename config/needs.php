@@ -81,6 +81,10 @@ return [
     | nilai di sini bersifat sementara dan mudah diganti dengan hasil query
     | dari database ketika backend sudah tersedia.
     |
+    | Latitude ditulis sebagai `0 - nilai`, bukan literal negatif: config-fold
+    | laravel-workers 0.4.10 membuang nilai unary-minus, sehingga kolom
+    | latitude hilang dari config hasil compile dan peta gagal init.
+    |
     */
 
     'needs' => [
@@ -95,7 +99,7 @@ return [
             'supporters' => 24,
             'hours_ago' => 52,
             'description' => 'Warga perumahan kesulitan mencari laundry kiloan terdekat. Mereka harus menempuh lebih dari 2 km ke jalan utama. Layanan laundry kiloan di sekitar RW akan sangat membantu aktivitas harian warga.',
-            'latitude' => -6.8905,
+            'latitude' => 0 - 6.8905,
             'longitude' => 107.5944,
             'opportunity' => true,
         ],
@@ -110,7 +114,7 @@ return [
             'supporters' => 19,
             'hours_ago' => 5,
             'description' => 'Banyak warga membutuhkan teknisi AC langganan yang cepat datang, terutama saat musim panas. Saat ini warga harus menghubungi teknisi dari luar kelurahan.',
-            'latitude' => -6.8875,
+            'latitude' => 0 - 6.8875,
             'longitude' => 107.5978,
             'opportunity' => true,
         ],
@@ -125,7 +129,7 @@ return [
             'supporters' => 15,
             'hours_ago' => 26,
             'description' => 'Warga ingin menanam sayur di pekarangan, tetapi belum ada penjual bibit tanaman terdekat. Toko bibit keliling atau kios kecil akan membantu kebutuhan ini.',
-            'latitude' => -6.8943,
+            'latitude' => 0 - 6.8943,
             'longitude' => 107.5979,
             'opportunity' => true,
         ],
@@ -140,7 +144,7 @@ return [
             'supporters' => 12,
             'hours_ago' => 9,
             'description' => 'Pelajar dan pekerja sekitar kesulitan mencetak serta memfotokopi dokumen. Layanan fotokopi dekat permukiman akan menghemat waktu warga.',
-            'latitude' => -6.8912,
+            'latitude' => 0 - 6.8912,
             'longitude' => 107.5908,
             'opportunity' => true,
         ],
@@ -155,7 +159,7 @@ return [
             'supporters' => 31,
             'hours_ago' => 74,
             'description' => 'Warga lansia membutuhkan warung sayur yang dekat dan menyediakan kebutuhan masak harian. Saat ini mereka harus berjalan jauh atau menunggu pedagang keliling.',
-            'latitude' => -6.8936,
+            'latitude' => 0 - 6.8936,
             'longitude' => 107.5924,
             'opportunity' => true,
         ],
@@ -170,7 +174,7 @@ return [
             'supporters' => 42,
             'hours_ago' => 8,
             'description' => 'Belum ada klinik yang buka 24 jam di sekitar permukiman. Warga membutuhkan akses layanan kesehatan cepat, terutama pada malam hari dan akhir pekan.',
-            'latitude' => -6.8868,
+            'latitude' => 0 - 6.8868,
             'longitude' => 107.5910,
             'opportunity' => true,
         ],
