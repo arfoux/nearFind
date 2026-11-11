@@ -128,6 +128,8 @@ async function navigateTo(url, { pushState = true } = {}) {
 
     shell.dataset.tab = targetTab;
 
+    syncNav(targetTab);
+
     document.querySelectorAll('[data-nav-link]').forEach((link) => {
         link.dataset.pending = link.dataset.navKey === targetTab ? 'true' : 'false';
     });
@@ -192,6 +194,18 @@ async function navigateTo(url, { pushState = true } = {}) {
         shell.className = nextShell.className;
         shell.dataset.tab = targetTab;
 
+        // The skeleton layer sits OUTSIDE the content slot that is about to be
+        // replaced, so only the slot for the tab that landed may stay shown.
+        // Before this, the server-rendered `peta` slot stayed visible under
+        // every other page.
+        document.querySelectorAll('[data-skeleton-slot]').forEach((slot) => {
+            if (slot.dataset.skeletonSlot === targetTab) {
+                slot.removeAttribute('hidden');
+            } else {
+                slot.setAttribute('hidden', '');
+            }
+        });
+
         // The skeleton for the tab that actually landed (a guest pressing Profil
         // gets the gate, a signed-in visitor is redirected by the server).
         const nextSkeleton = buildSkeleton(targetTab);
@@ -200,6 +214,8 @@ async function navigateTo(url, { pushState = true } = {}) {
 
         nextSkeleton?.reveal(content);
         skeleton?.remove();
+
+        syncNav(targetTab);
 
         document.querySelectorAll('[data-nav-link]').forEach((link) => {
             delete link.dataset.pending;
@@ -234,6 +250,39 @@ function tabForPathname(pathname) {
         default:
             return 'peta';
     }
+}
+
+// The nav is rendered once by the server, so its "current tab" styling has to be
+// repainted by the client on every swap: without this the highlight keeps
+// pointing at whichever tab the document was first served for.
+const NAV_ICON_ACTIVE = 'bg-brand-700 text-canvas shadow-[0_8px_18px_-12px_rgba(0,0,0,0.8)]';
+const NAV_ICON_IDLE = 'text-muted group-hover:bg-brand-50 group-hover:text-brand-200';
+const NAV_LABEL_ACTIVE = 'text-brand-200';
+const NAV_LABEL_IDLE = 'text-muted group-hover:text-brand-200';
+
+function syncNav(tab) {
+    document.querySelectorAll('[data-nav-link]').forEach((link) => {
+        const isActive = link.dataset.navKey === tab;
+
+        if (isActive) {
+            link.setAttribute('aria-current', 'page');
+        } else {
+            link.removeAttribute('aria-current');
+        }
+
+        const icon = link.querySelector('[data-nav-icon]');
+        const label = link.querySelector('[data-nav-label]');
+
+        if (icon) {
+            icon.classList.remove(...(isActive ? NAV_ICON_IDLE : NAV_ICON_ACTIVE).split(' ').filter(Boolean));
+            icon.classList.add(...(isActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE).split(' ').filter(Boolean));
+        }
+
+        if (label) {
+            label.classList.remove(...(isActive ? NAV_LABEL_IDLE : NAV_LABEL_ACTIVE).split(' ').filter(Boolean));
+            label.classList.add(...(isActive ? NAV_LABEL_ACTIVE : NAV_LABEL_IDLE).split(' ').filter(Boolean));
+        }
+    });
 }
 
 // The skeleton a tab shows while its page is in flight is the one the server

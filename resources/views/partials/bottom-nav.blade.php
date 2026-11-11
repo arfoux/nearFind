@@ -40,10 +40,14 @@
                 @if ($isActive) aria-current="page" @endif
                 class="{{ $itemClass }}"
             >
-                <span class="{{ $iconClass }}">
+                {{-- The active styling is a pair of classes the client swaps when a
+                     tab is opened in the shell (syncNav in app.js): the nav is
+                     rendered once, so it cannot depend on the server's $active
+                     after a client-side navigation. --}}
+                <span data-nav-icon class="{{ $iconClass }}">
                     @include('partials.icon', ['name' => $item['icon'], 'class' => 'size-[21px]', 'strokeWidth' => '2'])
                 </span>
-                <span class="{{ $labelClass }}">{{ $item['label'] }}</span>
+                <span data-nav-label class="{{ $labelClass }}">{{ $item['label'] }}</span>
             </a>
         @endforeach
     </div>
