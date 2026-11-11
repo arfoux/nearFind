@@ -105,6 +105,90 @@
             </div>
 
             <div>
+                <div class="flex items-baseline justify-between gap-3">
+                    <label id="need-point-label" class="text-[11px] font-semibold text-brand-200">Titik lokasi <span class="font-normal text-muted">(wajib)</span></label>
+
+                    <button
+                        type="button"
+                        data-point-locate
+                        class="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-semibold text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
+                    >
+                        @include('partials.icon', ['name' => 'pin', 'class' => 'size-3'])
+                        Pakai lokasiku
+                    </button>
+                </div>
+
+                {{-- Tapping this map is how a visitor says WHERE the need is. The pin
+                     stays centred while the map pans underneath it, which works the
+                     same with a mouse and with a thumb. --}}
+                <div
+                    data-point-picker
+                    class="relative mt-1.5 h-[176px] overflow-hidden rounded-xl bg-canvas ring-1 ring-white/10 transition focus-within:ring-2 focus-within:ring-brand-500/40"
+                >
+                    <div data-point-canvas class="absolute inset-0 h-full w-full"></div>
+
+                    <div data-point-hint class="pointer-events-none absolute inset-x-2 top-2 z-10 rounded-lg bg-black/55 px-2.5 py-1.5 text-center text-[10px] font-medium text-ink/90 backdrop-blur-sm">
+                        Geser peta untuk menaruh pin
+                    </div>
+
+                    {{-- The pin tip, not the icon box, must sit on the map centre. --}}
+                    <span class="pointer-events-none absolute left-1/2 top-1/2 z-[5] -translate-x-1/2 -translate-y-full">
+                        @include('partials.icon', ['name' => 'pin', 'class' => 'block size-8 drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)] text-brand-200'])
+                    </span>
+
+                    <span class="pointer-events-none absolute left-1/2 top-1/2 z-[4] size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-700 ring-2 ring-canvas"></span>
+
+                    <div data-point-busy class="absolute inset-0 z-20 hidden place-items-center bg-canvas/70 backdrop-blur-[1px]">
+                        <span class="text-[10.5px] font-semibold text-brand-200">Mencari alamat…</span>
+                    </div>
+                </div>
+
+                <input type="hidden" name="latitude" value="{{ old('latitude') }}" data-point-lat>
+                <input type="hidden" name="longitude" value="{{ old('longitude') }}" data-point-lng>
+
+                <p data-point-summary class="mt-2 text-[11px] font-medium leading-relaxed text-brand-200">
+                    Geser peta sampai pin berada di lokasi kebutuhan.
+                </p>
+
+                <div class="mt-2 flex flex-wrap gap-1.5">
+                    <button type="button" data-point-step="west" class="size-8 rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke barat">←</button>
+                    <button type="button" data-point-step="north" class="size-8 rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke utara">↑</button>
+                    <button type="button" data-point-step="south" class="size-8 rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke selatan">↓</button>
+                    <button type="button" data-point-step="east" class="size-8 rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke timur">→</button>
+
+                    <button type="button" data-point-zoom="in" class="flex size-8 items-center justify-center rounded-lg bg-canvas text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Perbesar peta">+</button>
+                    <button type="button" data-point-zoom="out" class="flex size-8 items-center justify-center rounded-lg bg-canvas text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Perkecil peta">−</button>
+                </div>
+
+                <div class="mt-2.5">
+                    <label for="need-area" class="text-[10px] font-semibold text-muted">Nama area <span class="font-normal">(terisi otomatis)</span></label>
+
+                    <input
+                        id="need-area"
+                        name="area"
+                        type="text"
+                        value="{{ old('area') }}"
+                        maxlength="120"
+                        autocomplete="off"
+                        placeholder="Contoh: Sukajadi, Bandung"
+                        class="mt-1 h-10 w-full rounded-xl border-0 bg-canvas px-3 text-[12px] text-ink ring-1 ring-white/10 transition placeholder:text-muted/70 focus:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                    >
+                </div>
+
+                @error('latitude')
+                    <p class="mt-1 text-[10px] font-medium text-[#FF9B9B]">{{ $message }}</p>
+                @enderror
+
+                @error('longitude')
+                    <p class="mt-1 text-[10px] font-medium text-[#FF9B9B]">{{ $message }}</p>
+                @enderror
+
+                @error('area')
+                    <p class="mt-1 text-[10px] font-medium text-[#FF9B9B]">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
                 <label for="need-location" class="text-[11px] font-semibold text-brand-200">Patokan lokasi <span class="font-normal text-muted">(opsional)</span></label>
 
                 <div class="relative mt-1.5">

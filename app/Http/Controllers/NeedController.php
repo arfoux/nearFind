@@ -158,8 +158,9 @@ class NeedController extends Controller
             'location' => $location !== '' ? $location : null,
             'description' => trim((string) ($validated['description'] ?? '')) ?: null,
             'area' => trim((string) ($validated['area'] ?? '')) ?: null,
-            // A submission carries no coordinates yet, so it is listed and
-            // ranked but not plotted (the map skips rows without a point).
+            // The pin the form required: without it the need never reaches the map.
+            'latitude' => (float) $validated['latitude'],
+            'longitude' => (float) $validated['longitude'],
             'status' => 'aktif',
         ]);
 
