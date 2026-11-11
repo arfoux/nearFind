@@ -1,6 +1,5 @@
 import { Map as MapLibreMap, Marker, Popup, setWorkerUrl } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
-import './profile.js';
 
 setWorkerUrl(workerUrl);
 
@@ -9,7 +8,12 @@ const DEFAULT_MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
 // The four tabs are separate endpoints, but they share one shell. Navigating
 // between them is a fetch + swap (with a skeleton in between) instead of a fresh
 // document, so the map/list state only changes where the page actually re-inits.
-const SPA_PATHS = new Set(['/', '/jelajahi', '/laporan', '/profil']);
+const SPA_PATHS = new Set(['/', '/explore', '/reports', '/profile']);
+
+// A tab may redirect out of the shell: a guest pressing Profil lands on /auth,
+// which is a standalone document (no app shell). Those can never be swapped in
+// place, so the first hop goes through a full page load.
+const SHELL_LESS_PATHS = new Set(['/auth']);
 
 let disposeCurrentPage = null;
 let isNavigating = false;
@@ -116,20 +120,58 @@ async function navigateTo(url, { pushState = true } = {}) {
 
     isNavigating = true;
 
+    let targetTab = tabForPathname(window.location.pathname);
+
     if (pushState) {
         window.history.pushState({ nearfind: true }, '', url);
     }
 
-    disposePage();
+    shell.dataset.tab = targetTab;
+
+    document.querySelectorAll('[data-nav-link]').forEach((link) => {
+        link.dataset.pending = link.dataset.navKey === targetTab ? 'true' : 'false';
+    });
+
+    // The tab's own skeleton paints first (the exact shape it had on the first
+    // visit), then the fetched page swaps in underneath it and fades in. The
+    // skeleton can be very fast, so give the paint a frame to land.
+    const skeleton = buildSkeleton(targetTab);
+
+    content.innerHTML = '';
     content.setAttribute('aria-busy', 'true');
-    content.innerHTML = skeletonMarkup(new URL(url).pathname);
+
+    skeleton?.prependFor(content);
+    disposePage();
+
+    // One frame, so the skeleton is painted before the network call can finish.
+    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
 
     try {
         const response = await fetch(url, {
             cache: 'no-store',
             credentials: 'same-origin',
+            redirect: 'follow',
             headers: { Accept: 'text/html' },
         });
+
+        // The server may have redirected to a page outside the shell (/auth for
+        // a guest). There is nothing to swap: load that document properly.
+        if (response.redirected && SHELL_LESS_PATHS.has(new URL(response.url).pathname)) {
+            window.location.href = response.url;
+
+            return;
+        }
+
+        // The server may have redirected (a signed-in visitor pressing Profil
+        // lands back on the page they can see). Keep the address bar truthful.
+        if (response.redirected && response.url) {
+            window.history.replaceState({ nearfind: true }, '', response.url);
+        }
+
+        const landedPath = response.redirected ? new URL(response.url).pathname : new URL(url).pathname;
+
+        targetTab = tabForPathname(landedPath);
+        shell.dataset.tab = targetTab;
 
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}`);
@@ -144,9 +186,24 @@ async function navigateTo(url, { pushState = true } = {}) {
             throw new Error('Halaman tujuan tidak memiliki kerangka aplikasi.');
         }
 
+        // The fresh body class always wins: a skeleton injected on the old shell
+        // must never leak the previous page's background.
         document.body.className = parsed.body.className;
         shell.className = nextShell.className;
-        shell.innerHTML = nextShell.innerHTML;
+        shell.dataset.tab = targetTab;
+
+        // The skeleton for the tab that actually landed (a guest pressing Profil
+        // gets the gate, a signed-in visitor is redirected by the server).
+        const nextSkeleton = buildSkeleton(targetTab);
+
+        content.innerHTML = nextContent.innerHTML;
+
+        nextSkeleton?.reveal(content);
+        skeleton?.remove();
+
+        document.querySelectorAll('[data-nav-link]').forEach((link) => {
+            delete link.dataset.pending;
+        });
 
         if (nextToast) {
             document.querySelector('#toast')?.setAttribute('class', nextToast.className);
@@ -164,41 +221,82 @@ async function navigateTo(url, { pushState = true } = {}) {
     }
 }
 
-function skeletonMarkup(pathname) {
+function tabForPathname(pathname) {
     const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : pathname;
 
-    if (path === '/') {
-        return `
-            <div class="relative min-h-0 flex-1 overflow-hidden bg-canvas" aria-hidden="true">
-                <div class="absolute inset-0 animate-pulse bg-surface/35"></div>
-                <div class="absolute inset-x-3 top-3 h-24 animate-pulse rounded-[22px] bg-surface/70"></div>
-                <div class="absolute inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] h-20 animate-pulse rounded-[20px] bg-surface/80"></div>
-            </div>
-        `;
+    switch (path) {
+        case '/explore':
+            return 'jelajahi';
+        case '/reports':
+            return 'laporan';
+        case '/profile':
+            return 'profil';
+        default:
+            return 'peta';
+    }
+}
+
+// The skeleton a tab shows while its page is in flight is the one the server
+// already rendered for that tab (partials/skeleton.blade.php) — same markup, so
+// the shapes a visitor sees on a press match the shapes of the page that lands.
+// Only the frame differs: the server paints it underneath the page, a press
+// needs it above the (now empty) page slot until the swap.
+function buildSkeleton(tab) {
+    const template = document.querySelector(`[data-page-skeleton] [data-skeleton-slot="${tab}"] [data-skeleton-pane]`);
+
+    if (!template) {
+        return null;
     }
 
-    const stats = path === '/laporan'
-        ? `<div class="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
-                <div class="h-[68px] animate-pulse rounded-2xl bg-surface"></div>
-                <div class="h-[68px] animate-pulse rounded-2xl bg-surface"></div>
-                <div class="h-[68px] animate-pulse rounded-2xl bg-surface"></div>
-            </div>`
-        : '';
+    return {
+        prependFor(content) {
+            const pane = template.cloneNode(true);
+            const frame = document.createElement('div');
+            const isMap = pane.dataset.skeletonPane === 'peta';
 
-    return `
-        <div class="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-5 sm:px-6 lg:px-8" aria-hidden="true">
-            <div class="mx-auto w-full max-w-7xl space-y-3">
-                <div class="h-3 w-24 animate-pulse rounded-full bg-surface"></div>
-                <div class="h-6 w-56 animate-pulse rounded-full bg-surface"></div>
-                <div class="h-4 w-full max-w-[420px] animate-pulse rounded-full bg-surface"></div>
-                ${stats}
-                <div class="h-11 w-full animate-pulse rounded-2xl bg-surface"></div>
-                <div class="h-28 w-full animate-pulse rounded-[24px] bg-surface"></div>
-                <div class="h-28 w-full animate-pulse rounded-[24px] bg-surface"></div>
-                <div class="h-28 w-full animate-pulse rounded-[24px] bg-surface"></div>
-            </div>
-        </div>
-    `;
+            frame.className = isMap
+                ? 'pointer-events-none absolute inset-0 z-[300] bg-canvas'
+                : 'pointer-events-none absolute inset-0 z-[300] flex flex-col bg-canvas';
+
+            frame.dataset.pendingSkeleton = 'true';
+            frame.setAttribute('aria-hidden', 'true');
+            frame.append(pane);
+
+            // The page slot is emptied before the skeleton goes in, so it has to
+            // be positioned against the shell, not against a zero-height child.
+            if (getComputedStyle(content).position === 'static') {
+                content.style.position = 'relative';
+            }
+
+            content.append(frame);
+        },
+        reveal(page) {
+            const frame = page.querySelector('[data-pending-skeleton]');
+
+            if (!frame) {
+                return;
+            }
+
+            // Lift the skeleton above the fresh page, fade the page in beneath it,
+            // then let the skeleton go: the tab never flashes an empty column.
+            page.prepend(frame);
+            page.style.opacity = '0';
+            page.style.transition = 'opacity 160ms ease-out';
+
+            requestAnimationFrame(() => {
+                page.style.opacity = '1';
+            });
+
+            window.setTimeout(() => {
+                frame.remove();
+                page.style.opacity = '';
+                page.style.transition = '';
+            }, 170);
+        },
+        remove() {
+            document.querySelector('[data-pending-skeleton]')?.remove();
+        },
+    };
 }
 
 function initPasswordToggles() {
@@ -221,7 +319,7 @@ function initPasswordToggles() {
 }
 
 // The auth page renders both forms and switches between them client-side. The
-// register form is reachable by URL too (`/auth?mode=daftar`), which is what a
+// register form is reachable by URL too (`/auth?mode=register`), which is what a
 // failed registration redirects back to.
 function initAuthTabs() {
     const root = document.querySelector('[data-auth]');
@@ -235,9 +333,8 @@ function initAuthTabs() {
     const params = new URLSearchParams(window.location.search);
     const requestedMode = params.get('mode');
     const startsAsRegister =
-        requestedMode === 'daftar' ||
         requestedMode === 'register' ||
-        window.location.hash === '#daftar' ||
+        window.location.hash === '#register' ||
         root.dataset.authInitial === 'register';
     let mode = startsAsRegister ? 'register' : 'login';
 
@@ -264,7 +361,7 @@ function initAuthTabs() {
             const url = new URL(window.location.href);
 
             if (mode === 'register') {
-                url.searchParams.set('mode', 'daftar');
+                url.searchParams.set('mode', 'register');
             } else {
                 url.searchParams.delete('mode');
             }
