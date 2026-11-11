@@ -604,6 +604,92 @@ body.app-background {
     animation: nf-card-in 0.28s ease-out both;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Shell skeleton (partials/skeleton.blade.php + skeletonMarkup() in app.js)  */
+/* -------------------------------------------------------------------------- */
+
+/* The skeleton swaps in the same frame the tab is pressed, so it fades rather
+   than entering like content: a fresh `nf-card-in` on every tab would read as
+   a second load. */
+[data-page-skeleton] {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    animation: nf-skeleton-in 0.16s ease-out both;
+}
+
+.nf-sk {
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.055);
+    border-radius: 0.75rem;
+}
+
+/* A single travelling highlight instead of Tailwind's opacity pulse: it reads as
+   "loading" without making a whole page of bars blink on and off. */
+.nf-sk::after {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 18%, rgba(255, 255, 255, 0.075) 50%, transparent 82%);
+    content: '';
+    transform: translateX(-100%);
+    animation: nf-skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+.nf-sk--line {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.nf-sk--chip {
+    background: rgba(255, 255, 255, 0.065);
+}
+
+.nf-sk--avatar {
+    background: rgba(139, 108, 255, 0.16);
+}
+
+.nf-sk--card {
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    background: rgba(18, 22, 28, 0.72);
+}
+
+@keyframes nf-skeleton-sweep {
+    to {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes nf-skeleton-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* A server-rendered card (gate, empty state): the same raised surface the
+   activity pages already used inline. */
+.nf-card {
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    background: rgba(18, 22, 28, 0.82);
+    box-shadow: 0 22px 55px -42px rgba(0, 0, 0, 0.9);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    backdrop-filter: blur(18px) saturate(140%);
+}
+
+/* The tab a visitor is on while the next page is still loading. */
+[data-nav-link][data-pending='true'] {
+    opacity: 0.72;
+}
+
+[data-nav-link][data-pending='true'] > span:first-child {
+    background: rgba(139, 108, 255, 0.18);
+    color: var(--color-brand-200);
+}
+
 @keyframes nf-sheet-in {
     from {
         opacity: 0.5;
@@ -657,6 +743,10 @@ body.app-background {
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    .nf-card {
+        background: rgba(18, 22, 28, 0.97);
+    }
+
     .category-chip {
         background: rgba(18, 22, 28, 0.96);
     }

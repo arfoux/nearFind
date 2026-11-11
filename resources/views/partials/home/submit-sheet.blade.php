@@ -129,11 +129,28 @@
                 @enderror
             </div>
 
+            <div>
+                <label for="need-description" class="text-[11px] font-semibold text-brand-200">Ceritakan singkat <span class="font-normal text-muted">(opsional)</span></label>
+
+                <textarea
+                    id="need-description"
+                    name="description"
+                    rows="3"
+                    maxlength="600"
+                    placeholder="Apa yang warga butuhkan, dan kenapa?"
+                    class="mt-1.5 w-full resize-none rounded-xl border-0 bg-canvas px-3 py-2.5 text-[12.5px] leading-relaxed text-ink ring-1 ring-white/10 transition placeholder:text-muted/70 focus:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                >{{ old('description') }}</textarea>
+
+                @error('description')
+                    <p class="mt-1 text-[10px] font-medium text-[#FF9B9B]">{{ $message }}</p>
+                @enderror
+            </div>
+
             <div class="flex items-start gap-2.5 rounded-2xl bg-canvas px-3.5 py-3 ring-1 ring-white/5">
                 @include('partials.icon', ['name' => 'info', 'class' => 'mt-0.5 size-4 shrink-0 text-brand-300'])
 
                 <p class="text-[10.5px] leading-relaxed text-muted">
-                    Kebutuhan akan tersimpan di akunmu dan tampil di halaman profil.
+                    Kebutuhan tersimpan di database dan langsung muncul di Jelajahi serta Laporan milikmu.
                 </p>
             </div>
 

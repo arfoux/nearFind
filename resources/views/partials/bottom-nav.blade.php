@@ -12,13 +12,14 @@
     $navInnerClass = 'pointer-events-auto mx-auto flex w-full max-w-[560px] items-stretch justify-around px-2.5';
 @endphp
 @php
-    $isAuthenticated = auth('seal')->check();
-
+    // Every tab is a page of its own. Profil points at `/profile`, which needs a
+    // session: a guest is redirected by the `auth` middleware to `/auth` (the
+    // sign-in page), and comes back to `/profile` once signed in.
     $items = [
         ['key' => 'peta', 'label' => 'Peta', 'icon' => 'map', 'route' => 'home'],
         ['key' => 'jelajahi', 'label' => 'Jelajahi', 'icon' => 'compass', 'route' => 'needs.index'],
         ['key' => 'laporan', 'label' => 'Laporan', 'icon' => 'clipboard', 'route' => 'needs.report'],
-        ['key' => 'profil', 'label' => 'Profil', 'icon' => 'user', 'route' => $isAuthenticated ? 'profile.index' : 'auth'],
+        ['key' => 'profil', 'label' => 'Profil', 'icon' => 'user', 'route' => 'profile'],
     ];
 @endphp
 

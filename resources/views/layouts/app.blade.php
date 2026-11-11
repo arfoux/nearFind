@@ -5,7 +5,7 @@
     // The map page IS the canvas: the MapLibre surface runs edge to edge under a
     // full-bleed shell and every control floats on glass above it. Jelajahi and
     // Laporan share that full-bleed shell so their content owns the whole
-    // viewport. The remaining account pages keep the framed card.
+    // viewport. The account page keeps the framed card.
     $isMap = $active === 'peta';
     $isFullBleed = $isMap || in_array($active, ['jelajahi', 'laporan'], true);
     $bodyClass = $isMap
@@ -16,6 +16,10 @@
         $isFullBleed => 'relative flex h-dvh min-h-dvh w-full flex-col overflow-hidden bg-canvas',
         default => 'relative mx-auto flex h-dvh w-full flex-col overflow-hidden bg-canvas sm:my-4 sm:h-[calc(100dvh-2rem)] sm:max-w-[600px] sm:rounded-[2.25rem] sm:shadow-[0_30px_90px_-40px_rgba(0,0,0,0.55)] sm:ring-1 sm:ring-white/10 lg:my-6 lg:h-[calc(100dvh-3rem)] lg:max-w-[1180px]',
     };
+
+    // The page a tab request is waiting for. Following a nav link rewrites
+    // `tab` on the live shell (app.js keeps it in sync with the address bar).
+    $tab = request()->query('tab', $active);
 @endphp
 
 <!DOCTYPE html>
@@ -39,7 +43,24 @@
 <body class="{{ $bodyClass }}">
     @include('partials.icon-sprite')
 
-    <div class="{{ $shellClass }}" data-app-shell>
+    <div class="{{ $shellClass }}" data-app-shell data-tab="{{ $tab }}">
+        {{-- Two layers, always: the tab's skeleton is painted by the server and
+             sits underneath, and the real page fades in above it once it has
+             data. Pressing a tab therefore shows that tab's shape immediately —
+             never a blank column, never the previous page's content.
+
+             Every tab's shape is rendered here (only the current one is shown),
+             so the client can swap to another tab's skeleton in the same frame
+             the tab is pressed, without a request. The extra markup is inert and
+             not painted. --}}
+        <div class="pointer-events-none absolute inset-0 flex min-h-0 flex-col" data-page-skeleton aria-hidden="true">
+            @foreach (['peta', 'jelajahi', 'laporan', 'profil'] as $skeletonTab)
+                <div @if ($skeletonTab !== $tab) hidden @endif data-skeleton-slot="{{ $skeletonTab }}" class="flex min-h-0 flex-1 flex-col">
+                    @include('partials.skeleton', ['tab' => $skeletonTab])
+                </div>
+            @endforeach
+        </div>
+
         <div class="flex min-h-0 flex-1 flex-col" data-page-content>
             @yield('content')
         </div>

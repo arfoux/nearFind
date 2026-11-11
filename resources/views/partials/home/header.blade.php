@@ -1,10 +1,17 @@
+@php
+    // The header links to the account page for a signed-in visitor, and to the
+    // Profil tab for a guest (which the auth middleware sends to /auth).
+    $accountUrl = route('profile');
+@endphp
+
 <header class="nf-glass-strong nf-header pointer-events-auto relative z-[700] rounded-[22px] px-3.5 py-3 sm:px-4 lg:px-5 lg:py-3.5">
     <div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-x-8">
         @include('partials.brand', ['class' => 'col-start-1 row-start-1 justify-self-start'])
 
         @if ($sealUser)
             <a
-                href="{{ route('profile.index') }}"
+                href="{{ $accountUrl }}"
+                data-app-link
                 class="col-start-2 row-start-1 inline-flex h-9 max-w-[150px] items-center justify-center gap-2 rounded-full bg-brand-50 px-2.5 text-[11.5px] font-semibold text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 lg:col-start-3 lg:h-10 lg:px-3.5 lg:text-xs"
                 aria-label="Buka profil {{ $sealUser->name }}"
             >
@@ -15,7 +22,8 @@
             </a>
         @else
             <a
-                href="{{ route('auth') }}"
+                href="{{ $accountUrl }}"
+                data-app-link
                 class="col-start-2 row-start-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-surface/80 px-3.5 text-[11.5px] font-semibold text-brand-200 shadow-sm ring-1 ring-white/10 transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 active:scale-[0.98] lg:col-start-3 lg:h-10 lg:px-4 lg:text-xs"
             >
                 @include('partials.icon', ['name' => 'user', 'class' => 'size-3.5'])
