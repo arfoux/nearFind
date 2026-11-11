@@ -4,12 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Need\StoreNeedRequest;
 use App\Models\Need;
-use App\Models\NeedSupport;
 use App\Models\Profile;
-use App\Support\NeedPresenter;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -30,7 +26,7 @@ class NeedController extends Controller
     {
         return view('explore.index', [
             'categories' => config('needs.categories'),
-            'needs' => NeedPresenter::collection($this->query()->get()),
+            'needs' => $this->present(Need::all()),
         ]);
     }
 
@@ -40,7 +36,7 @@ class NeedController extends Controller
      */
     public function report(): View
     {
-        $needs = NeedPresenter::collection($this->query()->get());
+        $needs = $this->present(Need::all());
         $categories = config('needs.categories');
 
         $perCategory = [];
@@ -119,7 +115,38 @@ class NeedController extends Controller
             ]);
         }
 
-        $profile = $this->resolveProfile($request);
+        $user = $request->user();
+
+        $profile = Profile::where('email', $user->email)->first();
+
+        if ($profile === null) {
+            $local = strtolower(Str::before($user->email, '@'));
+            $base = '';
+
+            for ($index = 0; $index < strlen($local); $index++) {
+                if (strlen($base) >= 24) {
+                    break;
+                }
+
+                $char = substr($local, $index, 1);
+
+                if (($char >= 'a' && $char <= 'z') || ($char >= '0' && $char <= '9') || $char === '.' || $char === '_' || $char === '-') {
+                    $base .= $char;
+                }
+            }
+
+            $base = trim($base, '._-');
+
+            if ($base === '') {
+                $base = 'warga';
+            }
+
+            $profile = Profile::create([
+                'email' => $user->email,
+                'name' => $user->name,
+                'username' => $base,
+            ]);
+        }
         $title = trim((string) $validated['title']);
         $location = trim((string) ($validated['location'] ?? ''));
 
@@ -142,63 +169,44 @@ class NeedController extends Controller
     }
 
     /**
-     * The map, the list and the recap read the same rows in the same order.
+     * Row → plain array, inline: the compiled rung has no surface for an app
+     * service class, so the controller produces the shape its views read. The
+     * field names are the ones resources/js/app.js consumes for the map.
+     *
+     * @param  iterable<int, Need>  $needs
+     * @return array<int, array<string, mixed>>
      */
-    private function query(): Builder
+    private function present(iterable $needs): array
     {
-        return Need::query()->latest('created_at')->latest('id');
+        $rows = [];
+
+        foreach ($needs as $need) {
+
+            $rows[] = [
+                'id' => (string) $need->id,
+                'title' => (string) $need->title,
+                'marker_label' => (string) ($need->marker_label ?: $need->title),
+                'category' => (string) $need->category,
+                'location' => (string) ($need->location ?? ''),
+                'area' => (string) ($need->area ?? ''),
+                'distance_km' => (float) ($need->distance_km ?? 0),
+                'supporters' => (int) $need->supporters,
+                'created_at' => (string) ($need->created_at ?? ''),
+                'description' => (string) ($need->description ?? ''),
+                'latitude' => $need->latitude !== null ? (float) $need->latitude : null,
+                'longitude' => $need->longitude !== null ? (float) $need->longitude : null,
+                'opportunity' => (bool) $need->opportunity,
+            ];
+        }
+
+        return $rows;
     }
 
+    /**
+     * The map, the list and the recap read the same rows in the same order.
+     */
     /**
      * Same lazy provisioning as the profile page: the deployment credential is
      * not necessarily a `profiles` row, so the first activity creates one.
      */
-    private function resolveProfile(Request $request): Profile
-    {
-        $user = $request->user();
-
-        $profile = Profile::where('email', $user->email)->first();
-
-        if ($profile !== null) {
-            return $profile;
-        }
-
-        return Profile::create([
-            'email' => $user->email,
-            'name' => $user->name,
-            'username' => $this->uniqueUsername($user->email),
-        ]);
-    }
-
-    private function uniqueUsername(string $email): string
-    {
-        $raw = strtolower(Str::before($email, '@'));
-        $base = '';
-
-        for ($i = 0; $i < strlen($raw); $i++) {
-            $ch = substr($raw, $i, 1);
-
-            if (($ch >= 'a' && $ch <= 'z') || ($ch >= '0' && $ch <= '9') || $ch === '.' || $ch === '_' || $ch === '-') {
-                $base .= $ch;
-            }
-        }
-
-        $base = trim($base, '._-');
-
-        if ($base === '') {
-            $base = 'warga';
-        }
-
-        $base = substr($base, 0, 24);
-
-        $username = $base;
-        $suffix = 1;
-
-        while (Profile::where('username', $username)->first() !== null) {
-            $suffix++;
-            $username = $base.$suffix;
-        }
-
-        return $username;
-    }
 }
