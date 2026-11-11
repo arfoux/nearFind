@@ -17,6 +17,12 @@ const MESSAGES = {
   'title.min': 'Judul kebutuhan minimal 3 karakter.',
   'title.max': 'Judul kebutuhan maksimal 120 karakter.',
   'category.required': 'Pilih kategori kebutuhan.',
+  'latitude.required': 'Tandai dulu titik lokasi kebutuhan di peta.',
+  'latitude.numeric': 'Titik lokasi tidak valid.',
+  'latitude.between': 'Titik lokasi di luar jangkauan peta.',
+  'longitude.required': 'Tandai dulu titik lokasi kebutuhan di peta.',
+  'longitude.numeric': 'Titik lokasi tidak valid.',
+  'longitude.between': 'Titik lokasi di luar jangkauan peta.',
   'location.max': 'Patokan lokasi maksimal 120 karakter.',
   'description.max': 'Deskripsi kebutuhan maksimal 600 karakter.',
   'area.max': 'Nama wilayah maksimal 120 karakter.',
@@ -58,6 +64,16 @@ function validate(body, env) {
   else if (categoryIds(env).length > 0 && !categoryIds(env).includes(category)) {
     errors.category = MESSAGES['category.in'];
   }
+
+  // The pin is what puts a need on the map, so it is required.
+  const lat = Number.parseFloat(str(body.latitude));
+  const lng = Number.parseFloat(str(body.longitude));
+
+  if (str(body.latitude) === '' || Number.isNaN(lat)) errors.latitude = MESSAGES['latitude.required'];
+  else if (lat < -90 || lat > 90) errors.latitude = MESSAGES['latitude.between'];
+
+  if (str(body.longitude) === '' || Number.isNaN(lng)) errors.longitude = MESSAGES['longitude.required'];
+  else if (lng < -180 || lng > 180) errors.longitude = MESSAGES['longitude.between'];
 
   if (location.length > 120) errors.location = MESSAGES['location.max'];
   if (description.length > 600) errors.description = MESSAGES['description.max'];
@@ -138,14 +154,13 @@ export default async function handle(ctx, env) {
   const area = str(body.area).trim();
   const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
-  // Coordinates stay null: a submission has no map point yet, so it appears in
-  // the list and on the profile but is not plotted.
   await db
     .prepare(
-      'insert into needs (profile_id, title, marker_label, category, location, description, area, supporters, opportunity, status, created_at, updated_at) ' +
-        'values (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?)'
+      'insert into needs (profile_id, title, marker_label, category, location, description, area, latitude, longitude, supporters, opportunity, status, created_at, updated_at) ' +
+        'values (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?)'
     )
-    .bind(profile.id, title, title, str(body.category), location || null, description || null, area || null, 'aktif', now, now)
+    .bind(profile.id, title, title, str(body.category), location || null, description || null, area || null,
+      Number.parseFloat(str(body.latitude)), Number.parseFloat(str(body.longitude)), 'aktif', now, now)
     .run();
 
   if (ctx.session && typeof ctx.session.flash === 'function') {

@@ -18,6 +18,10 @@ class StoreNeedRequest extends FormRequest
         return [
             'title' => ['required', 'string', 'min:3', 'max:120'],
             'category' => ['required', 'string'],
+            // The pin is what puts a need on the map, so it is required: a row
+            // without coordinates is invisible everywhere but a list.
+            'latitude' => ['required', 'numeric', 'between:-90,90'],
+            'longitude' => ['required', 'numeric', 'between:-180,180'],
             'location' => ['nullable', 'string', 'max:120'],
             'description' => ['nullable', 'string', 'max:600'],
             'area' => ['nullable', 'string', 'max:120'],
@@ -34,6 +38,12 @@ class StoreNeedRequest extends FormRequest
             'title.min' => 'Judul kebutuhan minimal 3 karakter.',
             'title.max' => 'Judul kebutuhan maksimal 120 karakter.',
             'category.required' => 'Pilih kategori kebutuhan.',
+            'latitude.required' => 'Tandai dulu titik lokasi kebutuhan di peta.',
+            'latitude.numeric' => 'Titik lokasi tidak valid.',
+            'latitude.between' => 'Titik lokasi di luar jangkauan peta.',
+            'longitude.required' => 'Tandai dulu titik lokasi kebutuhan di peta.',
+            'longitude.numeric' => 'Titik lokasi tidak valid.',
+            'longitude.between' => 'Titik lokasi di luar jangkauan peta.',
             'location.max' => 'Patokan lokasi maksimal 120 karakter.',
             'description.max' => 'Deskripsi kebutuhan maksimal 600 karakter.',
             'area.max' => 'Nama wilayah maksimal 120 karakter.',

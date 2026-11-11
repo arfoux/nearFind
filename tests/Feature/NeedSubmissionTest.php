@@ -66,6 +66,9 @@ class NeedSubmissionTest extends TestCase
         $response = $this->asWarga()->post(route('needs.store'), [
             'title' => 'Jasa servis kipas angin',
             'category' => 'repair',
+            'latitude' => '-6.8912',
+            'longitude' => '107.5931',
+            'area' => 'Sukajadi, Bandung',
             'location' => 'Jl. Sukajadi 5',
             'description' => 'Kipas angin warga rusak, butuh teknisi dekat.',
         ]);
@@ -82,6 +85,9 @@ class NeedSubmissionTest extends TestCase
             'category' => 'repair',
             'location' => 'Jl. Sukajadi 5',
             'description' => 'Kipas angin warga rusak, butuh teknisi dekat.',
+            'area' => 'Sukajadi, Bandung',
+            'latitude' => -6.8912,
+            'longitude' => 107.5931,
             'status' => 'aktif',
         ]);
 
@@ -105,6 +111,8 @@ class NeedSubmissionTest extends TestCase
             ->post(route('needs.store'), [
                 'title' => 'Warung kopi keliling',
                 'category' => 'culinary',
+                'latitude' => '-6.89',
+                'longitude' => '107.59',
             ])
             ->assertRedirect(route('profile'));
 
@@ -122,6 +130,8 @@ class NeedSubmissionTest extends TestCase
             ->post(route('needs.store'), [
                 'title' => 'Kebutuhan tanpa kategori',
                 'category' => 'tidak-ada',
+                'latitude' => '-6.89',
+                'longitude' => '107.59',
             ])
             ->assertRedirect(route('home'))
             ->assertSessionHasErrors('category');
@@ -136,6 +146,8 @@ class NeedSubmissionTest extends TestCase
             ->post(route('needs.store'), [
                 'title' => 'ab',
                 'category' => 'repair',
+                'latitude' => '-6.89',
+                'longitude' => '107.59',
             ])
             ->assertRedirect(route('home'))
             ->assertSessionHasErrors('title');
@@ -154,5 +166,36 @@ class NeedSubmissionTest extends TestCase
             'email' => self::EMAIL,
             'name' => self::NAME,
         ], '1h');
+    }
+
+    public function test_a_submission_without_a_pin_is_rejected(): void
+    {
+        $this->asWarga()
+            ->from(route('home'))
+            ->post(route('needs.store'), [
+                'title' => 'Kebutuhan tanpa titik lokasi',
+                'category' => 'repair',
+            ])
+            ->assertRedirect(route('home'))
+            ->assertSessionHasErrors(['latitude', 'longitude']);
+
+        // A row without coordinates can never be plotted, so it must not exist.
+        $this->assertDatabaseCount('needs', 0);
+    }
+
+    public function test_a_pin_outside_the_map_is_rejected(): void
+    {
+        $this->asWarga()
+            ->from(route('home'))
+            ->post(route('needs.store'), [
+                'title' => 'Kebutuhan di luar jangkauan',
+                'category' => 'repair',
+                'latitude' => '91',
+                'longitude' => '107.59',
+            ])
+            ->assertRedirect(route('home'))
+            ->assertSessionHasErrors('latitude');
+
+        $this->assertDatabaseCount('needs', 0);
     }
 }
