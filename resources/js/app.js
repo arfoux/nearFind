@@ -21,6 +21,19 @@ let isNavigating = false;
 initSpaNavigation();
 initPage();
 
+// The server renders every tab's skeleton only so the first paint is a shape and
+// not a blank column. The page it was painting under is ready by the time this
+// module runs, so the layer goes away for good: it sits above the content and a
+// rectangle of the same size, which is exactly why a finished page still looked
+// like it was loading.
+function hideServerSkeletons() {
+    document.querySelectorAll('[data-skeleton-slot]').forEach((slot) => {
+        slot.setAttribute('hidden', '');
+    });
+}
+
+hideServerSkeletons();
+
 function initPage() {
     initPasswordToggles();
     initAuthTabs();
@@ -203,16 +216,12 @@ async function navigateTo(url, { pushState = true } = {}) {
         shell.className = nextShell.className;
         shell.dataset.tab = targetTab;
 
-        // The skeleton layer sits OUTSIDE the content slot that is about to be
-        // replaced, so only the slot for the tab that landed may stay shown.
-        // Before this, the server-rendered `peta` slot stayed visible under
-        // every other page.
+        // The skeleton layer is the WAIT, never the page. Once the real content is
+        // in the slot, nothing of the server-rendered layer may stay painted: it
+        // is a full-size, absolutely positioned copy of the same page, so leaving
+        // it visible made every loaded tab look like it was still loading.
         document.querySelectorAll('[data-skeleton-slot]').forEach((slot) => {
-            if (slot.dataset.skeletonSlot === targetTab) {
-                slot.removeAttribute('hidden');
-            } else {
-                slot.setAttribute('hidden', '');
-            }
+            slot.setAttribute('hidden', '');
         });
 
         // The skeleton belonged to the WAIT, not to the page. It is removed the
@@ -1124,7 +1133,7 @@ function initNearFind(
     }
 
     function renderMarkers() {
-        if (!map) {
+        if (disposed || !map) {
             return;
         }
 
@@ -1199,7 +1208,7 @@ function initNearFind(
     }
 
     function showMarkerTooltip(need) {
-        if (!map) {
+        if (disposed || !map) {
             return;
         }
 
@@ -1452,7 +1461,7 @@ function initNearFind(
     }
 
     function zoomBy(delta) {
-        if (!map) {
+        if (disposed || !map) {
             return;
         }
 
@@ -1516,7 +1525,7 @@ function initNearFind(
     }
 
     function locateUser({ silent = false } = {}) {
-        if (!map) {
+        if (disposed || !map) {
             return;
         }
 
@@ -1534,6 +1543,14 @@ function initNearFind(
 
         navigator.geolocation.getCurrentPosition(
             ({ coords }) => {
+                // The callback can arrive after the tab was left: `disposed` is set
+                // by the page teardown and `map` is null by then, so anything that
+                // touches MapLibre here would throw "getCanvasContainer" on a
+                // detached container.
+                if (disposed || !map) {
+                    return;
+                }
+
                 const location = [coords.longitude, coords.latitude];
 
                 if (userMarker) {
