@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Need;
 use App\Models\NeedSupport;
 use App\Models\Profile;
-use App\Support\NeedPresenter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -20,84 +19,94 @@ class ProfileController extends Controller
     public function __invoke(Request $request): View
     {
         $user = $request->user();
-        $profile = $this->resolveProfile($request);
+        $user = $request->user();
+
+        $profile = Profile::where('email', $user->email)->first();
+
+        if ($profile === null) {
+            $local = strtolower(Str::before($user->email, '@'));
+            $base = '';
+
+            for ($index = 0; $index < strlen($local); $index++) {
+                if (strlen($base) >= 24) {
+                    break;
+                }
+
+                $char = substr($local, $index, 1);
+
+                if (($char >= 'a' && $char <= 'z') || ($char >= '0' && $char <= '9') || $char === '.' || $char === '_' || $char === '-') {
+                    $base .= $char;
+                }
+            }
+
+            $base = trim($base, '._-');
+
+            if ($base === '') {
+                $base = 'warga';
+            }
+
+            $profile = Profile::create([
+                'email' => $user->email,
+                'name' => $user->name,
+                'username' => $base,
+            ]);
+        }
 
         $submittedNeeds = Need::where('profile_id', $profile->id)->latest()->limit(30)->get();
 
-        $supportedNeeds = Need::whereIn(
-            'id',
-            // The pivot as a plain query: the compiled rung has no relation objects.
-            NeedSupport::where('profile_id', $profile->id)
-                ->latest('created_at')
-                ->limit(30)
-                ->get()
-                ->map(static fn ($support): mixed => $support->need_id)
-                ->all(),
-        )->get();
+        // Two plain queries, because the compiled rung cannot chain past `get()`.
+        $supportedIds = [];
+
+        foreach (NeedSupport::where('profile_id', $profile->id)->limit(30)->get() as $support) {
+            $supportedIds[] = $support->need_id;
+        }
+
+        $supportedNeeds = $supportedIds === []
+            ? []
+            : Need::whereIn('id', $supportedIds)->limit(30)->get();
 
         return view('profile.index', [
             'profile' => $profile,
             'email' => $user->email,
-            'submittedNeeds' => NeedPresenter::collection($submittedNeeds),
-            'supportedNeeds' => NeedPresenter::collection($supportedNeeds),
+            'submittedNeeds' => $this->present($submittedNeeds),
+            'supportedNeeds' => $this->present($supportedNeeds),
             'categories' => config('needs.categories'),
+            // `count()` on a query result is not part of the compiled surface,
+            // so the tally is taken from the arrays the view already receives.
             'stats' => [
-                'submitted' => $submittedNeeds->count(),
-                'supported' => $supportedNeeds->count(),
+                'submitted' => count($this->present($submittedNeeds)),
+                'supported' => count($this->present($supportedNeeds)),
             ],
         ]);
+    }
+
+    /**
+     * Row → plain array, inline: the compiled rung has no surface for an app
+     * service class, so the controller produces the shape its view reads.
+     *
+     * @param  iterable<int, Need>  $needs
+     * @return array<int, array<string, mixed>>
+     */
+    private function present(iterable $needs): array
+    {
+        $rows = [];
+
+        foreach ($needs as $need) {
+            $rows[] = [
+                'id' => (string) $need->id,
+                'title' => (string) $need->title,
+                'category' => (string) $need->category,
+                'location' => (string) ($need->location ?? ''),
+                'description' => (string) ($need->description ?? ''),
+                'supporters' => (int) $need->supporters,
+            ];
+        }
+
+        return $rows;
     }
 
     /**
      * The deployment credential is not necessarily a `profiles` row, so the
      * first visit creates the row it belongs to.
      */
-    private function resolveProfile(Request $request): Profile
-    {
-        $user = $request->user();
-
-        $profile = Profile::where('email', $user->email)->first();
-
-        if ($profile !== null) {
-            return $profile;
-        }
-
-        return Profile::create([
-            'email' => $user->email,
-            'name' => $user->name,
-            'username' => $this->uniqueUsername($user->email),
-        ]);
-    }
-
-    private function uniqueUsername(string $email): string
-    {
-        $raw = strtolower(Str::before($email, '@'));
-        $base = '';
-
-        for ($i = 0; $i < strlen($raw); $i++) {
-            $ch = substr($raw, $i, 1);
-
-            if (($ch >= 'a' && $ch <= 'z') || ($ch >= '0' && $ch <= '9') || $ch === '.' || $ch === '_' || $ch === '-') {
-                $base .= $ch;
-            }
-        }
-
-        $base = trim($base, '._-');
-
-        if ($base === '') {
-            $base = 'warga';
-        }
-
-        $base = substr($base, 0, 24);
-
-        $username = $base;
-        $suffix = 1;
-
-        while (Profile::where('username', $username)->first() !== null) {
-            $suffix++;
-            $username = $base.$suffix;
-        }
-
-        return $username;
-    }
 }

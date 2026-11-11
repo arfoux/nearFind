@@ -897,12 +897,25 @@ function initNearFind(
         }
     }
 
+    /**
+     * Whole hours between a row's `created_at` and now. The server sends the
+     * timestamp and the browser does the arithmetic, so the compiled PHP side
+     * never needs a Carbon method the rung does not implement.
+     */
+    function ageInHours(value) {
+        const then = Date.parse(value || '');
+        if (Number.isNaN(then)) return 0;
+        return Math.max(0, Math.floor((Date.now() - then) / 3600000));
+    }
+
     function sortNeeds(filteredNeeds) {
         const sortedNeeds = [...filteredNeeds];
 
         switch (state.sort) {
             case 'newest':
-                sortedNeeds.sort((first, second) => first.hours_ago - second.hours_ago);
+                // The row's timestamp, not a pre-computed age: the server no
+                // longer rounds it (the compiled rung has no Carbon surface).
+                sortedNeeds.sort((first, second) => ageInHours(second.created_at) - ageInHours(first.created_at));
                 break;
             case 'supported':
                 sortedNeeds.sort((first, second) => second.supporters - first.supporters);

@@ -4,7 +4,11 @@
   },
   "ports": {
     "/auth": "login",
-    "/keluar": "logout"
+    "/login": "login",
+    "/logout": "logout",
+    "/edge/login": "login",
+    "/edge/logout": "logout",
+    "/edge/needs": "need-store"
   },
   "static": {
     "/auth": "auth/index.html"
