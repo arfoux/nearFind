@@ -120,7 +120,10 @@ async function navigateTo(url, { pushState = true } = {}) {
 
     isNavigating = true;
 
-    let targetTab = tabForPathname(window.location.pathname);
+    // The tab the press is FOR, resolved from the URL being navigated to. It used
+    // to be read off window.location before pushState ran, so the nav lit up for
+    // the page being left and only corrected itself once the response arrived.
+    let targetTab = tabForPathname(new URL(url, window.location.href).pathname);
 
     if (pushState) {
         window.history.pushState({ nearfind: true }, '', url);
@@ -128,6 +131,8 @@ async function navigateTo(url, { pushState = true } = {}) {
 
     shell.dataset.tab = targetTab;
 
+    // The nav answers the press immediately, in the same frame as the skeleton:
+    // waiting for the response made the button feel dead for a network round trip.
     syncNav(targetTab);
 
     document.querySelectorAll('[data-nav-link]').forEach((link) => {
@@ -139,11 +144,15 @@ async function navigateTo(url, { pushState = true } = {}) {
     // skeleton can be very fast, so give the paint a frame to land.
     const skeleton = buildSkeleton(targetTab);
 
+    // Dispose BEFORE the old markup goes: MapLibre's remove() needs the container
+    // it was given, and emptying the slot first left it calling
+    // getCanvasContainer() on a detached node ("Cannot read properties of null").
+    disposePage();
+
     content.innerHTML = '';
     content.setAttribute('aria-busy', 'true');
 
     skeleton?.prependFor(content);
-    disposePage();
 
     // One frame, so the skeleton is painted before the network call can finish.
     await new Promise((resolve) => requestAnimationFrame(() => resolve()));
@@ -206,14 +215,16 @@ async function navigateTo(url, { pushState = true } = {}) {
             }
         });
 
-        // The skeleton for the tab that actually landed (a guest pressing Profil
-        // gets the gate, a signed-in visitor is redirected by the server).
-        const nextSkeleton = buildSkeleton(targetTab);
-
+        // The skeleton belonged to the WAIT, not to the page. It is removed the
+        // moment the real content is in place: keeping it on top (and fading the
+        // page in under it) is what made a loaded page still look like a
+        // skeleton.
         content.innerHTML = nextContent.innerHTML;
 
-        nextSkeleton?.reveal(content);
         skeleton?.remove();
+        content.removeAttribute('aria-busy');
+        content.style.opacity = '';
+        content.style.transition = '';
 
         syncNav(targetTab);
 
@@ -319,29 +330,9 @@ function buildSkeleton(tab) {
 
             content.append(frame);
         },
-        reveal(page) {
-            const frame = page.querySelector('[data-pending-skeleton]');
-
-            if (!frame) {
-                return;
-            }
-
-            // Lift the skeleton above the fresh page, fade the page in beneath it,
-            // then let the skeleton go: the tab never flashes an empty column.
-            page.prepend(frame);
-            page.style.opacity = '0';
-            page.style.transition = 'opacity 160ms ease-out';
-
-            requestAnimationFrame(() => {
-                page.style.opacity = '1';
-            });
-
-            window.setTimeout(() => {
-                frame.remove();
-                page.style.opacity = '';
-                page.style.transition = '';
-            }, 170);
-        },
+        // The skeleton is a placeholder for the wait and nothing else: the swap
+        // removes it synchronously, so a page that has its content never keeps a
+        // shimmering copy of itself on top.
         remove() {
             document.querySelector('[data-pending-skeleton]')?.remove();
         },
