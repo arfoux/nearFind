@@ -19,6 +19,8 @@ class StoreNeedRequest extends FormRequest
             'title' => ['required', 'string', 'min:3', 'max:120'],
             'category' => ['required', 'string'],
             'location' => ['nullable', 'string', 'max:120'],
+            'description' => ['nullable', 'string', 'max:600'],
+            'area' => ['nullable', 'string', 'max:120'],
         ];
     }
 
@@ -33,6 +35,8 @@ class StoreNeedRequest extends FormRequest
             'title.max' => 'Judul kebutuhan maksimal 120 karakter.',
             'category.required' => 'Pilih kategori kebutuhan.',
             'location.max' => 'Patokan lokasi maksimal 120 karakter.',
+            'description.max' => 'Deskripsi kebutuhan maksimal 600 karakter.',
+            'area.max' => 'Nama wilayah maksimal 120 karakter.',
         ];
     }
 }

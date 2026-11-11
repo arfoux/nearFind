@@ -76,7 +76,7 @@ class RegisterTest extends TestCase
 
         Mail::assertSent(VerifyEmail::class, function (VerifyEmail $mail) use ($profile): bool {
             return $mail->hasTo('siti.rahma@example.id')
-                && $mail->verificationUrl === url('/daftar/verifikasi?token='.$profile->email_verification_token);
+                && $mail->verificationUrl === url('/verify?token='.$profile->email_verification_token);
         });
     }
 

@@ -3,11 +3,14 @@
 namespace Tests\Feature\Auth;
 
 use App\Support\Seal\Sealer;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class LoginTest extends TestCase
 {
+    use RefreshDatabase;
+
     private const COOKIE = 'nearfind_seal';
 
     private const EMAIL = 'warga@nearfind.test';
@@ -65,19 +68,19 @@ class LoginTest extends TestCase
         $response->assertDontSee('class="app-background', false);
     }
 
-    public function test_the_profile_tab_points_signed_in_visitors_at_the_profile_page(): void
+    public function test_the_profile_tab_points_at_the_profile_page(): void
     {
         $response = $this->withUnencryptedCookie(self::COOKIE, $this->validToken())->get(route('home'));
 
         $response->assertOk();
 
         $this->assertSame(1, preg_match('/<a\b[^>]*data-nav-key="profil"[^>]*>/', (string) $response->getContent(), $match));
-        $this->assertStringContainsString('href="'.route('profile.index').'"', $match[0]);
+        $this->assertStringContainsString('href="'.route('profile').'"', $match[0]);
     }
 
-    public function test_guests_are_redirected_to_the_auth_page_from_the_dashboard(): void
+    public function test_guests_are_redirected_to_the_auth_page_from_the_profile_page(): void
     {
-        $this->get(route('dashboard'))->assertRedirect(route('auth'));
+        $this->get(route('profile'))->assertRedirect(route('auth'));
     }
 
     public function test_authenticated_users_are_redirected_away_from_the_auth_page(): void
@@ -103,7 +106,7 @@ class LoginTest extends TestCase
         $this->assertStringStartsWith('stseal.v1.', (string) $cookie->getValue());
 
         $this->withUnencryptedCookie(self::COOKIE, (string) $cookie->getValue())
-            ->get(route('dashboard'))
+            ->get(route('profile'))
             ->assertOk()
             ->assertSee(self::NAME)
             ->assertSee(self::EMAIL);
@@ -197,7 +200,7 @@ class LoginTest extends TestCase
     public function test_a_tampered_cookie_does_not_authenticate(): void
     {
         $this->withUnencryptedCookie(self::COOKIE, 'stseal.v1.invalid.invalid.invalid')
-            ->get(route('dashboard'))
+            ->get(route('profile'))
             ->assertRedirect(route('auth'));
     }
 

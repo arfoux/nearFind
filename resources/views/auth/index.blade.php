@@ -5,6 +5,12 @@
     // A register POST that comes back with validation errors has `name` in the
     // old input, so the page reopens on the register tab even without `?mode`.
     $initialMode = ($initialMode ?? 'login') === 'register' || old('name') !== null ? 'register' : 'login';
+
+    // Where to go after signing in: the page the auth middleware sent this guest
+    // from (`/auth?redirect=/profile`), echoed back by both forms.
+    $redirect = (string) (old('redirect') ?: request()->query('redirect', ''));
+    $registerUrl = route('auth', ['mode' => 'register'])
+        .($redirect !== '' ? '&redirect='.urlencode($redirect) : '');
 @endphp
 
 @section('content')
@@ -54,7 +60,7 @@
             </a>
 
             <a
-                href="{{ route('auth', ['mode' => 'daftar']) }}"
+                href="{{ $registerUrl }}"
                 role="tab"
                 id="auth-tab-register"
                 aria-controls="auth-panel-register"
@@ -78,6 +84,7 @@
             >
                 <form method="POST" action="{{ route('auth.login') }}" class="space-y-4">
                     @csrf
+                    <input type="hidden" name="redirect" value="{{ $redirect }}">
 
                     <div>
                         <label for="login-email" class="text-[11px] font-semibold text-brand-200">Email</label>
@@ -164,7 +171,7 @@
                 <p class="mt-4 text-center text-[10.5px] leading-relaxed text-muted">
                     Belum punya akun?
                     <a
-                        href="{{ route('auth', ['mode' => 'daftar']) }}"
+                        href="{{ $registerUrl }}"
                         data-auth-tab="register"
                         class="font-semibold text-brand-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
                     >
@@ -188,6 +195,7 @@
 
                 <form method="POST" action="{{ route('auth.register') }}" class="space-y-4">
                     @csrf
+                    <input type="hidden" name="redirect" value="{{ $redirect }}">
 
                     <div>
                         <label for="register-name" class="text-[11px] font-semibold text-brand-200">Nama</label>

@@ -91,7 +91,7 @@ class RegisterController extends Controller
 
         Mail::to((string) $profile->email)->send(new VerifyEmail(
             (string) $profile->name,
-            url('/daftar/verifikasi?token='.$profile->email_verification_token),
+            url('/verify?token='.$profile->email_verification_token),
         ));
     }
 
