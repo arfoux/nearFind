@@ -1,7 +1,7 @@
 @php
-    // The header links to the account page for a signed-in visitor, and to the
-    // Profil tab for a guest (which the auth middleware sends to /auth).
-    $accountUrl = route('profile');
+    // Signed-in: the header opens the account page. Guest: it is the sign-in
+    // link, so it goes straight to /auth instead of bouncing off /profile.
+    $accountUrl = $sealUser ? route('profile') : route('login');
 @endphp
 
 <header class="nf-glass-strong nf-header pointer-events-auto relative z-[700] rounded-[22px] px-3.5 py-3 sm:px-4 lg:px-5 lg:py-3.5">

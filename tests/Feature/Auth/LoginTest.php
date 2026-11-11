@@ -43,7 +43,7 @@ class LoginTest extends TestCase
 
     public function test_the_auth_page_renders_both_forms_for_guests(): void
     {
-        $this->get(route('auth'))
+        $this->get(route('login'))
             ->assertOk()
             ->assertSee('Masuk atau daftar')
             ->assertSee('Email')
@@ -54,14 +54,14 @@ class LoginTest extends TestCase
 
     public function test_the_register_tab_is_active_from_the_mode_query(): void
     {
-        $this->get(route('auth', ['mode' => 'daftar']))
+        $this->get(route('login', ['mode' => 'daftar']))
             ->assertOk()
             ->assertSee('data-auth-initial="register"', false);
     }
 
     public function test_the_auth_page_uses_the_flat_canvas_background(): void
     {
-        $response = $this->get(route('auth'));
+        $response = $this->get(route('login'));
 
         $response->assertOk();
         $response->assertSee('class="min-h-dvh bg-canvas', false);
@@ -80,13 +80,13 @@ class LoginTest extends TestCase
 
     public function test_guests_are_redirected_to_the_auth_page_from_the_profile_page(): void
     {
-        $this->get(route('profile'))->assertRedirect(route('auth'));
+        $this->get(route('profile'))->assertRedirect(route('login'));
     }
 
     public function test_authenticated_users_are_redirected_away_from_the_auth_page(): void
     {
         $this->withUnencryptedCookie(self::COOKIE, $this->validToken())
-            ->get(route('auth'))
+            ->get(route('login'))
             ->assertRedirect(route('home'));
     }
 
@@ -114,12 +114,12 @@ class LoginTest extends TestCase
 
     public function test_a_warga_cannot_login_with_an_incorrect_password(): void
     {
-        $response = $this->from(route('auth'))->post(route('auth.login'), [
+        $response = $this->from(route('login'))->post(route('auth.login'), [
             'email' => self::EMAIL,
             'password' => 'kata-sandi-salah',
         ]);
 
-        $response->assertRedirect(route('auth'));
+        $response->assertRedirect(route('login'));
         $response->assertSessionHasErrors('email');
         $response->assertCookieMissing(self::COOKIE);
 
@@ -128,12 +128,12 @@ class LoginTest extends TestCase
 
     public function test_a_warga_cannot_login_with_an_unknown_email(): void
     {
-        $response = $this->from(route('auth'))->post(route('auth.login'), [
+        $response = $this->from(route('login'))->post(route('auth.login'), [
             'email' => 'orang-lain@nearfind.test',
             'password' => self::PASSWORD,
         ]);
 
-        $response->assertRedirect(route('auth'));
+        $response->assertRedirect(route('login'));
         $response->assertSessionHasErrors('email');
         $response->assertCookieMissing(self::COOKIE);
     }
@@ -143,7 +143,7 @@ class LoginTest extends TestCase
         $response = $this->withUnencryptedCookie(self::COOKIE, $this->validToken())
             ->post(route('logout'));
 
-        $response->assertRedirect(route('auth'));
+        $response->assertRedirect(route('login'));
         $response->assertSessionHas('status');
         $response->assertCookieExpired(self::COOKIE);
     }
@@ -201,7 +201,7 @@ class LoginTest extends TestCase
     {
         $this->withUnencryptedCookie(self::COOKIE, 'stseal.v1.invalid.invalid.invalid')
             ->get(route('profile'))
-            ->assertRedirect(route('auth'));
+            ->assertRedirect(route('login'));
     }
 
     public function test_the_home_page_reflects_the_authenticated_user(): void

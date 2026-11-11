@@ -49,7 +49,7 @@ class RegisterController extends Controller
             $this->sendVerification($existing);
 
             return redirect()
-                ->route('auth')
+                ->route('login')
                 ->with('status', 'Tautan verifikasi baru sudah dikirim ke '.$existing->email.'.');
         }
 
@@ -72,7 +72,7 @@ class RegisterController extends Controller
         $this->sendVerification($profile);
 
         return redirect()
-            ->route('auth')
+            ->route('login')
             ->with('status', 'Akun dibuat. Buka tautan verifikasi di email '.$profile->email.' untuk mengaktifkannya.');
     }
 

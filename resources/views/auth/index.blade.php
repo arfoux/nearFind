@@ -9,7 +9,7 @@
     // Where to go after signing in: the page the auth middleware sent this guest
     // from (`/auth?redirect=/profile`), echoed back by both forms.
     $redirect = (string) (old('redirect') ?: request()->query('redirect', ''));
-    $registerUrl = route('auth', ['mode' => 'register'])
+    $registerUrl = route('login', ['mode' => 'register'])
         .($redirect !== '' ? '&redirect='.urlencode($redirect) : '');
 @endphp
 
@@ -47,7 +47,7 @@
 
         <div role="tablist" aria-label="Masuk atau daftar" class="grid grid-cols-2 gap-1 rounded-2xl bg-canvas p-1">
             <a
-                href="{{ route('auth') }}"
+                href="{{ route('login') }}"
                 role="tab"
                 id="auth-tab-login"
                 aria-controls="auth-panel-login"
@@ -318,7 +318,7 @@
                 <p class="mt-4 text-center text-[10.5px] leading-relaxed text-muted">
                     Sudah punya akun?
                     <a
-                        href="{{ route('auth') }}"
+                        href="{{ route('login') }}"
                         data-auth-tab="login"
                         class="font-semibold text-brand-200 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
                     >

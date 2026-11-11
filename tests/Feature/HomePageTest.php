@@ -78,7 +78,7 @@ class HomePageTest extends TestCase
     public function test_a_guest_asking_for_the_profile_page_is_sent_to_the_auth_page(): void
     {
         $this->get('/profile')
-            ->assertRedirect(route('auth'))
+            ->assertRedirect(route('login'))
             ->assertSessionHas('url.intended', route('profile'));
     }
 
@@ -90,7 +90,7 @@ class HomePageTest extends TestCase
 
         $this->assertSame(1, preg_match('/<a\b[^>]*data-nav-key="profil"[^>]*>/', (string) $response->getContent(), $match));
         $this->assertStringContainsString('href="'.route('profile').'"', $match[0]);
-        $this->assertStringNotContainsString('href="'.route('auth').'"', $match[0]);
+        $this->assertStringNotContainsString('href="'.route('login').'"', $match[0]);
     }
 
     public function test_every_tab_shares_the_same_app_shell_nav_track_and_skeleton(): void

@@ -104,7 +104,7 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
 
         return redirect()
-            ->route('auth')
+            ->route('login')
             ->with('status', 'Kamu sudah keluar dari akunmu.')
             ->withCookie(cookie()->forget((string) config('seal.session.cookie')));
     }
