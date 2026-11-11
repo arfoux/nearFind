@@ -443,6 +443,23 @@ function initAuthTabs() {
     applyMode();
 }
 
+// Every word must appear somewhere in the haystack, in any order: "sukajadi
+// laundry" finds the laundry in Sukajadi, which a single substring test missed.
+function matchesWords(haystack, query) {
+    const words = String(query || '')
+        .toLocaleLowerCase('id-ID')
+        .split(/\s+/)
+        .filter(Boolean);
+
+    if (words.length === 0) {
+        return true;
+    }
+
+    const hay = String(haystack || '').toLocaleLowerCase('id-ID');
+
+    return words.every((word) => hay.includes(word));
+}
+
 // The Jelajahi page renders every need on the server; the search box and the
 // category chips filter that list in place.
 function initNeedsList() {
@@ -464,7 +481,7 @@ function initNeedsList() {
 
         rows.forEach((row) => {
             const matchesCategory = state.category === 'all' || row.dataset.category === state.category;
-            const matchesQuery = state.query === '' || (row.dataset.search ?? '').includes(state.query);
+            const matchesQuery = matchesWords(row.dataset.search, state.query);
             const show = matchesCategory && matchesQuery;
 
             row.hidden = !show;
@@ -601,8 +618,18 @@ function initNearFind(
         }
 
         map?.resize();
-        fitMapToFiltered();
-        locateUser({ silent: true });
+
+        // A deep link (`/?need=<id>`, the "Lihat di peta" button on Jelajahi) asks
+        // for ONE need. Auto-locating on top of it moved the map to the visitor a
+        // moment later, so the camera drifted away from the pin they came for.
+        if (requestedNeedId !== null) {
+            if (state.selectedId !== null) {
+                focusNeedOnMap(state.selectedId);
+            }
+        } else {
+            fitMapToFiltered();
+            locateUser({ silent: true });
+        }
     });
 
     function initMap() {
@@ -916,14 +943,10 @@ function initNearFind(
                 return false;
             }
 
-            if (query === '') {
-                return true;
-            }
-
-            return [need.title, need.marker_label, need.location, need.area, need.description, category.label]
-                .join(' ')
-                .toLocaleLowerCase('id-ID')
-                .includes(query);
+            return matchesWords(
+                [need.title, need.marker_label, need.location, need.area, need.description, category.label].join(' '),
+                query,
+            );
         });
 
         state.filtered = sortNeeds(filteredNeeds);
@@ -1457,6 +1480,37 @@ function initNearFind(
             maxZoom: isDesktop ? 16 : 15.5,
             linear: true,
             duration: 350,
+        });
+    }
+
+    /**
+     * Centre the map on one need, keeping it clear of the floating header and the
+     * bottom card. Used by a `?need=` deep link so the pin the visitor came for
+     * is where the camera lands, not wherever the visitor happens to be.
+     */
+    function focusNeedOnMap(needId) {
+        if (disposed || !map) {
+            return;
+        }
+
+        const need = state.needs.find((item) => item.id === needId);
+
+        if (!need || need.longitude === null || need.latitude === null) {
+            return;
+        }
+
+        const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
+        const mapHeight = mapElement.clientHeight || window.innerHeight;
+
+        map.jumpTo({
+            center: [need.longitude, need.latitude],
+            zoom: Math.max(map.getZoom(), 15.5),
+            padding: {
+                top: isDesktop ? 180 : 210,
+                right: isDesktop ? Math.min(430, Math.max(120, (mapElement.clientWidth || window.innerWidth) * 0.4)) : 80,
+                bottom: Math.min(isDesktop ? 80 : 230, Math.max(60, mapHeight * 0.32)),
+                left: isDesktop ? 40 : 32,
+            },
         });
     }
 
