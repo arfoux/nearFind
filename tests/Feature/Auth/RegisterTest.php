@@ -44,7 +44,7 @@ class RegisterTest extends TestCase
 
     public function test_the_auth_page_opens_the_register_tab_for_guests(): void
     {
-        $this->get(route('auth', ['mode' => 'daftar']))
+        $this->get(route('login', ['mode' => 'daftar']))
             ->assertOk()
             ->assertSee('data-auth-initial="register"', false)
             ->assertSee('Ulangi kata sandi');
@@ -53,7 +53,7 @@ class RegisterTest extends TestCase
     public function test_guests_are_redirected_away_from_the_auth_page_when_signed_in(): void
     {
         $this->withUnencryptedCookie(self::COOKIE, $this->bootstrapToken())
-            ->get(route('auth', ['mode' => 'daftar']))
+            ->get(route('login', ['mode' => 'daftar']))
             ->assertRedirect(route('home'));
     }
 
@@ -66,7 +66,7 @@ class RegisterTest extends TestCase
             'email' => 'Siti.Rahma@Example.ID',
             'password' => self::PASSWORD,
             'password_confirmation' => self::PASSWORD,
-        ])->assertRedirect(route('auth'));
+        ])->assertRedirect(route('login'));
 
         $profile = Profile::where('email', 'siti.rahma@example.id')->first();
         $this->assertNotNull($profile);
@@ -95,7 +95,7 @@ class RegisterTest extends TestCase
         $this->assertNotSame('', $token);
 
         $this->get(route('register.verify', ['token' => $token]))
-            ->assertRedirect(route('auth'));
+            ->assertRedirect(route('login'));
 
         $profile = Profile::where('email', 'siti@example.id')->first();
         $this->assertTrue($profile->hasVerifiedEmail());
@@ -119,12 +119,12 @@ class RegisterTest extends TestCase
 
         $token = (string) Profile::where('email', 'siti@example.id')->first()->email_verification_token;
 
-        $this->get(route('register.verify', ['token' => $token]))->assertRedirect(route('auth'));
+        $this->get(route('register.verify', ['token' => $token]))->assertRedirect(route('login'));
 
         // A token that was already consumed is not recognised: a leaked mail
         // cannot re-open or re-activate the row.
         $this->get(route('register.verify', ['token' => $token]))
-            ->assertRedirect(route('auth'))
+            ->assertRedirect(route('login'))
             ->assertSessionHas('status', 'Tautan verifikasi tidak dikenali atau sudah dipakai.');
     }
 
@@ -165,7 +165,7 @@ class RegisterTest extends TestCase
             'email' => self::BOOTSTRAP_EMAIL,
             'password' => self::PASSWORD,
             'password_confirmation' => self::PASSWORD,
-        ])->assertRedirect(route('auth'));
+        ])->assertRedirect(route('login'));
 
         $this->assertSame(1, Profile::where('email', self::BOOTSTRAP_EMAIL)->count());
         Mail::assertSent(VerifyEmail::class, 1);
@@ -203,7 +203,7 @@ class RegisterTest extends TestCase
             'email' => 'SITI@example.id',
             'password' => self::PASSWORD,
             'password_confirmation' => self::PASSWORD,
-        ])->assertRedirect(route('auth'));
+        ])->assertRedirect(route('login'));
 
         $this->assertSame(1, Profile::where('email', 'siti@example.id')->count());
 

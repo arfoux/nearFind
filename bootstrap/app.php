@@ -16,7 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Every guarded page sends a guest to /auth with the intended URL
         // stashed, so signing in puts them back where they asked to go.
-        $middleware->redirectGuestsTo(fn () => route('auth'));
+        $middleware->redirectGuestsTo(fn () => route('login'));
         $middleware->redirectUsersTo(fn () => route('home'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {

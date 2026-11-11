@@ -30,7 +30,7 @@ Route::post('/needs', [NeedController::class, 'store'])
     ->name('needs.store');
 
 Route::middleware('guest:seal')->group(function (): void {
-    Route::get('/auth', [AuthController::class, 'create'])->name('auth');
+    Route::get('/auth', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('auth.login');
     Route::post('/register', [RegisterController::class, 'store'])->name('auth.register');
 });

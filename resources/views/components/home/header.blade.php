@@ -17,7 +17,7 @@
             </a>
         @else
             <a
-                href="{{ route('auth') }}"
+                href="{{ route('login') }}"
                 class="col-start-2 row-start-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-white/75 px-3.5 text-[11.5px] font-semibold text-brand-800 shadow-sm ring-1 ring-brand-900/10 transition hover:bg-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 active:scale-[0.98] lg:col-start-3 lg:h-10 lg:px-4 lg:text-xs"
             >
                 <x-icon name="user" class="size-3.5" />
