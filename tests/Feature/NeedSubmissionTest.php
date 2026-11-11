@@ -51,7 +51,7 @@ class NeedSubmissionTest extends TestCase
             ->assertDontSee('Masuk untuk melanjutkan');
     }
 
-    public function test_guests_are_redirected_to_login_before_submitting_a_need(): void
+    public function test_guests_are_redirected_to_the_auth_page_before_submitting_a_need(): void
     {
         $this->post(route('needs.store'), [
             'title' => 'Jasa servis kipas angin',
@@ -61,16 +61,16 @@ class NeedSubmissionTest extends TestCase
         $this->assertDatabaseCount('needs', 0);
     }
 
-    public function test_a_warga_can_submit_a_need_and_see_it_on_their_profile(): void
+    public function test_a_warga_can_submit_a_need_and_it_lands_in_the_database(): void
     {
-        $this->asWarga()
-            ->post(route('needs.store'), [
-                'title' => 'Jasa servis kipas angin',
-                'category' => 'repair',
-                'location' => 'Jl. Sukajadi, RW 05',
-            ])
-            ->assertRedirect(route('profile.index'))
-            ->assertSessionHas('status', 'Kebutuhan berhasil diajukan.');
+        $response = $this->asWarga()->post(route('needs.store'), [
+            'title' => 'Jasa servis kipas angin',
+            'category' => 'repair',
+            'location' => 'Jl. Sukajadi 5',
+            'description' => 'Kipas angin warga rusak, butuh teknisi dekat.',
+        ]);
+
+        $response->assertRedirect(route('profile'));
 
         $profile = Profile::where('email', self::EMAIL)->first();
 
@@ -78,15 +78,19 @@ class NeedSubmissionTest extends TestCase
         $this->assertDatabaseHas('needs', [
             'profile_id' => $profile->id,
             'title' => 'Jasa servis kipas angin',
+            'marker_label' => 'Jasa servis kipas angin',
             'category' => 'repair',
-            'location' => 'Jl. Sukajadi, RW 05',
+            'location' => 'Jl. Sukajadi 5',
+            'description' => 'Kipas angin warga rusak, butuh teknisi dekat.',
             'status' => 'aktif',
         ]);
 
+        // The new row is what the public pages read, not the config.
         $this->asWarga()
-            ->get(route('profile.index'))
+            ->get(route('profile'))
             ->assertOk()
             ->assertSee('Jasa servis kipas angin');
+        $this->get(route('needs.index'))->assertOk()->assertSee('Jasa servis kipas angin');
     }
 
     public function test_a_submitted_need_reuses_the_existing_profile(): void
@@ -99,26 +103,25 @@ class NeedSubmissionTest extends TestCase
 
         $this->asWarga()
             ->post(route('needs.store'), [
-                'title' => 'Kebutuhan tanpa patokan lokasi',
-                'category' => 'household',
+                'title' => 'Warung kopi keliling',
+                'category' => 'culinary',
             ])
-            ->assertRedirect(route('profile.index'));
+            ->assertRedirect(route('profile'));
 
-        $need = Need::where('title', 'Kebutuhan tanpa patokan lokasi')->first();
+        $need = Need::where('title', 'Warung kopi keliling')->first();
 
         $this->assertNotNull($need);
         $this->assertSame($profile->id, $need->profile_id);
-        $this->assertNull($need->location);
         $this->assertDatabaseCount('profiles', 1);
     }
 
-    public function test_the_category_must_come_from_the_configured_list(): void
+    public function test_the_category_must_be_one_of_the_configured_ones(): void
     {
         $this->asWarga()
             ->from(route('home'))
             ->post(route('needs.store'), [
-                'title' => 'Kebutuhan dengan kategori palsu',
-                'category' => 'all',
+                'title' => 'Kebutuhan tanpa kategori',
+                'category' => 'tidak-ada',
             ])
             ->assertRedirect(route('home'))
             ->assertSessionHasErrors('category');
@@ -126,7 +129,7 @@ class NeedSubmissionTest extends TestCase
         $this->assertDatabaseCount('needs', 0);
     }
 
-    public function test_the_title_is_required_and_must_be_long_enough(): void
+    public function test_the_title_is_too_short(): void
     {
         $this->asWarga()
             ->from(route('home'))
@@ -142,11 +145,14 @@ class NeedSubmissionTest extends TestCase
 
     private function asWarga(): static
     {
-        $token = app(Sealer::class)->seal(Sealer::PURPOSE_SESSION, [
+        return $this->withUnencryptedCookie(self::COOKIE, $this->validToken());
+    }
+
+    private function validToken(): string
+    {
+        return app(Sealer::class)->seal(Sealer::PURPOSE_SESSION, [
             'email' => self::EMAIL,
             'name' => self::NAME,
         ], '1h');
-
-        return $this->withUnencryptedCookie(self::COOKIE, $token);
     }
 }

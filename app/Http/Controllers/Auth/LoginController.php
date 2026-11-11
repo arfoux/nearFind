@@ -27,7 +27,7 @@ class LoginController extends Controller
         // Two ways in, one of them new with registration:
         //  - the deployment credential (the `seal.auth` binding): its email is
         //    part of the credential, as before;
-        //  - an account row created by /auth/daftar: its own email + hash, and only
+        //  - an account row created by /auth/register: its own email + hash, and only
         //    once the mailed link activated it.
         $valid = false;
 
@@ -79,7 +79,23 @@ class LoginController extends Controller
             sameSite: 'lax',
         );
 
-        return redirect()->intended(route('home'))->withCookie($cookie);
+        return redirect()->intended($this->redirectTarget($request))->withCookie($cookie);
+    }
+
+    /**
+     * The same-origin page the guest was sent here from (`?redirect=/profile`,
+     * put there by the auth middleware), so signing in lands back on the tab
+     * that asked for an account. Anything else falls back to the map.
+     */
+    private function redirectTarget(Request $request): string
+    {
+        $target = (string) $request->input('redirect', '');
+
+        if ($target === '' || ! str_starts_with($target, '/') || str_starts_with($target, '//')) {
+            return route('home');
+        }
+
+        return $target;
     }
 
     public function destroy(Request $request): RedirectResponse
