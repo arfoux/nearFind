@@ -610,13 +610,20 @@ body.app-background {
 
 /* The skeleton swaps in the same frame the tab is pressed, so it fades rather
    than entering like content: a fresh `nf-card-in` on every tab would read as
-   a second load. */
+   a second load. `both` is deliberately NOT used: it pins the end state (opacity
+   1) on an element that may be hidden and re-shown, which left a full-size
+   skeleton rectangle painted over a page that had already loaded. */
 [data-page-skeleton] {
     display: flex;
     min-height: 0;
     flex: 1;
     flex-direction: column;
-    animation: nf-skeleton-in 0.16s ease-out both;
+    animation: nf-skeleton-in 0.16s ease-out;
+}
+
+/* A hidden slot must not be painted at all, whatever its own display rule says. */
+[data-skeleton-slot][hidden] {
+    display: none !important;
 }
 
 .nf-sk {
