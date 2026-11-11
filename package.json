@@ -19,6 +19,6 @@
         "@laravel/multiplex": "^0.4.1"
     },
     "dependencies": {
-        "maplibre-gl": "^6.16.0"
+        "maplibre-gl": "^6.17.0"
     }
 }
