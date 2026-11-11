@@ -17,9 +17,11 @@
         default => 'relative mx-auto flex h-dvh w-full flex-col overflow-hidden bg-canvas sm:my-4 sm:h-[calc(100dvh-2rem)] sm:max-w-[600px] sm:rounded-[2.25rem] sm:shadow-[0_30px_90px_-40px_rgba(0,0,0,0.55)] sm:ring-1 sm:ring-white/10 lg:my-6 lg:h-[calc(100dvh-3rem)] lg:max-w-[1180px]',
     };
 
-    // The page a tab request is waiting for. Following a nav link rewrites
-    // `tab` on the live shell (app.js keeps it in sync with the address bar).
-    $tab = request()->query('tab', $active);
+    // The tab the SERVER shows on this response. It follows the page the route
+    // rendered (`$active`), never the address bar: the shell swaps tabs itself
+    // and keeps its own `data-tab` in sync, so a stale query string here would
+    // show the wrong tab's skeleton on the first paint after a reload.
+    $tab = $active;
 @endphp
 
 <!DOCTYPE html>
