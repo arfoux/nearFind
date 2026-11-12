@@ -100,6 +100,19 @@
                                 @if ($need['description'] !== '')
                                     <p class="mt-2 line-clamp-2 text-[11px] leading-relaxed text-muted">{{ $need['description'] }}</p>
                                 @endif
+
+                                <form method="POST" action="{{ route('needs.destroy', $need['id']) }}" class="mt-3" onsubmit="return confirm('Hapus pengajuan “{{ $need['title'] }}”? Tindakan ini tidak bisa dibatalkan.');">
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button
+                                        type="submit"
+                                        class="inline-flex items-center gap-1.5 rounded-full bg-canvas px-2.5 py-1 text-[10px] font-semibold text-[#FF9B9B] ring-1 ring-white/10 transition hover:bg-[#FF9B9B]/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF9B9B]/20"
+                                    >
+                                        @include('partials.icon', ['name' => 'close', 'class' => 'size-3'])
+                                        Batalkan pengajuan
+                                    </button>
+                                </form>
                             </li>
                         @endforeach
                     </ul>

@@ -150,7 +150,7 @@ class NeedController extends Controller
         $title = trim((string) $validated['title']);
         $location = trim((string) ($validated['location'] ?? ''));
 
-        Need::create([
+        $need = Need::create([
             'profile_id' => $profile->id,
             'title' => $title,
             'marker_label' => $title,
@@ -164,9 +164,38 @@ class NeedController extends Controller
             'status' => 'aktif',
         ]);
 
+        // Back to the map, not the profile: the visitor just placed a pin and
+        // wants to see it land there, with the card open on the new need.
+        return redirect()
+            ->route('home', ['need' => $need->id])
+            ->with('status', 'Kebutuhan “'.$title.'” berhasil diajukan dan sudah tampil di peta.');
+    }
+
+    /**
+     * Withdraw one of your own submissions. Ownership is checked against the
+     * signed-in profile, so a guessed id from someone else is a 404 rather than
+     * a silent delete.
+     */
+    public function destroy(string $id): RedirectResponse
+    {
+        $user = request()->user();
+        $profile = Profile::where('email', $user->email)->first();
+
+        if ($profile === null) {
+            abort(404);
+        }
+
+        $need = Need::where('id', $id)->first();
+
+        if ($need === null || (int) $need->profile_id !== (int) $profile->id) {
+            abort(404);
+        }
+
+        $need->delete();
+
         return redirect()
             ->route('profile')
-            ->with('status', 'Kebutuhan berhasil diajukan.');
+            ->with('status', 'Pengajuan dihapus.');
     }
 
     /**
