@@ -7,6 +7,9 @@
             'needs' => $needs,
             'authenticated' => $authenticated,
             'mapStyleUrl' => $mapStyleUrl,
+            // A flash survives the redirect back to the map after a submission;
+            // app.js turns it into the transient success toast.
+            'flash' => session('status'),
         ];
     @endphp
 
