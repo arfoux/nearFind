@@ -73,7 +73,9 @@ class NeedSubmissionTest extends TestCase
             'description' => 'Kipas angin warga rusak, butuh teknisi dekat.',
         ]);
 
-        $response->assertRedirect(route('profile'));
+        // Lands back on the map with the new pin, not on the profile page.
+        $created = Need::where('title', 'Jasa servis kipas angin')->first();
+        $response->assertRedirect(route('home', ['need' => $created->id]));
 
         $profile = Profile::where('email', self::EMAIL)->first();
 
@@ -114,7 +116,7 @@ class NeedSubmissionTest extends TestCase
                 'latitude' => '-6.89',
                 'longitude' => '107.59',
             ])
-            ->assertRedirect(route('profile'));
+            ->assertRedirect(route('home', ['need' => Need::where('title', 'Warung kopi keliling')->first()->id]));
 
         $need = Need::where('title', 'Warung kopi keliling')->first();
 
@@ -197,5 +199,83 @@ class NeedSubmissionTest extends TestCase
             ->assertSessionHasErrors('latitude');
 
         $this->assertDatabaseCount('needs', 0);
+    }
+
+    public function test_a_warga_can_withdraw_their_own_submission(): void
+    {
+        $profile = Profile::create([
+            'email' => self::EMAIL,
+            'name' => self::NAME,
+            'username' => 'warga_uji',
+        ]);
+
+        $need = Need::create([
+            'profile_id' => $profile->id,
+            'title' => 'Kebutuhan untuk dihapus',
+            'marker_label' => 'Kebutuhan untuk dihapus',
+            'category' => 'repair',
+            'latitude' => -6.89,
+            'longitude' => 107.59,
+            'status' => 'aktif',
+        ]);
+
+        $this->asWarga()
+            ->delete(route('needs.destroy', $need->id))
+            ->assertRedirect(route('profile'))
+            ->assertSessionHas('status', 'Pengajuan dihapus.');
+
+        $this->assertDatabaseMissing('needs', ['id' => $need->id]);
+    }
+
+    public function test_a_warga_cannot_withdraw_someone_elses_submission(): void
+    {
+        Profile::create([
+            'email' => self::EMAIL,
+            'name' => self::NAME,
+            'username' => 'warga_uji',
+        ]);
+
+        $other = Profile::create([
+            'email' => 'lain@nearfind.test',
+            'name' => 'Warga Lain',
+            'username' => 'warga_lain',
+        ]);
+
+        $need = Need::create([
+            'profile_id' => $other->id,
+            'title' => 'Milik orang lain',
+            'marker_label' => 'Milik orang lain',
+            'category' => 'repair',
+            'latitude' => -6.89,
+            'longitude' => 107.59,
+            'status' => 'aktif',
+        ]);
+
+        $this->asWarga()->delete(route('needs.destroy', $need->id))->assertNotFound();
+
+        $this->assertDatabaseHas('needs', ['id' => $need->id]);
+    }
+
+    public function test_a_guest_cannot_withdraw_a_submission(): void
+    {
+        $owner = Profile::create([
+            'email' => 'pemilik@nearfind.test',
+            'name' => 'Pemilik',
+            'username' => 'pemilik',
+        ]);
+
+        $need = Need::create([
+            'profile_id' => $owner->id,
+            'title' => 'Tidak boleh dihapus tamu',
+            'marker_label' => 'Tidak boleh dihapus tamu',
+            'category' => 'repair',
+            'latitude' => -6.89,
+            'longitude' => 107.59,
+            'status' => 'aktif',
+        ]);
+
+        $this->delete(route('needs.destroy', $need->id))->assertRedirect(route('login'));
+
+        $this->assertDatabaseHas('needs', ['id' => $need->id]);
     }
 }

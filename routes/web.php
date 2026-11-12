@@ -29,6 +29,11 @@ Route::post('/needs', [NeedController::class, 'store'])
     ->middleware('auth:seal')
     ->name('needs.store');
 
+// Withdrawing one of your own submissions.
+Route::delete('/needs/{id}', [NeedController::class, 'destroy'])
+    ->middleware('auth:seal')
+    ->name('needs.destroy');
+
 Route::middleware('guest:seal')->group(function (): void {
     Route::get('/auth', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('auth.login');

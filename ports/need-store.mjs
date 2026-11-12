@@ -163,9 +163,16 @@ export default async function handle(ctx, env) {
       Number.parseFloat(str(body.latitude)), Number.parseFloat(str(body.longitude)), 'aktif', now, now)
     .run();
 
+  // Back to the map on the new pin, same as the compiled controller.
+  const created = await db
+    .prepare('select id from needs where profile_id = ? order by id desc limit 1')
+    .bind(profile.id)
+    .first();
+  const newId = created && created.id ? created.id : null;
+
   if (ctx.session && typeof ctx.session.flash === 'function') {
-    ctx.session.flash('status', 'Kebutuhan berhasil diajukan.');
+    ctx.session.flash('status', 'Kebutuhan “' + title + '” berhasil diajukan dan sudah tampil di peta.');
   }
 
-  return redirect('/profile');
+  return redirect(newId === null ? '/' : '/?need=' + newId);
 }

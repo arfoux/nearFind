@@ -528,7 +528,7 @@ function initNeedsList() {
 }
 
 function initNearFind(
-    { categories, needs, authenticated = false, mapStyleUrl = DEFAULT_MAP_STYLE_URL },
+    { categories, needs, authenticated = false, mapStyleUrl = DEFAULT_MAP_STYLE_URL, flash = null },
     { mapElement, needCardElement },
 ) {
     const categoryById = Object.fromEntries(categories.map((category) => [category.id, category]));
@@ -610,6 +610,17 @@ function initNearFind(
 
     if (submitSheet?.dataset.initialOpen === 'true') {
         openSubmitSheet();
+    }
+
+    // A flash arrives with the redirect back to the map after a submission; it
+    // is shown once the map has had a frame to paint, so the toast is not lost
+    // behind the initial skeleton.
+    if (typeof flash === 'string' && flash.trim() !== '') {
+        window.setTimeout(() => {
+            if (!disposed) {
+                showToast(flash.trim());
+            }
+        }, 700);
     }
 
     requestAnimationFrame(() => {
@@ -1296,7 +1307,7 @@ function initNearFind(
 
             const request = ++pointAreaRequest;
             pointBusy?.classList.remove('hidden');
-            pointBusy?.classList.add('grid');
+            pointBusy?.classList.add('flex');
 
             try {
                 const response = await fetch(
@@ -1323,7 +1334,7 @@ function initNearFind(
             } finally {
                 if (request === pointAreaRequest) {
                     pointBusy?.classList.add('hidden');
-                    pointBusy?.classList.remove('grid');
+                    pointBusy?.classList.remove('flex');
                 }
             }
         }, 420);
