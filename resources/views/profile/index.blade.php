@@ -101,7 +101,7 @@
                                     <p class="mt-2 line-clamp-2 text-[11px] leading-relaxed text-muted">{{ $need['description'] }}</p>
                                 @endif
 
-                                <form method="POST" action="{{ route('needs.destroy', $need['id']) }}" class="mt-3" onsubmit="return confirm('Hapus pengajuan “{{ $need['title'] }}”? Tindakan ini tidak bisa dibatalkan.');">
+                                <form method="POST" action="{{ route('needs.destroy', $need['id']) }}" class="mt-3" data-confirm="Hapus pengajuan “{{ $need['title'] }}”? Tindakan ini tidak bisa dibatalkan." onsubmit="return confirm(this.dataset.confirm);">
                                     @csrf
                                     @method('DELETE')
 

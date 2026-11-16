@@ -19,7 +19,6 @@ class ProfileController extends Controller
     public function __invoke(Request $request): View
     {
         $user = $request->user();
-        $user = $request->user();
 
         $profile = Profile::where('email', $user->email)->first();
 

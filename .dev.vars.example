@@ -10,3 +10,7 @@
 SEAL_KEY_ID=local
 SEAL_KEY=O0d-Wgoy5X5WQk3Spj6K6NNPWgJbc0vygLjgXUtPuuo
 NEARFIND_AUTH_EMAIL=warga@nearfind.test
+#
+# Optional: set NEARFIND_CATEGORIES to enable the edge category check.
+# When it is unset, the edge category check is disabled.
+# NEARFIND_CATEGORIES=
