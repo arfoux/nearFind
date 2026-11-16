@@ -231,5 +231,4 @@ class NeedController extends Controller
 
         return $rows;
     }
-
 }
