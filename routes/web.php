@@ -37,7 +37,6 @@ Route::delete('/needs/{id}', [NeedController::class, 'destroy'])
 Route::post('/locations', [LocationController::class, 'store'])
     ->middleware('auth:seal')
     ->name('locations.store');
-
 Route::middleware('guest:seal')->group(function (): void {
     Route::get('/auth', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('auth.login');

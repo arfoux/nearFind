@@ -123,7 +123,7 @@
                      same with a mouse and with a thumb. --}}
                 <div
                     data-point-picker
-                    class="relative mt-1.5 h-[176px] overflow-hidden rounded-xl bg-canvas ring-1 ring-white/10 transition focus-within:ring-2 focus-within:ring-brand-500/40"
+                    class="relative mt-1.5 h-[176px] overflow-hidden rounded-xl bg-[#1a1d21] ring-1 ring-white/10 transition focus-within:ring-2 focus-within:ring-brand-500/40"
                 >
                     <div data-point-canvas class="absolute inset-0 h-full w-full"></div>
 

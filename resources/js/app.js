@@ -1882,6 +1882,136 @@ function initNearFind(
         locationPicker.setStyle(styleUrl);
     }, listenerOptions);
 
+    function putPointOnMap(lat, lng) {
+        if (pointLat) {
+            pointLat.value = lat.toFixed(6);
+        }
+
+        if (pointLng) {
+            pointLng.value = lng.toFixed(6);
+        }
+
+        pointHint?.classList.add('hidden');
+
+        if (pointSummary) {
+            pointSummary.textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)} · pin tepat di lokasi kebutuhan`;
+        }
+    }
+
+    /** Move the map so the fixed pin lands on a given point (locate, restore). */
+    function centerPointMap(lat, lng) {
+        if (!pointMap) {
+            return;
+        }
+
+        pointSyncing = true;
+        pointMap.jumpTo({ center: [lng, lat] });
+        pointSyncing = false;
+    }
+
+    /** The pin is the map centre at the end of any interaction. */
+    function commitPoint() {
+        if (!pointMap || pointSyncing) {
+            return;
+        }
+
+        const center = pointMap.getCenter();
+        putPointOnMap(center.lat, center.lng);
+        fetchAreaName(center.lat, center.lng);
+    }
+
+    /**
+     * Reverse geocode through the public Nominatim endpoint so "area" is a real
+     * place name instead of whatever the visitor typed. Bounded and debounced: a
+     * pin being nudged must not fire a request per pixel, and a failed lookup
+     * must never block the form (the field stays editable).
+     */
+    function fetchAreaName(lat, lng) {
+        if (!areaInput || areaInput.value.trim() !== '') {
+            return;
+        }
+
+        window.clearTimeout(pointAreaTimer);
+        pointAreaTimer = window.setTimeout(async () => {
+            if (disposed) {
+                return;
+            }
+
+            const request = ++pointAreaRequest;
+            pointBusy?.classList.remove('hidden');
+            pointBusy?.classList.add('flex');
+
+            try {
+                const response = await fetch(
+                    `https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=16&lat=${lat}&lon=${lng}`,
+                    { headers: { Accept: 'application/json' }, signal: controller.signal },
+                );
+
+                if (!response.ok || request !== pointAreaRequest || disposed) {
+                    return;
+                }
+
+                const data = await response.json();
+                const address = data?.address ?? {};
+                const parts = [
+                    address.village ?? address.suburb ?? address.neighbourhood ?? address.quarter,
+                    address.city_district ?? address.city ?? address.town ?? address.county,
+                ].filter(Boolean);
+
+                if (parts.length > 0 && areaInput && areaInput.value.trim() === '') {
+                    areaInput.value = parts.join(', ');
+                }
+            } catch {
+                // Offline, rate limited or blocked: the visitor can still type it.
+            } finally {
+                if (request === pointAreaRequest) {
+                    pointBusy?.classList.add('hidden');
+                    pointBusy?.classList.remove('flex');
+                }
+            }
+        }, 420);
+    }
+
+    function nudgePoint(direction) {
+        if (!pointMap) {
+            return;
+        }
+
+        const step = direction === 'west' ? [-0.0015, 0] : direction === 'east' ? [0.0015, 0]
+            : direction === 'north' ? [0, 0.0015] : [0, -0.0015];
+        const center = pointMap.getCenter();
+
+        pointMap.easeTo({ center: [center.lng + step[0], center.lat + step[1]], duration: 160 });
+    }
+
+    function locatePoint() {
+        if (!('geolocation' in navigator)) {
+            showToast('Browser ini tidak mendukung fitur lokasi.');
+
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            ({ coords }) => {
+                if (disposed || !pointMap) {
+                    return;
+                }
+
+                if (areaInput) {
+                    areaInput.value = '';
+                }
+
+                pointMap.jumpTo({ center: [coords.longitude, coords.latitude], zoom: 17 });
+                putPointOnMap(coords.latitude, coords.longitude);
+                fetchAreaName(coords.latitude, coords.longitude);
+            },
+            () => {
+                showToast('Lokasi kamu tidak bisa dibaca. Geser peta saja.');
+            },
+            { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 },
+        );
+    }
+
     function setCardExpanded(expanded) {
         if (!needPanel) {
             return;

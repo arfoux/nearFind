@@ -102,7 +102,7 @@
 
                                     <button
                                         type="submit"
-                                        class="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-canvas px-3 text-[10px] font-semibold text-danger ring-1 ring-white/10 transition hover:bg-[#FF9B9B]/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF9B9B]/20"
+                                        class="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-canvas px-3 py-1 text-[10px] font-semibold text-danger ring-1 ring-white/10 transition hover:bg-[#FF9B9B]/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF9B9B]/20"
                                     >
                                         @include('partials.icon', ['name' => 'close', 'class' => 'size-3'])
                                         Batalkan pengajuan
