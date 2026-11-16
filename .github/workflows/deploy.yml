@@ -100,10 +100,13 @@ jobs:
           # real D1. Read its id instead of creating a second, unbindable one.
           D1_ID="$(node -e "const s=require('fs').readFileSync('wrangler.jsonc','utf8').replace(/^\s*\/\/.*$/mg,'');process.stdout.write(JSON.parse(s).d1_databases[0].database_id)")"
           echo "d1: ${D1_ID:0:8}… (from wrangler.jsonc)"
+          # Production D1 was created outside the tool and already carries the
+          # final 14-table schema; dist/schema.sql is CREATE-only, so reapplying
+          # it would fail on those tables. Skip the schema step.
           # The worker URL stays out of this public repository's logs: wrangler
           # echoes it on deploy, so the streamed copy masks it. The log file
           # keeps the raw output for the readiness block below.
-          npx laravel-workers deploy --mode 3 --yes --no-cache --d1-id "$D1_ID" 2>&1 \
+          npx laravel-workers deploy --mode 3 --yes --no-cache --d1-id "$D1_ID" --skip-schema 2>&1 \
             | tee deploy.log \
             | sed -E 's#https?://[A-Za-z0-9._-]+\.workers\.dev#https://<worker>.workers.dev#g'
 
