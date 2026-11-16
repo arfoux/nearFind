@@ -312,7 +312,7 @@ function renderPlaceResults(root, { status, results = [], hooks }) {
     root.removeAttribute('hidden');
     setChildHidden(root, hooks.loading, status !== 'loading');
     setChildHidden(root, hooks.error, status !== 'error');
-    setChildHidden(root, hooks.empty, status === 'ready' && results.length === 0);
+    setChildHidden(root, hooks.empty, status !== 'ready' || results.length !== 0);
     setChildHidden(root, hooks.list, status !== 'ready' || results.length === 0);
 
     if (status === 'loading') {
@@ -491,6 +491,8 @@ function createPointPicker({
         fetchArea(center.lat, center.lng);
     }
 
+    // Zero duration takes MapLibre's immediate easeTo path, so moveend commits
+    // the point even when animation frames are throttled.
     function nudge(direction) {
         if (!map) {
             return;
@@ -500,12 +502,12 @@ function createPointPicker({
             : direction === 'east' ? [0.0015, 0]
                 : direction === 'north' ? [0, 0.0015] : [0, -0.0015];
         const center = map.getCenter();
-        map.easeTo({ center: [center.lng + step[0], center.lat + step[1]], duration: 160 });
+        map.easeTo({ center: [center.lng + step[0], center.lat + step[1]], duration: 0 });
     }
 
     function zoomBy(delta) {
         if (map) {
-            map.easeTo({ zoom: map.getZoom() + delta, duration: 180 });
+            map.easeTo({ zoom: map.getZoom() + delta, duration: 0 });
         }
     }
 
@@ -2064,8 +2066,10 @@ function initNearFind(
         closeLocationSheet();
         clearAreaPreview();
 
+        // A result press must move the camera deterministically, not start an
+        // animation that can stall under frame throttling.
         if (map) {
-            map.panTo([place.lng, place.lat], { duration: 350 });
+            map.panTo([place.lng, place.lat], { duration: 0 });
         }
 
         const saved = findSavedLocation(place);
@@ -2239,7 +2243,7 @@ function initNearFind(
         const isPending = query.length >= PLACE_SEARCH_MIN_CHARS && status === 'loading';
         setChildHidden(placeTopResults, TOP_RESULT_HOOKS.loading, !isPending);
         setChildHidden(placeTopResults, TOP_RESULT_HOOKS.error, status !== 'error');
-        setChildHidden(placeTopResults, TOP_RESULT_HOOKS.empty, status === 'ready' && total === 0);
+        setChildHidden(placeTopResults, TOP_RESULT_HOOKS.empty, status !== 'ready' || total !== 0);
         setChildHidden(placeTopResults, TOP_RESULT_HOOKS.list, total === 0);
         placeTopResults.removeAttribute('hidden');
     }
