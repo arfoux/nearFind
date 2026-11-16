@@ -11,6 +11,11 @@ SEAL_KEY_ID=local
 SEAL_KEY=O0d-Wgoy5X5WQk3Spj6K6NNPWgJbc0vygLjgXUtPuuo
 NEARFIND_AUTH_EMAIL=warga@nearfind.test
 #
+# NEARFIND_AUTH_PASSWORD_HASH must match the sealed deployment credential. The
+# worker reads it from env at request time; it is not baked into the bundle.
+# The value below is a non-secret placeholder, not a real hash.
+NEARFIND_AUTH_PASSWORD_HASH=bcrypt-local-placeholder
+#
 # Optional: set NEARFIND_CATEGORIES to enable the edge category check.
 # When it is unset, the edge category check is disabled.
 # NEARFIND_CATEGORIES=

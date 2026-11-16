@@ -1,4 +1,4 @@
-<div class="animate-pulse pt-1" aria-hidden="true">
+<div class="pt-1" aria-hidden="true">
     <div class="flex items-center gap-2">
         <span class="h-5 w-28 rounded-full bg-brand-50"></span>
         <span class="h-3.5 w-16 rounded-full bg-canvas"></span>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Location;
 use App\Models\Need;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -38,10 +39,29 @@ class HomeController extends Controller
             ];
         }
 
+        $locations = [];
+
+        foreach (Location::all() as $location) {
+            $locations[] = [
+                'id' => (string) $location->id,
+                'name' => (string) $location->name,
+                'category' => (string) $location->category,
+                'address' => (string) ($location->address ?? ''),
+                'area' => (string) ($location->area ?? ''),
+                'latitude' => (float) $location->latitude,
+                'longitude' => (float) $location->longitude,
+                'source' => (string) $location->source,
+                'created_at' => (string) ($location->created_at ?? ''),
+            ];
+        }
+
         return view('home', [
             'categories' => config('needs.categories'),
             'needs' => $rows,
+            'locations' => $locations,
             'mapStyleUrl' => config('needs.map.style_url'),
+            'mapDarkStyleUrl' => config('needs.map.dark_style_url'),
+            'mapLightStyleUrl' => config('needs.map.light_style_url'),
             'authenticated' => $user !== null,
             'sealUser' => $user,
         ]);

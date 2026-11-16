@@ -1,9 +1,9 @@
 @php
-    $title = $title ?? 'nearFind — Peta Kebutuhan Warga';
+    $title = $title ?? 'nearFind: Peta Kebutuhan Warga';
     $active = $active ?? 'peta';
 
     // The map page IS the canvas: the MapLibre surface runs edge to edge under a
-    // full-bleed shell and every control floats on glass above it. Jelajahi and
+    // full-bleed shell and every control floats above solid surfaces. Jelajahi and
     // Laporan share that full-bleed shell so their content owns the whole
     // viewport. The account page keeps the framed card.
     $isMap = $active === 'peta';
@@ -14,7 +14,7 @@
     $shellClass = match (true) {
         $isMap => 'relative flex h-dvh min-h-dvh w-full flex-col overflow-hidden',
         $isFullBleed => 'relative flex h-dvh min-h-dvh w-full flex-col overflow-hidden bg-canvas',
-        default => 'relative mx-auto flex h-dvh w-full flex-col overflow-hidden bg-canvas sm:my-4 sm:h-[calc(100dvh-2rem)] sm:max-w-[600px] sm:rounded-[2.25rem] sm:shadow-[0_30px_90px_-40px_rgba(0,0,0,0.55)] sm:ring-1 sm:ring-white/10 lg:my-6 lg:h-[calc(100dvh-3rem)] lg:max-w-[1180px]',
+        default => 'relative mx-auto flex h-dvh w-full flex-col overflow-hidden bg-canvas sm:my-4 sm:h-[calc(100dvh-2rem)] sm:max-w-[600px] sm:rounded-[2.25rem] sm:shadow-[0_30px_90px_-40px_rgba(0,0,0,0.55)] sm:ring-1 sm:ring-[var(--nf-border)] lg:my-6 lg:h-[calc(100dvh-3rem)] lg:max-w-[1180px]',
     };
 
     // The tab the SERVER shows on this response. It follows the page the route
@@ -25,11 +25,27 @@
 @endphp
 
 <!DOCTYPE html>
-<html lang="id" class="h-full">
+<html lang="id" class="h-full" data-theme="dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#0B0E12">
+    {{-- Pre-paint theme: no external script, no flash of the wrong palette. --}}
+    <script>
+        (function () {
+            try {
+                var saved = localStorage.getItem('nf-theme');
+                var theme = saved === 'light' || saved === 'dark'
+                    ? saved
+                    : (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+                document.documentElement.setAttribute('data-theme', theme);
+                var meta = document.querySelector('meta[name="theme-color"]');
+                if (meta) meta.setAttribute('content', theme === 'light' ? '#F7F5F1' : '#0B0E12');
+            } catch (error) {
+                /* Storage can be blocked; the dark default on <html> still applies. */
+            }
+        })();
+    </script>
     <meta name="description" content="nearFind membantu warga menemukan dan melaporkan kebutuhan di sekitar, sekaligus membuka peluang usaha bagi pelaku usaha lokal.">
 
     {{-- The tab icon is the same mark as partials/brand.blade.php: browsers that
@@ -48,7 +64,7 @@
     <div class="{{ $shellClass }}" data-app-shell data-tab="{{ $tab }}">
         {{-- Two layers, always: the tab's skeleton is painted by the server and
              sits underneath, and the real page fades in above it once it has
-             data. Pressing a tab therefore shows that tab's shape immediately —
+             data. Pressing a tab therefore shows that tab's shape immediately,
              never a blank column, never the previous page's content.
 
              Every tab's shape is rendered here (only the current one is shown),
@@ -67,8 +83,24 @@
             @yield('content')
         </div>
 
-        @include('partials.bottom-nav', ['active' => $active, 'floating' => $active === 'peta'])
+        <footer>
+            @include('partials.bottom-nav', ['active' => $active, 'floating' => $active === 'peta'])
+        </footer>
     </div>
+
+    {{-- Themed shell control. CSS shows the sun in dark mode and the moon in
+         light mode; app.js owns the click, persistence and aria-pressed sync. --}}
+    <button
+        type="button"
+        class="nf-theme-toggle nf-theme-toggle--app"
+        data-theme-toggle
+        aria-pressed="true"
+        aria-label="Ganti tema"
+        title="Ganti tema"
+    >
+        @include('partials.icon', ['name' => 'sun', 'class' => 'nf-theme-icon nf-theme-icon--sun size-5'])
+        @include('partials.icon', ['name' => 'moon', 'class' => 'nf-theme-icon nf-theme-icon--moon size-5'])
+    </button>
 
     @php
         // PR #26: the map-first home floats the panel above the nav, so the toast
@@ -79,7 +111,7 @@
     @endphp
 
     <div id="toast" class="{{ $toastClass }}" role="status" aria-live="polite" aria-atomic="true">
-        <div class="flex max-w-[420px] items-start gap-2.5 rounded-2xl bg-brand-800 px-4 py-3 text-[12px] font-medium leading-relaxed text-white shadow-[0_18px_40px_-18px_rgba(0,0,0,0.65)] ring-1 ring-white/10">
+        <div class="flex max-w-[420px] items-start gap-2.5 rounded-2xl bg-brand-800 px-4 py-3 text-[12px] font-medium leading-relaxed text-white shadow-[0_18px_40px_-18px_rgba(0,0,0,0.65)] ring-1 ring-[var(--nf-border)]">
             @include('partials.icon', ['name' => 'info', 'class' => 'mt-0.5 size-4 shrink-0 text-brand-200'])
             <span data-toast-message></span>
         </div>

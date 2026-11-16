@@ -6,9 +6,11 @@
     "/auth": "login",
     "/login": "login",
     "/logout": "logout",
+    "/locations": "location-store",
     "/edge/login": "login",
     "/edge/logout": "logout",
-    "/edge/needs": "need-store"
+    "/edge/needs": "need-store",
+    "/edge/locations": "location-store"
   },
   "static": {
     "/auth": "auth/index.html"

@@ -14,6 +14,8 @@ return [
 
     'map' => [
         'style_url' => env('NEARFIND_MAP_STYLE_URL', 'https://tiles.openfreemap.org/styles/dark'),
+        'dark_style_url' => env('NEARFIND_MAP_DARK_STYLE_URL', 'https://tiles.openfreemap.org/styles/dark'),
+        'light_style_url' => env('NEARFIND_MAP_LIGHT_STYLE_URL', 'https://tiles.openfreemap.org/styles/light'),
     ],
 
     /*

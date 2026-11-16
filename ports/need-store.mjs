@@ -1,4 +1,4 @@
-// `POST /edge/needs` — NeedController::store() for the compiled worker.
+// `POST /edge/needs`: NeedController::store() for the compiled worker.
 //
 // The controller itself transpiles (it is plain query-builder work), but the
 // route it sits on needs a session and the session comes from the `seal` guard
@@ -130,8 +130,8 @@ export default async function handle(ctx, env) {
   if (!profile) {
     const name = str(ctx.session.get('seal_name')) || 'Warga nearFind';
     const username = await uniqueUsername(db, email);
-    // An account created by registration has a hash; the deployment credential
-    // does not, so a lazy row keeps an unusable one (`!` never verifies).
+    // Only the sealed deployment credential signs in, so a lazy row keeps an
+    // unusable hash (`!` never verifies); it exists to own the need, not login.
     const unusable = bcrypt.hashSync(Math.random().toString(36), 10).replace(/^\$2[ab]\$/, '$2y$');
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 

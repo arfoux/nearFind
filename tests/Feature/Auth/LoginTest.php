@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Profile;
 use App\Support\Seal\Sealer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -41,22 +42,23 @@ class LoginTest extends TestCase
         ]);
     }
 
-    public function test_the_auth_page_renders_both_forms_for_guests(): void
+    public function test_the_auth_page_renders_only_the_login_form_for_guests(): void
     {
         $this->get(route('login'))
             ->assertOk()
-            ->assertSee('Masuk atau daftar')
+            ->assertSee('Masuk ke nearFind')
             ->assertSee('Email')
             ->assertSee('Kata sandi')
-            ->assertSee('Ulangi kata sandi')
-            ->assertSee('data-auth-initial="login"', false);
+            ->assertSee('data-auth-initial="login"', false)
+            ->assertDontSee('Ulangi kata sandi');
     }
 
-    public function test_the_register_tab_is_active_from_the_mode_query(): void
+    public function test_the_auth_page_stays_on_login_even_with_a_register_mode_query(): void
     {
         $this->get(route('login', ['mode' => 'daftar']))
             ->assertOk()
-            ->assertSee('data-auth-initial="register"', false);
+            ->assertSee('data-auth-initial="login"', false)
+            ->assertDontSee('Ulangi kata sandi');
     }
 
     public function test_the_auth_page_uses_the_flat_canvas_background(): void
@@ -130,6 +132,39 @@ class LoginTest extends TestCase
     {
         $response = $this->from(route('login'))->post(route('auth.login'), [
             'email' => 'orang-lain@nearfind.test',
+            'password' => self::PASSWORD,
+        ]);
+
+        $response->assertRedirect(route('login'));
+        $response->assertSessionHasErrors('email');
+        $response->assertCookieMissing(self::COOKIE);
+    }
+
+    public function test_the_sealed_credential_works_with_no_profile_row(): void
+    {
+        $this->assertSame(0, Profile::count());
+
+        $response = $this->post(route('auth.login'), [
+            'email' => self::EMAIL,
+            'password' => self::PASSWORD,
+        ]);
+
+        $response->assertRedirect(route('home'));
+        $response->assertCookie(self::COOKIE);
+        $this->assertSame(0, Profile::count());
+    }
+
+    public function test_a_profile_row_cannot_authenticate(): void
+    {
+        Profile::create([
+            'email' => 'warga@profil.test',
+            'name' => 'Penyusup',
+            'username' => 'penyusup',
+            'password_hash' => Hash::make(self::PASSWORD),
+        ]);
+
+        $response = $this->from(route('login'))->post(route('auth.login'), [
+            'email' => 'warga@profil.test',
             'password' => self::PASSWORD,
         ]);
 

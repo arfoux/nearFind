@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use App\Models\Profile;
 use App\Support\Seal\Sealer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,30 +21,12 @@ class LoginController extends Controller
 
         $configuredEmail = Str::lower(trim((string) config('seal.auth.email')));
         $configuredHash = trim((string) config('seal.auth.password_hash'));
-        $profile = Profile::findByEmail($request->email());
 
-        // Two ways in, one of them new with registration:
-        //  - the deployment credential (the `seal.auth` binding): its email is
-        //    part of the credential, as before;
-        //  - an account row created by /auth/register: its own email + hash, and only
-        //    once the mailed link activated it.
-        $valid = false;
-
-        if ($configuredEmail !== '' && $configuredHash !== '' && hash_equals($configuredEmail, $request->email())
-            && Hash::check((string) $request->input('password'), $configuredHash)) {
-            $valid = true;
-        } elseif ($profile !== null && $profile->password_hash
-            && Hash::check((string) $request->input('password'), (string) $profile->password_hash)) {
-            if (! $profile->hasVerifiedEmail()) {
-                throw ValidationException::withMessages([
-                    'email' => 'Email belum diverifikasi. Buka tautan verifikasi yang kami kirim ke '.$profile->email.'.',
-                ]);
-            }
-
-            $valid = true;
-        }
-
-        if (! $valid) {
+        // One account, sealed into the deployment: no profile row, no
+        // registration, and no verification gate to consult.
+        if ($configuredEmail === '' || $configuredHash === ''
+            || ! hash_equals($configuredEmail, $request->email())
+            || ! Hash::check((string) $request->input('password'), $configuredHash)) {
             $request->hitRateLimiter();
 
             throw ValidationException::withMessages([
@@ -64,7 +45,7 @@ class LoginController extends Controller
 
         $token = $this->sealer->seal(Sealer::PURPOSE_SESSION, [
             'email' => $request->email(),
-            'name' => $profile?->name ?: (string) config('seal.auth.name'),
+            'name' => (string) config('seal.auth.name'),
         ], $ttlMs);
 
         $cookie = cookie(

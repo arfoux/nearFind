@@ -1,21 +1,20 @@
-// `POST /auth` — LoginController::store().
+// `POST /auth`: LoginController::store().
 //
 // Not compiled: the constructor injects the app service App\Support\Seal\Sealer
 // and the body calls `Sealer::durationToMilliseconds()` + `cookie()`. The port
-// reproduces the flow against ctx.db (D1), ctx.cache (rate limiter) and inline
-// AES-256-GCM, and mints exactly the cookie the guard port re-reads.
+// reproduces the flow against ctx.cache (rate limiter) and inline AES-256-GCM,
+// and mints exactly the cookie the guard port re-reads. Login is stateless:
+// the deployment credential from env is the only account, so no D1 lookup.
 //
-// Known, deliberate divergence: the credential email comes from
-// `env.NEARFIND_AUTH_EMAIL` (config('seal.auth.email')) — the config dump strips
-// credentials from dist, so the port reads the binding directly. Unset means the
-// profile row's password_hash is the only way in.
+// The credential comes from `env.NEARFIND_AUTH_EMAIL` and
+// `env.NEARFIND_AUTH_PASSWORD_HASH` (config('seal.auth.*')) because the config
+// dump strips credentials from dist. Unset means nobody can sign in.
 
 import bcrypt from 'bcryptjs';
 import {
   COOKIE_NAME,
   clientIp,
   durationToMilliseconds,
-  findProfileByEmail,
   forgetCookie,
   keyringFromEnv,
   methodNotAllowed,
@@ -76,7 +75,7 @@ async function attempts(ctx, key) {
   };
 }
 
-/** `RateLimiter::hit($key, $decaySeconds)` — every attempt counts. */
+/** `RateLimiter::hit($key, $decaySeconds)`: every attempt counts. */
 async function hit(ctx, key, state) {
   const cache = ctx.cache;
   if (!cache || typeof cache.put !== 'function') return;
@@ -87,7 +86,7 @@ async function hit(ctx, key, state) {
   await cache.put(key, hits, ttl);
 }
 
-/** `RateLimiter::clear($key)` — the successful login forgets the failures. */
+/** `RateLimiter::clear($key)`: the successful login forgets the failures. */
 async function clear(ctx, key) {
   const cache = ctx.cache;
   if (!cache || typeof cache.forget !== 'function') return;
@@ -138,11 +137,6 @@ function injectFlash(ctx, html) {
   const status = session.get('status');
   const old = session.get('_old_input');
   const email = old && typeof old === 'object' && typeof old.email === 'string' ? old.email : '';
-  const errorKeys = stored && typeof stored === 'object' ? Object.keys(stored) : [];
-  const registerMode =
-    (old && typeof old === 'object' && Object.prototype.hasOwnProperty.call(old, 'name')) ||
-    errorKeys.includes('name') ||
-    errorKeys.includes('password_confirmation');
 
   let out = html;
   const statusBanner =
@@ -160,18 +154,14 @@ function injectFlash(ctx, html) {
   if (statusBanner !== '' || errorBanner !== '') {
     out = out.replace(FLASH_MARKER, statusBanner + errorBanner);
   }
-  if (registerMode) {
-    // The static page ships on the login tab; a register POST that failed
-    // validation must come back with its own tab open.
-    out = out.replace('data-auth-initial="login"', 'data-auth-initial="register"');
-  }
+
   if (email !== '') {
     out = out.replace(
       /(name="email"[^>]*?value=")[^"]*(")/g,
       (match, open, close) => open + escapeHtml(email) + close
     );
   }
-  if ((statusBanner !== '' || errorBanner !== '' || email !== '' || registerMode) && typeof session.forget === 'function') {
+  if ((statusBanner !== '' || errorBanner !== '' || email !== '') && typeof session.forget === 'function') {
     session.forget(['errors', '_old_input', 'status']);
   }
   return out;
@@ -227,18 +217,12 @@ export default async function handle(ctx, env) {
   // attempt counts, successful or not. A successful login clears the key.
   await hit(ctx, key, limit);
 
-  const profile = await findProfileByEmail(ctx.db, email);
   const configuredEmail = normalizeEmail(str(env && env.NEARFIND_AUTH_EMAIL));
   const configuredHash = str(env && env.NEARFIND_AUTH_PASSWORD_HASH);
-  const profileHash = profile ? str(profile.password_hash) : '';
+  const accountName = str(env && env.NEARFIND_AUTH_NAME) || 'nearFind';
 
-  // PHP (LoginController::store, :30-52): two ways in, one credential each.
-  //   - the deployment credential: `NEARFIND_AUTH_EMAIL` (the config group the
-  //     build does not dump) + `NEARFIND_AUTH_PASSWORD_HASH`; the email is half
-  //     of it, so the row's hash can never shadow it;
-  //   - a row created by /auth/daftar: its own email + hash, and only once the mailed
-  //     link set `email_verified_at`. An unverified row answers the same message
-  //     Laravel's MustVerifyEmail flow does, after a correct password.
+  // Stateless by design: the sealed deployment credential is the only account.
+  // No profile lookup, registration or verification gate on either side.
   const passwordMatches = async (hash) => {
     if (hash === '') return false;
     try {
@@ -251,15 +235,7 @@ export default async function handle(ctx, env) {
   let accepted = false;
   if (configuredEmail !== '' && configuredHash !== '' && configuredEmail === email) {
     accepted = await passwordMatches(configuredHash);
-  } else if (profileHash !== '' && await passwordMatches(profileHash)) {
-    if (str(profile.email_verified_at) === '') {
-      return redirectBack(ctx, {
-        email: 'Email belum diverifikasi. Buka tautan verifikasi yang kami kirim ke ' + str(profile.email) + '.',
-      });
-    }
-    accepted = true;
   }
-
   if (!accepted) {
     return redirectBack(ctx, { email: 'Email atau kata sandi tidak cocok.' });
   }
@@ -269,7 +245,7 @@ export default async function handle(ctx, env) {
   if (session && typeof session.regenerate === 'function') await session.regenerate();
   if (session && typeof session.put === 'function') {
     session.put('seal_email', email);
-    session.put('seal_name', (profile && str(profile.name)) || str(env && env.NEARFIND_AUTH_NAME) || 'nearFind');
+    session.put('seal_name', accountName);
   }
 
   const ttlMs =
@@ -289,7 +265,7 @@ export default async function handle(ctx, env) {
     ttlMs,
     data: {
       email,
-      name: (profile && str(profile.name)) || str(env.NEARFIND_AUTH_NAME) || 'nearFind',
+      name: accountName,
     },
   });
 
@@ -330,7 +306,7 @@ function successTarget(ctx, session) {
  * The session cookie. Laravel's seam is the CookieJar (queued cookies are added
  * to the response by AddQueuedCookiesToResponse); the kernel drops a raw
  * `set-cookie` header, so the jar is the only path that survives. A plain unit
- * ctx has no jar — then the header is the best that can be done.
+ * ctx has no jar, so the header is the best that can be done.
  */
 function setSessionCookie(ctx, env, token, ttlMs) {
   const jar = ctx.cookieJar;

@@ -1,10 +1,9 @@
 <?php
 
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\Auth\EmailVerificationController;
 use App\Http\Controllers\Auth\LoginController;
-use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\LocationController;
 use App\Http\Controllers\NeedController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -34,15 +33,15 @@ Route::delete('/needs/{id}', [NeedController::class, 'destroy'])
     ->middleware('auth:seal')
     ->name('needs.destroy');
 
+// Saving a place found through Nominatim writes a `locations` row.
+Route::post('/locations', [LocationController::class, 'store'])
+    ->middleware('auth:seal')
+    ->name('locations.store');
+
 Route::middleware('guest:seal')->group(function (): void {
     Route::get('/auth', [AuthController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('auth.login');
-    Route::post('/register', [RegisterController::class, 'store'])->name('auth.register');
 });
-
-// Public on purpose: an already signed-in visitor may still activate a second
-// account, and the token alone decides which row it activates.
-Route::get('/verify', EmailVerificationController::class)->name('register.verify');
 
 Route::post('/logout', [LoginController::class, 'destroy'])
     ->middleware('auth:seal')
@@ -50,12 +49,12 @@ Route::post('/logout', [LoginController::class, 'destroy'])
 
 /*
 | Edge ports. These are the same actions again, on paths only the compiled
-| worker answers (`ports/*.mjs`, listed in registry.json). The code they run —
-| a custom middleware, an app service, `cookie()` — has no compiled surface, so
+| worker answers (`ports/*.mjs`, listed in registry.json). The code they run,
+| a custom middleware, an app service, `cookie()`, have no compiled surface, so
 | the Worker's copy lives in a port and PHP keeps these paths for
 | `php artisan serve` and the tests. Both sides answer one set of URLs.
 */
 Route::post('/edge/login', [LoginController::class, 'store'])->name('edge.login');
-Route::post('/edge/register', [RegisterController::class, 'store'])->name('edge.register');
 Route::post('/edge/logout', [LoginController::class, 'destroy'])->middleware('auth:seal')->name('edge.logout');
 Route::post('/edge/needs', [NeedController::class, 'store'])->middleware('auth:seal')->name('edge.needs.store');
+Route::post('/edge/locations', [LocationController::class, 'store'])->middleware('auth:seal')->name('edge.locations.store');

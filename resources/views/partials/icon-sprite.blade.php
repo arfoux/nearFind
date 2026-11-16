@@ -204,8 +204,13 @@
         <path d="M19 12H5m6 6-6-6 6-6" />
     </symbol>
 
-    <symbol id="nf-sparkle" viewBox="0 0 24 24">
-        <path d="M12 3.5 13.6 9l5.4 1.6-5.4 1.6L12 18l-1.6-5.8L5 10.6 10.4 9 12 3.5Z" />
-        <path d="M19 3v3M20.5 4.5h-3" />
+    <symbol id="nf-sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" />
     </symbol>
+
+    <symbol id="nf-moon" viewBox="0 0 24 24">
+        <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z" />
+    </symbol>
+
 </svg>
