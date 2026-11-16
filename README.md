@@ -2,7 +2,7 @@
 
 [![ci](https://github.com/arfoux/nearFind/actions/workflows/ci.yml/badge.svg)](https://github.com/arfoux/nearFind/actions/workflows/ci.yml) [![verdict: runs with declared gaps](https://img.shields.io/badge/verdict-RUNS%20WITH%20DECLARED%20GAPS-E0A126)](https://github.com/arfoux/laravel-workers/blob/main/docs/CI.md) [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-Aplikasi peta: daftar kebutuhan (`config/needs.php`) per kategori ditampilkan di atas peta
+Aplikasi peta: daftar kebutuhan (baris D1/SQLite) per kategori - `config/needs.php` hanya berisi daftar kategori - ditampilkan di atas peta
 [MapLibre GL](https://maplibre.org/). Laravel 13 (PHP 8.3+) di-compile
 [laravel-workers](https://github.com/arfoux/laravel-workers) menjadi satu Cloudflare Worker; Vite +
 Tailwind di klien. Gaya peta diambil dari `NEARFIND_MAP_STYLE_URL` (default: OpenFreeMap Dark).

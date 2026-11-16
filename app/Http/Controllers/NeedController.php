@@ -232,11 +232,4 @@ class NeedController extends Controller
         return $rows;
     }
 
-    /**
-     * The map, the list and the recap read the same rows in the same order.
-     */
-    /**
-     * Same lazy provisioning as the profile page: the deployment credential is
-     * not necessarily a `profiles` row, so the first activity creates one.
-     */
 }
