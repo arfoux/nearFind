@@ -1,7 +1,7 @@
 @extends('layouts.app')
 @php $title = 'Jelajahi · nearFind'; $active = 'jelajahi'; @endphp
 @section('content')
-    <div class="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-5 sm:px-6 lg:px-8">
+    <main class="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-5 sm:px-6 lg:px-8">
         <div class="mx-auto w-full max-w-7xl">
             <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-300">Jelajahi</p>
             <h1 class="mt-1 text-xl font-semibold tracking-[-0.03em] text-ink">Kebutuhan di sekitarmu</h1>
@@ -20,7 +20,7 @@
                     autocomplete="off"
                     placeholder="Cari kebutuhan, lokasi, atau kata kunci"
                     aria-label="Cari kebutuhan"
-                    class="h-11 w-full rounded-2xl bg-surface pl-10 pr-11 text-[12.5px] font-medium text-ink ring-1 ring-white/10 transition placeholder:text-muted/70 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
+                    class="h-11 w-full rounded-2xl bg-surface pl-10 pr-14 text-[12.5px] font-medium text-ink ring-1 ring-white/10 transition placeholder:text-muted/70 focus:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
                 >
 
                 <button
@@ -28,7 +28,7 @@
                     data-list-clear
                     hidden
                     aria-label="Hapus kata kunci"
-                    class="absolute inset-y-0 right-2.5 my-auto flex size-8 items-center justify-center rounded-xl text-muted transition hover:bg-brand-50 hover:text-brand-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
+                    class="absolute inset-y-0 right-2 my-auto flex size-11 items-center justify-center rounded-xl text-muted transition hover:bg-brand-50 hover:text-brand-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
                 >
                     @include('partials.icon', ['name' => 'close', 'class' => 'size-4'])
                 </button>
@@ -66,7 +66,7 @@
                             }
                         }
 
-                        $searchText = $need['title'].' '.$need['location'].' '.$need['area'].' '.$need['description'].' '.($category['label'] ?? '');
+                        $searchText = $need['title'].' '.$need['location'].' '.$need['area'].' '.$need['description'].' '.($category ? ($category['label'] ?? '') : '');
                     @endphp
 
                     <article
@@ -76,8 +76,8 @@
                         class="rounded-[24px] bg-surface p-4 ring-1 ring-white/10 shadow-[0_18px_45px_-38px_rgba(0,0,0,0.9)]"
                     >
                         <div class="flex items-start gap-3">
-                            <span class="chip-icon mt-0.5" style="--chip-color: {{ $category['color'] ?? '#A78BFA' }}">
-                                @include('partials.icon', ['name' => $category['icon'] ?? 'grid', 'class' => 'size-4'])
+                            <span class="chip-icon mt-0.5" style="--chip-color: {{ $category ? ($category['color'] ?? '#A78BFA') : '#A78BFA' }}">
+                                @include('partials.icon', ['name' => $category ? ($category['icon'] ?? 'grid') : 'grid', 'class' => 'size-4'])
                             </span>
 
                             <div class="min-w-0 flex-1">
@@ -108,7 +108,7 @@
                             <a
                                 href="{{ url('/') }}?need={{ $need['id'] }}"
                                 data-app-link
-                                class="inline-flex h-9 items-center gap-1.5 rounded-xl bg-brand-50 px-3 text-[11px] font-semibold text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
+                                class="inline-flex h-11 items-center gap-1.5 rounded-xl bg-brand-50 px-3 text-[11px] font-semibold text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
                             >
                                 @include('partials.icon', ['name' => 'map', 'class' => 'size-3.5'])
                                 Lihat di peta
@@ -132,11 +132,11 @@
             <a
                 href="{{ route('home') }}"
                 data-app-link
-                class="mt-4 inline-flex items-center gap-1.5 rounded-lg px-1 py-1 text-[11.5px] font-semibold text-brand-200 transition hover:text-brand-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
+                class="mt-4 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-[11.5px] font-semibold text-brand-200 transition hover:text-brand-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
             >
                 @include('partials.icon', ['name' => 'map', 'class' => 'size-3.5'])
                 Kembali ke peta
             </a>
         </div>
-    </div>
+    </main>
 @endsection

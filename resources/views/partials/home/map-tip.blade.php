@@ -13,7 +13,7 @@
     <button
         type="button"
         data-dismiss-tip
-        class="flex size-6 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-canvas hover:text-brand-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30"
+        class="flex size-11 shrink-0 items-center justify-center rounded-full text-muted transition hover:bg-canvas hover:text-brand-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/30"
         aria-label="Tutup petunjuk peta"
     >
         @include('partials.icon', ['name' => 'close', 'class' => 'size-3.5'])

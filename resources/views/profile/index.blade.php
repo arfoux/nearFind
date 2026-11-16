@@ -2,19 +2,19 @@
 @php $title = 'Profil · nearFind'; $active = 'profil'; @endphp
 
 @section('content')
-    <div class="min-h-0 flex-1 overflow-y-auto px-4 pb-8 pt-5 sm:px-6 lg:px-8">
+    <main class="min-h-0 flex-1 overflow-y-auto px-4 pb-8 pt-5 sm:px-6 lg:px-8">
         <div class="mx-auto w-full max-w-[860px] pb-24">
             {{-- Identity --}}
             <section class="nf-card relative overflow-hidden rounded-[26px] p-5 sm:p-6">
                 <div class="pointer-events-none absolute -right-16 -top-24 size-56 rounded-full bg-brand-500/20 blur-3xl"></div>
 
                 <div class="relative flex flex-wrap items-start gap-4">
-                    <span class="flex size-16 shrink-0 items-center justify-center rounded-[22px] bg-brand-700 text-xl font-semibold text-canvas shadow-[0_16px_32px_-20px_rgba(0,0,0,0.95)]">
+                    <span class="flex size-16 shrink-0 items-center justify-center rounded-[22px] bg-brand-700 text-xl font-semibold text-white shadow-[0_16px_32px_-20px_rgba(0,0,0,0.95)]">
                         {{ mb_strtoupper(mb_substr($profile->name, 0, 1)) }}
                     </span>
 
                     <div class="min-w-0 basis-[min(100%,16rem)] flex-1">
-                        <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-brand-300">Akun nearFind</p>
+                        <p class="text-[9px] font-semibold uppercase tracking-[0.18em] text-brand-300">Sesi nearFind</p>
                         <h1 class="mt-1 text-[22px] font-semibold leading-[1.15] tracking-[-0.035em] text-ink sm:text-2xl">{{ $profile->name }}</h1>
                         <p class="mt-1 truncate text-[11.5px] text-muted">
                             {{ $email }}
@@ -29,18 +29,13 @@
                                 @include('partials.icon', ['name' => 'shield-check', 'class' => 'size-3'])
                                 Sesi bertanda tangan
                             </span>
-
-                            <span class="inline-flex items-center gap-1.5 rounded-full bg-canvas px-2.5 py-1 text-[9.5px] font-semibold text-muted ring-1 ring-white/10">
-                                @include('partials.icon', ['name' => 'mail', 'class' => 'size-3'])
-                                {{ $email }}
-                            </span>
                         </div>
                     </div>
 
                     <a
                         href="{{ route('home') }}"
                         data-app-link
-                        class="inline-flex h-9 items-center gap-1.5 rounded-full bg-surface-2 px-3.5 text-[11px] font-semibold text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
+                        class="inline-flex h-11 items-center gap-1.5 rounded-full bg-surface-2 px-3.5 text-[11px] font-semibold text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
                     >
                         @include('partials.icon', ['name' => 'map', 'class' => 'size-3.5'])
                         ke peta
@@ -75,7 +70,7 @@
 
                 @if (count($submittedNeeds) === 0)
                     <div class="nf-card rounded-[24px] p-5 text-[11.5px] leading-relaxed text-muted">
-                        Belum ada. Tekan tombol tambah di peta untuk mengajukan kebutuhan pertamamu.
+                        Belum ada. Tekan “Ajukan Kebutuhan” di peta untuk mengajukan kebutuhan pertamamu.
                     </div>
                 @else
                     <ul class="grid gap-2.5" role="list">
@@ -107,7 +102,7 @@
 
                                     <button
                                         type="submit"
-                                        class="inline-flex items-center gap-1.5 rounded-full bg-canvas px-2.5 py-1 text-[10px] font-semibold text-[#FF9B9B] ring-1 ring-white/10 transition hover:bg-[#FF9B9B]/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF9B9B]/20"
+                                        class="inline-flex min-h-11 items-center gap-1.5 rounded-full bg-canvas px-3 text-[10px] font-semibold text-danger ring-1 ring-white/10 transition hover:bg-[#FF9B9B]/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF9B9B]/20"
                                     >
                                         @include('partials.icon', ['name' => 'close', 'class' => 'size-3'])
                                         Batalkan pengajuan
@@ -146,12 +141,12 @@
 
                 <button
                     type="submit"
-                    class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#3A1518] px-4 text-[12px] font-semibold text-[#FF9B9B] ring-1 ring-[#FF9B9B]/15 transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF9B9B]/20"
+                    class="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-canvas px-4 text-[12px] font-semibold text-brand-200 ring-1 ring-ink/10 transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
                 >
                     @include('partials.icon', ['name' => 'log-out', 'class' => 'size-4'])
-                    Keluar dari akun
+                    Keluar dari sesi
                 </button>
             </form>
         </div>
-    </div>
+    </main>
 @endsection

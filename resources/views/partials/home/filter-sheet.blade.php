@@ -30,7 +30,7 @@
             <button
                 type="button"
                 data-filter-close
-                class="flex size-9 shrink-0 items-center justify-center rounded-full bg-canvas text-muted transition hover:bg-brand-50 hover:text-brand-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
+                class="flex size-11 shrink-0 items-center justify-center rounded-full bg-canvas text-muted transition hover:bg-brand-50 hover:text-brand-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
                 aria-label="Tutup filter"
             >
                 @include('partials.icon', ['name' => 'close', 'class' => 'size-4'])
@@ -108,7 +108,7 @@
 
                 <button
                     type="submit"
-                    class="inline-flex h-11 flex-[1.6] items-center justify-center rounded-xl bg-brand-700 px-4 text-[12px] font-semibold text-canvas shadow-[0_12px_24px_-16px_rgba(0,0,0,0.8)] transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
+                    class="inline-flex h-11 flex-[1.6] items-center justify-center rounded-xl bg-brand-700 px-4 text-[12px] font-semibold text-white shadow-[0_12px_24px_-16px_rgba(0,0,0,0.8)] transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
                 >
                     Terapkan filter
                 </button>
