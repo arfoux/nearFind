@@ -1,0 +1,282 @@
+<div
+    id="location-sheet"
+    data-initial-open="{{ $errors->hasAny(['name', 'category', 'address', 'area', 'latitude', 'longitude']) ? 'true' : 'false' }}"
+    class="fixed inset-0 z-[1250] hidden items-end justify-center lg:items-center"
+    role="presentation"
+>
+    <div data-location-backdrop class="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
+
+    <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="location-sheet-title"
+        aria-describedby="location-sheet-description"
+        class="location-sheet-panel relative z-10 max-h-[92dvh] w-full max-w-[560px] overflow-y-auto rounded-t-[28px] bg-surface px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-24px_70px_-30px_rgba(0,0,0,0.55)] lg:max-h-[88dvh] lg:max-w-[460px] lg:rounded-[28px] lg:p-6"
+    >
+        <div class="mx-auto mb-4 h-1 w-10 rounded-full bg-white/10 lg:hidden"></div>
+
+        <div class="flex items-start gap-3">
+            <span class="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-brand-50 text-brand-200 ring-1 ring-white/10">
+                @include('partials.icon', ['name' => 'compass', 'class' => 'size-6'])
+            </span>
+
+            <div class="min-w-0 flex-1">
+                <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-300">Tempat warga</p>
+                <h2 id="location-sheet-title" class="mt-1 text-xl font-semibold tracking-[-0.025em] text-ink">Tambah tempat</h2>
+            </div>
+
+            <button
+                type="button"
+                data-location-close
+                class="flex size-11 shrink-0 items-center justify-center rounded-full bg-canvas text-muted transition hover:bg-brand-50 hover:text-brand-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
+                aria-label="Tutup form tempat"
+            >
+                @include('partials.icon', ['name' => 'close', 'class' => 'size-4'])
+            </button>
+        </div>
+
+        {{-- Lookup and storage are deliberately separate: Nominatim only finds
+             candidate places, and the chosen one is written to nearFind's D1. --}}
+        <p id="location-sheet-description" class="mt-3 text-[12px] leading-relaxed text-muted">
+            Cari jalan, kelurahan, atau tempat lewat OpenStreetMap Nominatim. Pilih titiknya di peta, lalu simpan di database nearFind supaya warga lain bisa melihatnya.
+        </p>
+
+        <div class="relative mt-4">
+            <label for="place-search" class="sr-only">Cari tempat lewat Nominatim</label>
+
+            <div class="flex h-12 items-center gap-2.5 rounded-xl bg-canvas px-3.5 ring-1 ring-white/10 transition focus-within:ring-2 focus-within:ring-brand-500/40">
+                @include('partials.icon', ['name' => 'search', 'class' => 'size-[19px] shrink-0 text-brand-300'])
+
+                <input
+                    id="place-search"
+                    data-place-search
+                    type="search"
+                    inputmode="search"
+                    autocomplete="off"
+                    placeholder="Contoh: Jl. Sukajadi, Bandung"
+                    class="min-w-0 flex-1 bg-transparent text-[12.5px] font-medium text-ink outline-none placeholder:text-muted/70"
+                >
+            </div>
+
+            <div
+                data-place-results
+                hidden
+                class="absolute inset-x-0 top-[calc(100%+0.5rem)] z-[20] max-h-[15rem] overflow-y-auto overscroll-contain rounded-xl bg-surface p-2 shadow-[0_18px_40px_-26px_rgba(0,0,0,0.9)] ring-1 ring-white/10"
+            >
+                <p data-place-loading hidden class="px-2.5 py-2 text-[11.5px] text-muted">Mencari tempat…</p>
+                <p data-place-error hidden class="px-2.5 py-2 text-[11.5px] font-medium text-danger">Pencarian gagal. Coba lagi.</p>
+                <ul data-place-list role="list" class="space-y-1"></ul>
+                <p data-place-empty hidden class="px-2.5 py-2 text-[11.5px] leading-relaxed text-muted">Tempat tidak ditemukan. Coba kata kunci lain.</p>
+            </div>
+        </div>
+
+        <form data-location-form method="POST" action="/locations" class="mt-5 space-y-4">
+            @csrf
+
+            <div>
+                <label for="location-name" class="text-[11px] font-semibold text-brand-200">Nama tempat</label>
+
+                <div class="relative mt-1.5">
+                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
+                        @include('partials.icon', ['name' => 'pin', 'class' => 'size-4'])
+                    </span>
+
+                    <input
+                        id="location-name"
+                        data-location-name
+                        name="name"
+                        type="text"
+                        value="{{ old('name') }}"
+                        required
+                        minlength="3"
+                        maxlength="120"
+                        autocomplete="off"
+                        placeholder="Contoh: Warung Bu Sari"
+                        class="h-11 w-full rounded-xl border-0 bg-canvas pl-10 pr-3 text-[12.5px] text-ink ring-1 ring-white/10 transition placeholder:text-muted/70 focus:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                    >
+                </div>
+
+                @error('name')
+                    <p class="mt-1 text-[10px] font-medium text-danger">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label for="location-category" class="text-[11px] font-semibold text-brand-200">Kategori</label>
+
+                <div class="relative mt-1.5">
+                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
+                        @include('partials.icon', ['name' => 'grid', 'class' => 'size-4'])
+                    </span>
+
+                    <select
+                        id="location-category"
+                        data-location-category
+                        name="category"
+                        required
+                        class="h-11 w-full appearance-none rounded-xl border-0 bg-canvas pl-10 pr-10 text-[12.5px] text-ink ring-1 ring-white/10 transition focus:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                    >
+                        <option value="" disabled {{ old('category') ? '' : 'selected' }}>Pilih kategori</option>
+
+                        @foreach ($categories as $category)
+                            @if ($category['id'] !== 'all')
+                                <option value="{{ $category['id'] }}" {{ old('category') === $category['id'] ? 'selected' : '' }}>
+                                    {{ $category['label'] }}
+                                </option>
+                            @endif
+                        @endforeach
+                    </select>
+
+                    <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-muted">
+                        @include('partials.icon', ['name' => 'chevron-down', 'class' => 'size-4'])
+                    </span>
+                </div>
+
+                @error('category')
+                    <p class="mt-1 text-[10px] font-medium text-danger">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label for="location-address" class="text-[11px] font-semibold text-brand-200">Alamat</label>
+
+                <div class="relative mt-1.5">
+                    <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
+                        @include('partials.icon', ['name' => 'map', 'class' => 'size-4'])
+                    </span>
+
+                    <input
+                        id="location-address"
+                        data-location-address
+                        name="address"
+                        type="text"
+                        value="{{ old('address') }}"
+                        required
+                        maxlength="200"
+                        autocomplete="off"
+                        placeholder="Alamat dari hasil pencarian"
+                        class="h-11 w-full rounded-xl border-0 bg-canvas pl-10 pr-3 text-[12.5px] text-ink ring-1 ring-white/10 transition placeholder:text-muted/70 focus:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                    >
+                </div>
+
+                @error('address')
+                    <p class="mt-1 text-[10px] font-medium text-danger">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <div class="flex items-baseline justify-between gap-3">
+                    <label class="text-[11px] font-semibold text-brand-200">Titik lokasi <span class="font-normal text-muted">(wajib)</span></label>
+
+                    <button
+                        type="button"
+                        data-location-point-locate
+                        class="inline-flex h-11 items-center gap-1.5 rounded-full bg-brand-50 px-3 text-[10px] font-semibold text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
+                    >
+                        @include('partials.icon', ['name' => 'locate', 'class' => 'size-3.5'])
+                        Pakai lokasiku
+                    </button>
+                </div>
+
+                {{-- The pin hangs from the centre upwards: the tip must land on
+                     the exact coordinate written to the hidden latitude/longitude. --}}
+                <div
+                    data-location-picker
+                    class="relative mt-1.5 h-[176px] overflow-hidden rounded-xl bg-canvas ring-1 ring-white/10 transition focus-within:ring-2 focus-within:ring-brand-500/40"
+                >
+                    <div data-location-point-canvas class="absolute inset-0 h-full w-full"></div>
+
+                    <div class="pointer-events-none absolute inset-x-2 bottom-2 z-10 rounded-lg bg-black/60 px-2.5 py-1.5 text-center text-[10px] font-medium text-white backdrop-blur-sm">
+                        Geser peta untuk menaruh pin
+                    </div>
+
+                    <span class="pointer-events-none absolute left-1/2 top-1/2 z-[5] -translate-x-1/2 -translate-y-full">
+                        @include('partials.icon', ['name' => 'pin', 'class' => 'block size-8 drop-shadow-[0_4px_8px_rgba(0,0,0,0.6)] text-brand-200'])
+                    </span>
+
+                    <span class="pointer-events-none absolute left-1/2 top-1/2 z-[4] size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-700 ring-2 ring-canvas"></span>
+
+                    <div data-location-point-busy class="absolute inset-x-2 top-2 z-20 hidden justify-center">
+                        <span class="rounded-lg bg-black/70 px-2.5 py-1.5 text-[10px] font-semibold text-white backdrop-blur-sm">Mencari alamat…</span>
+                    </div>
+                </div>
+
+                <input type="hidden" name="latitude" data-location-lat value="{{ old('latitude') }}">
+                <input type="hidden" name="longitude" data-location-lng value="{{ old('longitude') }}">
+
+                <p data-location-point-summary class="mt-2 text-[11px] font-medium leading-relaxed text-brand-200">
+                    Geser peta sampai pin berada di lokasi tempat.
+                </p>
+
+                <div class="mt-2 flex flex-wrap gap-1.5">
+                    <button type="button" data-location-point-step="west" class="flex size-11 items-center justify-center rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke barat">←</button>
+                    <button type="button" data-location-point-step="north" class="flex size-11 items-center justify-center rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke utara">↑</button>
+                    <button type="button" data-location-point-step="south" class="flex size-11 items-center justify-center rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke selatan">↓</button>
+                    <button type="button" data-location-point-step="east" class="flex size-11 items-center justify-center rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke timur">→</button>
+
+                    <span class="w-px self-stretch bg-white/10" aria-hidden="true"></span>
+
+                    <button type="button" data-location-point-zoom="in" class="flex size-11 items-center justify-center rounded-lg bg-canvas text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Perbesar peta">
+                        @include('partials.icon', ['name' => 'plus', 'class' => 'size-4'])
+                    </button>
+                    <button type="button" data-location-point-zoom="out" class="flex size-11 items-center justify-center rounded-lg bg-canvas text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Perkecil peta">
+                        @include('partials.icon', ['name' => 'minus', 'class' => 'size-4'])
+                    </button>
+                </div>
+
+                @error('latitude')
+                    <p class="mt-1 text-[10px] font-medium text-danger">{{ $message }}</p>
+                @enderror
+
+                @error('longitude')
+                    <p class="mt-1 text-[10px] font-medium text-danger">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label for="location-area" class="text-[10px] font-semibold text-muted">Nama area <span class="font-normal">(terisi otomatis)</span></label>
+
+                <input
+                    id="location-area"
+                    data-location-area
+                    name="area"
+                    type="text"
+                    value="{{ old('area') }}"
+                    maxlength="120"
+                    autocomplete="off"
+                    placeholder="Contoh: Sukajadi, Bandung"
+                    class="mt-1 h-11 w-full rounded-xl border-0 bg-canvas px-3 text-[12px] text-ink ring-1 ring-white/10 transition placeholder:text-muted/70 focus:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                >
+
+                @error('area')
+                    <p class="mt-1 text-[10px] font-medium text-danger">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="flex items-start gap-2.5 rounded-2xl bg-canvas px-3.5 py-3 ring-1 ring-white/5">
+                @include('partials.icon', ['name' => 'info', 'class' => 'mt-0.5 size-4 shrink-0 text-brand-300'])
+
+                <p class="text-[10.5px] leading-relaxed text-muted">
+                    Nominatim hanya mencari nama tempat. Data yang kamu simpan menjadi milik nearFind dan tampil di peta ini.
+                </p>
+            </div>
+
+            <div class="flex gap-2.5">
+                <button
+                    type="button"
+                    data-location-close
+                    class="inline-flex h-11 flex-1 items-center justify-center rounded-xl bg-canvas px-4 text-[12px] font-semibold text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
+                >
+                    Batal
+                </button>
+
+                <button
+                    type="submit"
+                    class="inline-flex h-11 flex-[1.6] items-center justify-center rounded-xl bg-brand-700 px-4 text-[12px] font-semibold text-white shadow-[0_12px_24px_-16px_rgba(0,0,0,0.8)] transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
+                >
+                    Simpan tempat
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

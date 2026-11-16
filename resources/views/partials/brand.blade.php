@@ -5,7 +5,7 @@
 <a
     href="{{ route('home') }}"
     class="group inline-flex items-center gap-2.5 rounded-2xl outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20 {{ $class }}"
-    aria-label="nearFind — kembali ke peta kebutuhan"
+    aria-label="nearFind: kembali ke peta kebutuhan"
 >
     <span class="relative flex size-10 shrink-0 items-center justify-center transition-transform duration-200 group-hover:-rotate-3 group-hover:scale-[1.03] lg:size-[44px]">
         <svg viewBox="0 0 44 44" width="44" height="44" class="size-full drop-shadow-[0_8px_14px_rgba(0,0,0, 0.55)]" aria-hidden="true">

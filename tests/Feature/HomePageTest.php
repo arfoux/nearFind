@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Location;
 use App\Models\Need;
 use App\Models\Profile;
 use Database\Seeders\NeedSeeder;
@@ -51,6 +52,53 @@ class HomePageTest extends TestCase
 
         $this->assertContains('Klinik Siaga Malam', $titles);
         $this->assertNotContains('Klinik 24 Jam', $titles);
+    }
+
+    public function test_home_passes_location_rows_and_both_map_styles(): void
+    {
+        Location::create([
+            'name' => 'Warung Bu Sari',
+            'category' => 'retail',
+            'address' => 'Jl. Cihampelas 12',
+            'area' => 'Sukajadi',
+            'latitude' => -6.92,
+            'longitude' => 107.61,
+            'source' => 'warga',
+            'author_email' => 'warga@nearfind.test',
+        ]);
+
+        $response = $this->get('/');
+        $response->assertOk();
+
+        $locations = $response->viewData('locations');
+
+        $this->assertCount(1, $locations);
+        $this->assertSame([
+            'id',
+            'name',
+            'category',
+            'address',
+            'area',
+            'latitude',
+            'longitude',
+            'source',
+            'created_at',
+        ], array_keys($locations[0]));
+        $this->assertSame('Warung Bu Sari', $locations[0]['name']);
+        $this->assertSame('warga', $locations[0]['source']);
+        $this->assertIsFloat($locations[0]['latitude']);
+        $this->assertIsFloat($locations[0]['longitude']);
+
+        $this->assertSame('https://tiles.openfreemap.org/styles/dark', $response->viewData('mapDarkStyleUrl'));
+        $this->assertSame('https://tiles.openfreemap.org/styles/light', $response->viewData('mapLightStyleUrl'));
+        $this->assertSame('https://tiles.openfreemap.org/styles/dark', $response->viewData('mapStyleUrl'));
+        $this->assertStringNotContainsString('author_email', (string) $response->getContent());
+
+        preg_match('/<script type="application\/json" id="nearfind-data">(.*?)<\/script>/s', (string) $response->getContent(), $match);
+        $data = json_decode($match[1] ?? '[]', true);
+
+        $this->assertSame('Warung Bu Sari', $data['locations'][0]['name'] ?? null);
+        $this->assertSame('https://tiles.openfreemap.org/styles/light', $data['mapLightStyleUrl'] ?? null);
     }
 
     public function test_explore_and_report_pages_render_and_are_linked_from_the_nav(): void

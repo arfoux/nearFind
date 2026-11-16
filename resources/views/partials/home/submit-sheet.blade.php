@@ -28,7 +28,7 @@
             <button
                 type="button"
                 data-submit-close
-                class="flex size-9 shrink-0 items-center justify-center rounded-full bg-canvas text-muted transition hover:bg-brand-50 hover:text-brand-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
+                class="flex size-11 shrink-0 items-center justify-center rounded-full bg-canvas text-muted transition hover:bg-brand-50 hover:text-brand-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
                 aria-label="Tutup form kebutuhan"
             >
                 @include('partials.icon', ['name' => 'close', 'class' => 'size-4'])
@@ -47,7 +47,7 @@
 
                 <div class="relative mt-1.5">
                     <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
-                        @include('partials.icon', ['name' => 'sparkle', 'class' => 'size-4'])
+                        @include('partials.icon', ['name' => 'pencil', 'class' => 'size-4'])
                     </span>
 
                     <input
@@ -65,7 +65,7 @@
                 </div>
 
                 @error('title')
-                    <p class="mt-1 text-[10px] font-medium text-[#FF9B9B]">{{ $message }}</p>
+                    <p class="mt-1 text-[10px] font-medium text-danger">{{ $message }}</p>
                 @enderror
             </div>
 
@@ -100,7 +100,7 @@
                 </div>
 
                 @error('category')
-                    <p class="mt-1 text-[10px] font-medium text-[#FF9B9B]">{{ $message }}</p>
+                    <p class="mt-1 text-[10px] font-medium text-danger">{{ $message }}</p>
                 @enderror
             </div>
 
@@ -111,7 +111,7 @@
                     <button
                         type="button"
                         data-point-locate
-                        class="inline-flex items-center gap-1.5 rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-semibold text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
+                        class="inline-flex h-11 items-center gap-1.5 rounded-full bg-brand-50 px-3 text-[10px] font-semibold text-brand-200 ring-1 ring-ink/10 transition hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
                     >
                         @include('partials.icon', ['name' => 'pin', 'class' => 'size-3'])
                         Pakai lokasiku
@@ -123,7 +123,7 @@
                      same with a mouse and with a thumb. --}}
                 <div
                     data-point-picker
-                    class="relative mt-1.5 h-[176px] overflow-hidden rounded-xl bg-[#1a1d21] ring-1 ring-white/10 transition focus-within:ring-2 focus-within:ring-brand-500/40"
+                    class="relative mt-1.5 h-[176px] overflow-hidden rounded-xl bg-canvas ring-1 ring-white/10 transition focus-within:ring-2 focus-within:ring-brand-500/40"
                 >
                     <div data-point-canvas class="absolute inset-0 h-full w-full"></div>
 
@@ -153,13 +153,13 @@
                 </p>
 
                 <div class="mt-2 flex flex-wrap gap-1.5">
-                    <button type="button" data-point-step="west" class="size-8 rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke barat">←</button>
-                    <button type="button" data-point-step="north" class="size-8 rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke utara">↑</button>
-                    <button type="button" data-point-step="south" class="size-8 rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke selatan">↓</button>
-                    <button type="button" data-point-step="east" class="size-8 rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke timur">→</button>
+                    <button type="button" data-point-step="west" class="flex size-11 items-center justify-center rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke barat">←</button>
+                    <button type="button" data-point-step="north" class="flex size-11 items-center justify-center rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke utara">↑</button>
+                    <button type="button" data-point-step="south" class="flex size-11 items-center justify-center rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke selatan">↓</button>
+                    <button type="button" data-point-step="east" class="flex size-11 items-center justify-center rounded-lg bg-canvas text-[13px] text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Geser peta ke timur">→</button>
 
-                    <button type="button" data-point-zoom="in" class="flex size-8 items-center justify-center rounded-lg bg-canvas text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Perbesar peta">+</button>
-                    <button type="button" data-point-zoom="out" class="flex size-8 items-center justify-center rounded-lg bg-canvas text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Perkecil peta">−</button>
+                    <button type="button" data-point-zoom="in" class="flex size-11 items-center justify-center rounded-lg bg-canvas text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Perbesar peta">+</button>
+                    <button type="button" data-point-zoom="out" class="flex size-11 items-center justify-center rounded-lg bg-canvas text-brand-200 ring-1 ring-white/10 transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15" aria-label="Perkecil peta">−</button>
                 </div>
 
                 <div class="mt-2.5">
@@ -173,20 +173,20 @@
                         maxlength="120"
                         autocomplete="off"
                         placeholder="Contoh: Sukajadi, Bandung"
-                        class="mt-1 h-10 w-full rounded-xl border-0 bg-canvas px-3 text-[12px] text-ink ring-1 ring-white/10 transition placeholder:text-muted/70 focus:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
+                        class="mt-1 h-11 w-full rounded-xl border-0 bg-canvas px-3 text-[12px] text-ink ring-1 ring-white/10 transition placeholder:text-muted/70 focus:bg-surface-2 focus:outline-none focus:ring-2 focus:ring-brand-500/40"
                     >
                 </div>
 
                 @error('latitude')
-                    <p class="mt-1 text-[10px] font-medium text-[#FF9B9B]">{{ $message }}</p>
+                    <p class="mt-1 text-[10px] font-medium text-danger">{{ $message }}</p>
                 @enderror
 
                 @error('longitude')
-                    <p class="mt-1 text-[10px] font-medium text-[#FF9B9B]">{{ $message }}</p>
+                    <p class="mt-1 text-[10px] font-medium text-danger">{{ $message }}</p>
                 @enderror
 
                 @error('area')
-                    <p class="mt-1 text-[10px] font-medium text-[#FF9B9B]">{{ $message }}</p>
+                    <p class="mt-1 text-[10px] font-medium text-danger">{{ $message }}</p>
                 @enderror
             </div>
 
@@ -211,7 +211,7 @@
                 </div>
 
                 @error('location')
-                    <p class="mt-1 text-[10px] font-medium text-[#FF9B9B]">{{ $message }}</p>
+                    <p class="mt-1 text-[10px] font-medium text-danger">{{ $message }}</p>
                 @enderror
             </div>
 
@@ -228,7 +228,7 @@
                 >{{ old('description') }}</textarea>
 
                 @error('description')
-                    <p class="mt-1 text-[10px] font-medium text-[#FF9B9B]">{{ $message }}</p>
+                    <p class="mt-1 text-[10px] font-medium text-danger">{{ $message }}</p>
                 @enderror
             </div>
 
@@ -251,10 +251,9 @@
 
                 <button
                     type="submit"
-                    class="inline-flex h-11 flex-[1.6] items-center justify-center gap-2 rounded-xl bg-brand-700 px-4 text-[12px] font-semibold text-canvas shadow-[0_12px_24px_-16px_rgba(0,0,0,0.8)] transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
+                    class="inline-flex h-11 flex-[1.6] items-center justify-center rounded-xl bg-brand-700 px-4 text-[12px] font-semibold text-white shadow-[0_12px_24px_-16px_rgba(0,0,0,0.8)] transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
                 >
                     Kirim kebutuhan
-                    @include('partials.icon', ['name' => 'arrow-right', 'class' => 'size-4'])
                 </button>
             </div>
         </form>

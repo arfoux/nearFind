@@ -1,12 +1,15 @@
 @extends('layouts.app')
-@php $title = 'nearFind — Peta Kebutuhan Warga'; $active = 'peta'; @endphp
+@php $title = 'nearFind: Peta Kebutuhan Warga'; $active = 'peta'; @endphp
 @section('content')
     @php
         $nearFindData = [
             'categories' => $categories,
             'needs' => $needs,
+            'locations' => $locations ?? [],
             'authenticated' => $authenticated,
             'mapStyleUrl' => $mapStyleUrl,
+            'mapDarkStyleUrl' => $mapDarkStyleUrl ?? $mapStyleUrl,
+            'mapLightStyleUrl' => $mapLightStyleUrl ?? $mapStyleUrl,
             // A flash survives the redirect back to the map after a submission;
             // app.js turns it into the transient success toast.
             'flash' => session('status'),
@@ -47,10 +50,10 @@
                 aria-label="Informasi kebutuhan terpilih"
             >
                 <div id="need-peek" class="flex shrink-0 items-center gap-3 px-4 py-3" aria-live="polite">
-                    <span class="flex size-10 shrink-0 animate-pulse items-center justify-center rounded-[14px] bg-brand-50 text-brand-200"></span>
+                    <span class="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-brand-50 text-brand-200"></span>
                     <div class="min-w-0 flex-1 space-y-2">
-                        <span class="block h-2 w-24 animate-pulse rounded-full bg-brand-50"></span>
-                        <span class="block h-3 w-40 animate-pulse rounded-full bg-canvas"></span>
+                        <span class="block h-2 w-24 rounded-full bg-brand-50"></span>
+                        <span class="block h-3 w-40 rounded-full bg-canvas"></span>
                     </div>
                 </div>
 
@@ -63,11 +66,45 @@
                 </div>
             </aside>
 
+            {{-- Saved places get their own panel so a location never borrows a
+                 need's detail. JS swaps this with #need-panel. Native `hidden`
+                 keeps it out of the tab order until a pin is selected. --}}
+            <aside
+                data-location-panel
+                hidden
+                class="nf-glass-strong absolute inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-[650] overflow-hidden rounded-[20px] lg:inset-x-auto lg:bottom-24 lg:right-5 lg:w-[390px]"
+                aria-label="Detail tempat warga"
+            >
+                <div class="flex items-start gap-3 px-4 py-3">
+                    <span class="flex size-10 shrink-0 items-center justify-center rounded-[14px] bg-brand-50 text-brand-200">
+                        @include('partials.icon', ['name' => 'pin', 'class' => 'size-5'])
+                    </span>
+
+                    <div class="min-w-0 flex-1">
+                        <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-300">Tempat warga</p>
+                        <h2 data-location-panel-title class="mt-0.5 truncate text-[15px] font-semibold tracking-[-0.02em] text-ink">Detail tempat</h2>
+                        <p data-location-panel-meta class="mt-0.5 truncate text-[11px] text-muted">Pilih pin tempat di peta.</p>
+                    </div>
+
+                    <button
+                        type="button"
+                        data-location-panel-close
+                        class="flex size-11 shrink-0 items-center justify-center rounded-full bg-canvas text-muted transition hover:bg-brand-50 hover:text-brand-200 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/15"
+                        aria-label="Tutup detail tempat"
+                    >
+                        @include('partials.icon', ['name' => 'close', 'class' => 'size-4'])
+                    </button>
+                </div>
+
+                <div data-location-panel-body class="scrollbar-card min-h-0 max-h-[min(56dvh,32rem)] overflow-y-auto overscroll-contain px-4 pb-5 pt-1 lg:px-5 lg:pb-6"></div>
+            </aside>
+
             @include('partials.home/fab', [])
         </main>
     </div>
 
     @include('partials.home/filter-sheet', ['categories' => $categories])
+    @include('partials.home/location-sheet', ['categories' => $categories])
 
     @if ($authenticated)
         @include('partials.home/submit-sheet', ['categories' => $categories])
