@@ -2424,12 +2424,12 @@ function initNearFind(
         closeFilterSheet();
         locationReturnFocus = trigger instanceof HTMLElement ? trigger : document.activeElement;
 
+        locationSheet.classList.remove('hidden');
+        locationSheet.classList.add('flex');
+
         if (prefill) {
             prefillLocationForm(prefill);
         }
-
-        locationSheet.classList.remove('hidden');
-        locationSheet.classList.add('flex');
 
         window.requestAnimationFrame(() => {
             if (disposed) {
