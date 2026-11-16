@@ -1,13 +1,15 @@
 name: deploy
 
-# Production only: the PR gate lives in ci.yml. `deploy --mode 3` is the whole
-# pipeline — build, database (D1 ensure + schema), then `wrangler deploy` — so
-# there is no separate database workflow to drift from it.
+# Production only: the PR gate lives in ci.yml. This job builds assets, applies
+# companion D1 migrations, then runs `deploy --mode 3` for the D1 ensure and
+# `wrangler deploy`. No separate database workflow to drift from it.
 #
-# The schema is stateful, not re-applied blindly: the first run against an empty
-# D1 applies dist/schema.sql (CREATE-only, from database/migrations); a D1 that
-# already has tables is skipped; a CHANGED schema against a non-empty D1 stops
-# with "schema drift" — pass `--schema=apply` deliberately when you mean it.
+# dist/schema.sql is CREATE-only, generated from database/migrations. It can
+# initialise an empty D1, but it cannot add tables or columns to an already
+# populated, externally managed D1. Companion migrations under database/d1/
+# must be applied explicitly; the step below applies them idempotently before
+# deploy. `--skip-schema` stays in the deploy command because re-applying the
+# CREATE-only schema there would collide with the tables already present.
 on:
   push:
     branches:
@@ -86,6 +88,16 @@ jobs:
       - name: Build assets
         run: npm run build
 
+      # dist/schema.sql is CREATE-only, so `deploy --mode 3` skips it on this
+      # externally managed D1. The companion SQL under database/d1/ still has
+      # to reach the remote database; it uses CREATE IF NOT EXISTS, so this
+      # step is deterministic and safe on every deploy. The D1 name comes from
+      # wrangler.jsonc, the same source of truth the deploy step reads.
+      - name: Apply companion D1 schema (remote)
+        run: |
+          D1_NAME="$(node -e "const s=require('fs').readFileSync('wrangler.jsonc','utf8').replace(/^\s*\/\/.*$/mg,'');process.stdout.write(JSON.parse(s).d1_databases[0].database_name)")"
+          npx wrangler d1 execute "$D1_NAME" --remote --yes --file="${{ github.workspace }}/database/d1/2026_11_17_create_locations.sql"
+
       # No composer install: `deploy` provisions a composer-free vendor tree
       # from composer.lock (vendor-lite) — the same path the tool's e2e job
       # covers. require-dev is not provisioned, and nothing here runs PHPUnit.
@@ -100,9 +112,10 @@ jobs:
           # real D1. Read its id instead of creating a second, unbindable one.
           D1_ID="$(node -e "const s=require('fs').readFileSync('wrangler.jsonc','utf8').replace(/^\s*\/\/.*$/mg,'');process.stdout.write(JSON.parse(s).d1_databases[0].database_id)")"
           echo "d1: ${D1_ID:0:8}… (from wrangler.jsonc)"
-          # Production D1 was created outside the tool and already carries the
-          # final 14-table schema; dist/schema.sql is CREATE-only, so reapplying
-          # it would fail on those tables. Skip the schema step.
+          # dist/schema.sql is CREATE-only: it can initialise an empty D1 but
+          # cannot add tables or columns to this externally managed D1. The
+          # companion step above handles that; skip the tool's schema step here
+          # because reapplying CREATE-only SQL would collide with what exists.
           # The worker URL stays out of this public repository's logs: wrangler
           # echoes it on deploy, so the streamed copy masks it. The log file
           # keeps the raw output for the readiness block below.
