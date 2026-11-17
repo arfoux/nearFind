@@ -3336,6 +3336,7 @@ function initNearFind(
         closeLocationPanel();
         state.selectedLocationId = null;
         state.selectedId = need.id;
+        setCardExpanded(true);
 
         state.filtered.forEach((filteredNeed) => refreshMarker(filteredNeed));
 
