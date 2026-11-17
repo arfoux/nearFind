@@ -30,6 +30,9 @@ saat Ajukan Kebutuhan atau Tambah Tempat ditekan; logika pengambilan titik itu
 tidak berubah. Kursor berada pada bentuk normal di atas peta maupun penanda,
 dan hanya berubah menjadi `grabbing` selagi peta diseret.
 
+Saat Overpass gagal, nearFind mencoba mirror Overpass sekunder agar tempat
+OSM tetap muncul.
+
 Setiap penanda, baik pengajuan warga, tempat tersimpan, tempat maupun daerah
 dari OpenStreetMap, memuat label ringkas yang menguat saat hover atau fokus dan
 membuka panel detail saat diklik. Label memuat judul dan baris sumber
@@ -40,12 +43,15 @@ kepolisian, taman, dan museum, ditambah bentuk pin garis untuk data
 OpenStreetMap tanpa kategori. Warna berasal dari warna kategori yang sudah ada;
 tidak ada aset atau warna baru.
 
+Tempat penting atau tonggak mendapat prioritas tampil pada penanda, sementara
+kedekatan tetap mengurutkan hasil.
+
 Pin pengajuan warga terisi, pin tempat tersimpan memiliki garis tepi lebih
 kuat, dan pin OpenStreetMap lebih tenang dengan bentuk garis luar. Pratinjau
 daerah mempertahankan garis putus-putus. Saat peta diperkecil, penanda yang
-rapat disaring agar peta tetap terbaca. Pencarian terdekat memeringkat hasil
-berdasarkan jarak dari lokasi browser dan tampilan peta saat ini; batas
-fair-use tidak berubah.
+rapat disaring agar peta tetap terbaca. Secara bawaan, hasil pencarian
+diurutkan dari yang terdekat dengan lokasi pengguna, lalu yang terdekat
+dengan pusat peta yang terlihat. Batas fair-use tidak berubah.
 
 ## SEO
 

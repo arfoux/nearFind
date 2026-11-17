@@ -80,7 +80,7 @@
                                 name="filter-sort"
                                 value="{{ $sortOption['value'] }}"
                                 class="sr-only"
-                                @checked($sortOption['value'] === 'relevance')
+                                @checked($sortOption['value'] === 'nearest')
                             >
 
                             <span class="filter-sort-inner flex items-center gap-3 rounded-2xl border border-white/10 bg-canvas px-3 py-2.5 transition">
