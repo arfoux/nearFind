@@ -15,7 +15,8 @@ return [
     'map' => [
         'style_url' => env('NEARFIND_MAP_STYLE_URL', 'https://tiles.openfreemap.org/styles/dark'),
         'dark_style_url' => env('NEARFIND_MAP_DARK_STYLE_URL', 'https://tiles.openfreemap.org/styles/dark'),
-        'light_style_url' => env('NEARFIND_MAP_LIGHT_STYLE_URL', 'https://tiles.openfreemap.org/styles/light'),
+        // OpenFreeMap's light style is `positron`; `/styles/light` returns 404.
+        'light_style_url' => env('NEARFIND_MAP_LIGHT_STYLE_URL', 'https://tiles.openfreemap.org/styles/positron'),
     ],
 
     /*
@@ -34,8 +35,8 @@ return [
             'id' => 'all',
             'label' => 'Semua',
             'icon' => 'grid',
-            'color' => '#A78BFA',
-            'soft_color' => 'rgba(139, 92, 246, 0.22)',
+            'color' => '#6b6256',
+            'soft_color' => 'rgba(107, 98, 86, 0.22)',
         ],
         [
             'id' => 'household',
@@ -48,8 +49,8 @@ return [
             'id' => 'repair',
             'label' => 'Servis & Reparasi',
             'icon' => 'wrench',
-            'color' => '#60A5FA',
-            'soft_color' => 'rgba(96, 165, 250, 0.22)',
+            'color' => '#7a7166',
+            'soft_color' => 'rgba(122, 113, 102, 0.22)',
         ],
         [
             'id' => 'culinary',
@@ -62,8 +63,8 @@ return [
             'id' => 'retail',
             'label' => 'Retail',
             'icon' => 'bag',
-            'color' => '#F0ABFC',
-            'soft_color' => 'rgba(240, 171, 252, 0.22)',
+            'color' => '#a39684',
+            'soft_color' => 'rgba(163, 150, 132, 0.22)',
         ],
         [
             'id' => 'health',

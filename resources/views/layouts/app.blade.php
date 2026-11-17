@@ -3,11 +3,11 @@
     $active = $active ?? 'peta';
 
     // The map page IS the canvas: the MapLibre surface runs edge to edge under a
-    // full-bleed shell and every control floats above solid surfaces. Jelajahi and
-    // Laporan share that full-bleed shell so their content owns the whole
-    // viewport. The account page keeps the framed card.
+    // full-bleed shell and every control floats above solid surfaces. Jelajahi,
+    // Laporan and Profil share that full-bleed shell so their content owns the
+    // whole viewport. No tab renders a floating card over a map surface.
     $isMap = $active === 'peta';
-    $isFullBleed = $isMap || in_array($active, ['jelajahi', 'laporan'], true);
+    $isFullBleed = $isMap || in_array($active, ['jelajahi', 'laporan', 'profil'], true);
     $bodyClass = $isMap
         ? 'h-dvh w-full overflow-hidden bg-transparent text-ink antialiased'
         : 'app-background h-dvh w-full overflow-hidden text-ink antialiased';
@@ -25,24 +25,23 @@
 @endphp
 
 <!DOCTYPE html>
-<html lang="id" class="h-full" data-theme="dark">
+<html lang="id" class="h-full" data-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#0B0E12">
+    <meta name="theme-color" content="#F7F5F1">
     {{-- Pre-paint theme: no external script, no flash of the wrong palette. --}}
+    {{-- R-31: light is the calm first-visit default for a civic map; a stored nf-theme choice always wins. --}}
     <script>
         (function () {
             try {
                 var saved = localStorage.getItem('nf-theme');
-                var theme = saved === 'light' || saved === 'dark'
-                    ? saved
-                    : (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+                var theme = saved === 'light' || saved === 'dark' ? saved : 'light';
                 document.documentElement.setAttribute('data-theme', theme);
                 var meta = document.querySelector('meta[name="theme-color"]');
                 if (meta) meta.setAttribute('content', theme === 'light' ? '#F7F5F1' : '#0B0E12');
             } catch (error) {
-                /* Storage can be blocked; the dark default on <html> still applies. */
+                /* Storage can be blocked; the light default on <html> still applies. */
             }
         })();
     </script>
@@ -94,7 +93,7 @@
         type="button"
         class="nf-theme-toggle nf-theme-toggle--app"
         data-theme-toggle
-        aria-pressed="true"
+        aria-pressed="false"
         aria-label="Ganti tema"
         title="Ganti tema"
     >
@@ -107,7 +106,7 @@
         // clears it. A precomputed class keeps `@class` out of the compiled path.
         $toastClass = $active === 'peta'
             ? 'toast pointer-events-none fixed inset-x-0 bottom-[calc(13.75rem+env(safe-area-inset-bottom))] z-[1400] flex justify-center px-4 lg:bottom-24'
-            : 'toast pointer-events-none fixed inset-x-0 bottom-24 z-[1400] flex justify-center px-4';
+            : 'toast pointer-events-none fixed inset-x-0 bottom-[calc(7rem+env(safe-area-inset-bottom))] z-[1400] flex justify-center px-4';
     @endphp
 
     <div id="toast" class="{{ $toastClass }}" role="status" aria-live="polite" aria-atomic="true">

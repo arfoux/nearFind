@@ -76,7 +76,7 @@
                         class="rounded-[24px] bg-surface p-4 ring-1 ring-white/10 shadow-[0_18px_45px_-38px_rgba(0,0,0,0.9)]"
                     >
                         <div class="flex items-start gap-3">
-                            <span class="chip-icon mt-0.5" style="--chip-color: {{ $category ? ($category['color'] ?? '#A78BFA') : '#A78BFA' }}">
+                            <span class="chip-icon mt-0.5" style="--chip-color: {{ $category ? ($category['color'] ?? '#6b6256') : '#6b6256' }}">
                                 @include('partials.icon', ['name' => $category ? ($category['icon'] ?? 'grid') : 'grid', 'class' => 'size-4'])
                             </span>
 

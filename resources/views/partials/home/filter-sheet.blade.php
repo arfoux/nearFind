@@ -11,7 +11,8 @@
 @endphp
 
 <div id="filter-sheet" class="fixed inset-0 z-[1200] hidden items-end justify-center lg:items-center" role="presentation">
-    <div data-filter-backdrop class="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
+    {{-- Solid black backdrop: no translucent grey veil over the map. --}}
+    <div data-filter-backdrop class="absolute inset-0 bg-black"></div>
 
     <div
         role="dialog"

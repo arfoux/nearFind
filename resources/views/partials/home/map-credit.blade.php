@@ -1,6 +1,7 @@
+{{-- R-31: extra clearance below the category chips keeps all three attributions legible. --}}
 <div
     data-map-credit
-    class="nf-glass-subtle pointer-events-auto absolute left-3 top-full z-[522] mt-2 flex items-center gap-1 rounded-full px-2.5 py-1 text-[8.5px] font-medium text-muted lg:left-5"
+    class="nf-solid-panel pointer-events-auto absolute left-3 top-full z-[522] mt-4 flex items-center gap-1 rounded-full px-2.5 py-1 text-[8.5px] font-medium text-muted lg:left-5"
     aria-label="Atribusi peta OpenFreeMap, OpenMapTiles, dan OpenStreetMap"
 >
     <a

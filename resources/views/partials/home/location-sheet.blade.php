@@ -4,7 +4,8 @@
     class="fixed inset-0 z-[1250] hidden items-end justify-center lg:items-center"
     role="presentation"
 >
-    <div data-location-backdrop class="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
+    {{-- Solid black backdrop: no translucent grey veil over the map. --}}
+    <div data-location-backdrop class="absolute inset-0 bg-black"></div>
 
     <div
         role="dialog"
@@ -186,7 +187,8 @@
                 >
                     <div data-location-point-canvas class="absolute inset-0 h-full w-full"></div>
 
-                    <div class="pointer-events-none absolute inset-x-2 bottom-2 z-10 rounded-lg bg-black/60 px-2.5 py-1.5 text-center text-[10px] font-medium text-white backdrop-blur-sm">
+                    {{-- Solid hint: white text stays legible on any tile tone. --}}
+                    <div class="pointer-events-none absolute inset-x-2 bottom-2 z-10 rounded-lg bg-black px-2.5 py-1.5 text-center text-[10px] font-medium text-white">
                         Geser peta untuk menaruh pin
                     </div>
 
@@ -197,7 +199,7 @@
                     <span class="pointer-events-none absolute left-1/2 top-1/2 z-[4] size-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-700 ring-2 ring-canvas"></span>
 
                     <div data-location-point-busy class="absolute inset-x-2 top-2 z-20 hidden justify-center">
-                        <span class="rounded-lg bg-black/70 px-2.5 py-1.5 text-[10px] font-semibold text-white backdrop-blur-sm">Mencari alamat…</span>
+                        <span class="rounded-lg bg-black px-2.5 py-1.5 text-[10px] font-semibold text-white">Mencari alamat…</span>
                     </div>
                 </div>
 

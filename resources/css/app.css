@@ -7,7 +7,7 @@
 @source '../js/**/*.js';
 
 /* Token names are the public contract with the Blade templates. Values are set
-   per theme below: warm neutral surfaces plus a single violet signal accent. */
+   per theme below: warm neutral surfaces and neutral ink accents, no brand hue. */
 @theme {
     /* Instrument Sans is the utilitarian civic-map voice; small uppercase
        wide-tracked eyebrows are functional section markers, not decoration. */
@@ -15,28 +15,30 @@
         'Segoe UI Symbol', 'Noto Color Emoji';
 
     --color-canvas: #0b0e12;
-    --color-surface: #1e1c1a;
-    --color-surface-2: #292622;
+    /* Solid near-black reads as night paper; translucent warm grey over the
+       map looked like tinted glass instead of a surface. */
+    --color-surface: #121417;
+    --color-surface-2: #1b1e22;
     --color-ink: #f5f1ea;
     --color-muted: #c2bab0;
     --color-danger: #FF9B9B;
 
-    --color-brand-50: #241f30;
-    --color-brand-100: #332a45;
-    --color-brand-200: #d6c9ff;
-    --color-brand-300: #bca6ff;
-    --color-brand-500: #9a7bff;
-    --color-brand-600: #8b69ff;
-    --color-brand-700: #7c54f2;
-    --color-brand-800: #6841d6;
-    --color-brand-900: #3a2b63;
+    --color-brand-50: #232321;
+    --color-brand-100: #2c2c2e;
+    --color-brand-200: #e8e2d8;
+    --color-brand-300: #cfc7ba;
+    --color-brand-500: #a9a094;
+    --color-brand-600: #b3aa9e;
+    --color-brand-700: #6b6256;
+    --color-brand-800: #5f584f;
+    --color-brand-900: #4a443d;
 
-    /* The old orange accent is folded into the violet signal so the palette
-       stays at one accent. Existing bg-accent-* classes keep working. */
-    --color-accent-50: #241f30;
-    --color-accent-100: #332a45;
-    --color-accent-500: #9a7bff;
-    --color-accent-600: #8b69ff;
+    /* Accent steps mirror the brand greys, so existing bg-accent-* classes
+       stay neutral in both themes. */
+    --color-accent-50: #232321;
+    --color-accent-100: #2c2c2e;
+    --color-accent-500: #c2bab0;
+    --color-accent-600: #d6cdbf;
 
     --shadow-soft: 0 18px 40px -30px rgba(0, 0, 0, 0.75);
 }
@@ -52,21 +54,41 @@
 
     color-scheme: dark;
 
-    /* Measured pairs: ink/canvas 17.2:1, ink/surface 15.1:1,
-       muted/canvas 10.1:1, white/brand-700 4.77:1. */
+    /* Measured pairs: ink/canvas 17.2:1, ink/surface 16.4:1,
+       muted/canvas 10.1:1, white/brand-700 5.99:1. */
     --nf-border: rgba(245, 241, 234, 0.14);
     --nf-border-strong: rgba(245, 241, 234, 0.24);
     --nf-divider: rgba(245, 241, 234, 0.12);
-    --nf-overlay: rgba(30, 28, 26, 0.92);
-    --nf-overlay-strong: rgba(30, 28, 26, 0.97);
-    --nf-panel: rgba(30, 28, 26, 0.94);
+    /* Overlays are opaque steps of the same near-black, never alpha greys. */
+    --nf-overlay: #121417;
+    --nf-overlay-strong: #0b0e12;
+    --nf-panel: #121417;
+    /* The scrim is a top-of-map fade, not a surface; the solid header carries text. */
     --nf-scrim: rgba(11, 14, 18, 0.34);
     --nf-skeleton: rgba(245, 241, 234, 0.08);
     --nf-skeleton-sheen: rgba(245, 241, 234, 0.12);
-    --nf-focus: #bca6ff;
+    --nf-focus: #f5f1ea;
     --nf-shadow: 0 18px 40px -30px rgba(0, 0, 0, 0.75);
     --nf-shadow-lg: 0 24px 60px -36px rgba(0, 0, 0, 0.85);
     --nf-scrollbar: rgba(245, 241, 234, 0.24);
+    /* The two Liquid Glass surfaces use the library's tokens, not the
+       blue/green defaults. Neutral ink keeps the selected tab achromatic. */
+    --lg-accent: #f5f1ea;
+    --lg-on: #f5f1ea;
+    --lg-text: #f5f1ea;
+    --lg-text-muted: #c2bab0;
+    --lg-on-glass: #f5f1ea;
+    --lg-surface: var(--color-surface);
+    --lg-track: #2c2c2e;
+    --lg-track-off: #48484a;
+    --lg-tint: rgba(28, 30, 34, 0.22);
+    --lg-tint-strong: rgba(28, 30, 34, 0.30);
+    --lg-tint-opaque: #1c1e22;
+    --lg-indicator: rgba(245, 241, 234, 0.16);
+    --lg-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.4);
+    --lg-shadow-2: 0 10px 30px -18px rgba(0, 0, 0, 0.7);
+    --lg-fallback: blur(18px) saturate(160%);
+    --lg-focus: #f5f1ea;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -83,37 +105,54 @@
     --color-muted: #5f584f;
     --color-danger: #b42318;
 
-    --color-brand-50: #f1ecff;
-    --color-brand-100: #e6dcff;
-    /* Text-safe violet steps, measured against white and brand-50. */
-    --color-brand-200: #6d43c7;
-    --color-brand-300: #5c36b8;
-    --color-brand-500: #6e3fd4;
-    --color-brand-600: #5e2fc2;
-    --color-brand-700: #5123b0;
-    --color-brand-800: #421e91;
-    --color-brand-900: #2e175f;
+    --color-brand-50: #efebe3;
+    --color-brand-100: #e3ddd2;
+    /* Text-safe neutral steps, measured against white and brand-50. */
+    --color-brand-200: #5f584f;
+    --color-brand-300: #6b6256;
+    --color-brand-500: #7a7166;
+    --color-brand-600: #5f584f;
+    --color-brand-700: #3f3a34;
+    --color-brand-800: #2c2823;
+    --color-brand-900: #211e1a;
 
-    --color-accent-50: #f1ecff;
-    --color-accent-100: #e6dcff;
-    --color-accent-500: #6e3fd4;
-    --color-accent-600: #5e2fc2;
+    --color-accent-50: #efebe3;
+    --color-accent-100: #e3ddd2;
+    --color-accent-500: #7a7166;
+    --color-accent-600: #5f584f;
 
     /* Measured pairs: ink/canvas 14.7:1, muted/surface 7.0:1,
-       brand-700/white 9.5:1, brand-200/brand-50 5.5:1. */
+       brand-700/white 11.25:1, brand-200/brand-50 5.9:1. */
     --nf-border: rgba(36, 33, 29, 0.14);
     --nf-border-strong: rgba(36, 33, 29, 0.26);
     --nf-divider: rgba(36, 33, 29, 0.12);
-    --nf-overlay: rgba(255, 255, 255, 0.96);
-    --nf-overlay-strong: rgba(255, 255, 255, 0.99);
-    --nf-panel: rgba(255, 255, 255, 0.96);
+    /* Light tokens stay pure white so the measured ink contrast is unchanged. */
+    --nf-overlay: #ffffff;
+    --nf-overlay-strong: #ffffff;
+    --nf-panel: #ffffff;
     --nf-scrim: rgba(247, 245, 241, 0.45);
     --nf-skeleton: rgba(36, 33, 29, 0.07);
     --nf-skeleton-sheen: rgba(36, 33, 29, 0.11);
-    --nf-focus: #5e2fc2;
+    --nf-focus: #24211d;
     --nf-shadow: 0 18px 40px -32px rgba(36, 33, 29, 0.22);
     --nf-shadow-lg: 0 24px 60px -36px rgba(36, 33, 29, 0.28);
     --nf-scrollbar: rgba(36, 33, 29, 0.24);
+    --lg-accent: #24211d;
+    --lg-on: #24211d;
+    --lg-text: #24211d;
+    --lg-text-muted: #5f584f;
+    --lg-on-glass: #24211d;
+    --lg-surface: var(--color-surface);
+    --lg-track: #e5e5ea;
+    --lg-track-off: #d1d1d6;
+    --lg-tint: rgba(255, 255, 255, 0.14);
+    --lg-tint-strong: rgba(255, 255, 255, 0.22);
+    --lg-tint-opaque: #ffffff;
+    --lg-indicator: rgba(255, 255, 255, 0.38);
+    --lg-shadow-1: 0 1px 3px rgba(36, 33, 29, 0.1);
+    --lg-shadow-2: 0 10px 30px -18px rgba(36, 33, 29, 0.28);
+    --lg-fallback: blur(18px) saturate(160%);
+    --lg-focus: #24211d;
 }
 
 @layer base {
@@ -218,13 +257,8 @@
     }
 }
 
-/* An expanded detail panel owns the lower half on phones; step aside. */
-[data-app-shell]:has(.nf-need-panel[data-state='expanded']) ~ .nf-theme-toggle--app,
-[data-app-shell]:has([data-location-panel]:not([hidden])) ~ .nf-theme-toggle--app {
-    visibility: hidden;
-    opacity: 0;
-    pointer-events: none;
-}
+/* R-32: the toggle keeps z-index 900 above the detail and place panels. It is
+   never hidden, so Tab and pointer always reach it in every panel state. */
 
 /* Dark shows the sun (switch to light); light shows the moon (switch to dark). */
 .nf-theme-icon--moon {
@@ -252,8 +286,8 @@ body.app-background {
 /* Elevated surfaces                                                          */
 /* -------------------------------------------------------------------------- */
 
-/* R-10: the shell uses solid surfaces only. View-level backdrop utilities are
-   neutralized here so no cluster of glass panels competes with the map. */
+/* R-10: sheets and map hints stay solid, so their backdrop utilities are
+   neutralized here. Blur belongs only to the two glass surfaces below. */
 [data-filter-backdrop],
 [data-location-backdrop],
 [data-login-backdrop],
@@ -261,8 +295,7 @@ body.app-background {
 [data-map-tip],
 [data-point-hint],
 [data-point-busy] span,
-[data-location-point-busy] span,
-nav[aria-label='Navigasi utama'] {
+[data-location-point-busy] span {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
 }
@@ -273,38 +306,89 @@ nav[aria-label='Navigasi utama'] {
     color: var(--color-ink);
 }
 
-nav[aria-label='Navigasi utama'] {
-    border-color: var(--nf-border);
-}
-
-/* These class names stay for the Blade views. Blur was removed: only solid
-   token surfaces remain, so overlays stay legible in both themes. */
-.nf-glass,
-.nf-glass-strong,
-.nf-glass-subtle {
+.nf-solid-panel {
     border: 1px solid var(--nf-border);
-    background: var(--nf-panel);
+    background: var(--color-surface);
     color: var(--color-ink);
+    box-shadow: var(--nf-shadow);
 }
 
-.nf-glass-strong,
+/* R-31: glass lives in exactly two components, <lg-panel> (header) and
+   <lg-navbar> (bottom tabs). Their fill and optics come from the --lg-*
+   tokens above; every other surface stays solid. */
+
+/* The sliding indicator is an aria-hidden copy of the links, so the real
+   links and that copy must share one layout or the indicator drifts off the
+   active tab. Same padding, gap and flex sizing on both sides. */
+lg-navbar.nf-nav {
+    display: flex;
+    width: 100%;
+    gap: 2px;
+    padding: 6px;
+}
+
+lg-navbar.nf-nav .lg-nav__copy {
+    gap: 2px;
+    padding: 6px;
+}
+
+lg-navbar.nf-nav > a,
+lg-navbar.nf-nav > button,
+lg-navbar.nf-nav .lg-nav__copy > span {
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    height: auto;
+    margin: 0;
+    padding: 6px 2px;
+    border: 0;
+    border-radius: 14px;
+    line-height: 1.15;
+    font-size: 10px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+lg-navbar.nf-nav > a,
+lg-navbar.nf-nav > button {
+    color: var(--lg-text);
+    opacity: 0.82;
+    transition: opacity 0.15s ease;
+}
+
+lg-navbar.nf-nav > a:hover,
+lg-navbar.nf-nav > a[aria-current='page'] {
+    opacity: 1;
+}
+
+/* The library's reduced-transparency fallback paints every surface white,
+   which would put light text on white in dark mode. Keep each theme opaque. */
+@media (prefers-reduced-transparency: reduce) {
+    lg-panel .lg-surface__tint,
+    lg-navbar .lg-surface__tint {
+        background: var(--lg-tint-opaque);
+    }
+}
+
 .nf-card {
     box-shadow: var(--nf-shadow);
 }
 
-/* No `background: #fff` here. `.nf-header` used to paint the header solid white
-   from AFTER the glass rules, so the header's `nf-glass-strong` never showed its
-   blur. The class survives only as a targeting hook for the markup. */
+/* `.nf-header` survives only as a targeting hook for the map header markup. */
 
 /* -------------------------------------------------------------------------- */
-/* Default avatars: warm neutral and violet shades only, no extra hues        */
+/* Default avatars: warm neutral shades only, no extra hues                */
 /* -------------------------------------------------------------------------- */
 
-.nf-avatar--0 { background-color: #7454b8; }
+.nf-avatar--0 { background-color: #7a7166; }
 .nf-avatar--1 { background-color: #6b6256; }
 .nf-avatar--2 { background-color: #7d6a52; }
-.nf-avatar--3 { background-color: #5f576d; }
-.nf-avatar--4 { background-color: #786770; }
+.nf-avatar--3 { background-color: #5f584f; }
+.nf-avatar--4 { background-color: #786e62; }
 .nf-avatar--5 { background-color: #655e55; }
 
 /* -------------------------------------------------------------------------- */
@@ -323,6 +407,53 @@ nav[aria-label='Navigasi utama'] {
     background: linear-gradient(180deg, var(--nf-scrim), transparent 60%);
     content: '';
     pointer-events: none;
+}
+
+/* The centre reticle is a targeting aid, not a control: it never takes pointer
+   events. Ink keeps the cross legible over tiles in both themes, and the
+   canvas-coloured ring separates the dot from whatever tile sits under it. */
+.nf-map-reticle {
+    width: 34px;
+    height: 34px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.nf-map-reticle__arm {
+    position: absolute;
+    background: var(--color-ink);
+    border-radius: 2px;
+}
+
+.nf-map-reticle__arm--x {
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    transform: translateY(-50%);
+}
+
+.nf-map-reticle__arm--y {
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 100%;
+    transform: translateX(-50%);
+}
+
+.nf-map-reticle__dot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    border: 2px solid var(--color-canvas);
+    border-radius: 50%;
+    background: var(--color-ink);
+    transform: translate(-50%, -50%);
+}
+
+[data-theme='light'] .nf-map-reticle {
+    filter: drop-shadow(0 1px 2px rgba(247, 245, 241, 0.75));
 }
 
 .maplibregl-map {
@@ -642,7 +773,7 @@ nav[aria-label='Navigasi utama'] {
     background: transparent !important;
 }
 
-/* The location dot uses the same violet signal, with a static ring: no endless
+/* The location dot uses the same neutral signal, with a static ring: no endless
    pulse (MOTION 1). */
 .nf-user-dot {
     position: relative;
@@ -675,7 +806,7 @@ nav[aria-label='Navigasi utama'] {
     justify-content: center;
     border: 1px solid var(--nf-border);
     border-radius: 14px;
-    background: var(--nf-panel);
+    background: var(--color-surface);
     color: var(--color-ink);
     box-shadow: var(--nf-shadow);
     transition:
@@ -686,7 +817,7 @@ nav[aria-label='Navigasi utama'] {
 
 .map-control:hover {
     border-color: var(--color-brand-500);
-    background: var(--nf-overlay-strong);
+    background: var(--color-surface-2);
     color: var(--color-brand-200);
 }
 
@@ -818,20 +949,23 @@ nav[aria-label='Navigasi utama'] {
 /* Map-first detail panel                                                     */
 /* -------------------------------------------------------------------------- */
 
+/* R-31: the panel sizes to its real content up to a viewport cap, so a short
+   detail leaves no empty slab under the share row and the map stays visible. */
 .nf-need-panel {
     --nf-panel-peek: 4.75rem;
-    height: var(--nf-panel-peek);
-    background: var(--nf-panel);
-    transition: height 280ms cubic-bezier(0.22, 1, 0.36, 1);
+    height: auto;
+    max-height: var(--nf-panel-peek);
+    background: var(--color-surface);
+    transition: max-height 280ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .nf-need-panel[data-state='expanded'] {
-    height: max(var(--nf-panel-peek), min(56dvh, calc(100dvh - 16rem), 34rem));
-    background: var(--nf-overlay-strong);
+    max-height: max(var(--nf-panel-peek), min(56dvh, calc(100dvh - 16rem), 34rem));
+    background: var(--color-surface-2);
 }
 
 .nf-need-panel[data-state='collapsed'] #need-peek {
-    height: 100%;
+    min-height: var(--nf-panel-peek);
 }
 
 .nf-need-panel[data-state='collapsed'] #need-card {
@@ -864,7 +998,7 @@ nav[aria-label='Navigasi utama'] {
 
 @media (min-width: 1024px) {
     .nf-need-panel[data-state='expanded'] {
-        height: max(var(--nf-panel-peek), min(calc(100dvh - 18.5rem), 24rem));
+        max-height: max(var(--nf-panel-peek), min(calc(100dvh - 18.5rem), 24rem));
     }
 }
 
@@ -995,8 +1129,8 @@ nav[aria-label='Navigasi utama'] {
 }
 
 [data-nav-link][data-pending='true'] > span:first-child {
-    background: color-mix(in srgb, var(--color-brand-500) 18%, transparent);
-    color: var(--color-brand-200);
+    background: color-mix(in srgb, var(--color-ink) 12%, transparent);
+    color: var(--color-ink);
 }
 
 @keyframes nf-sheet-in {

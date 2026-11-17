@@ -90,7 +90,7 @@ class HomePageTest extends TestCase
         $this->assertIsFloat($locations[0]['longitude']);
 
         $this->assertSame('https://tiles.openfreemap.org/styles/dark', $response->viewData('mapDarkStyleUrl'));
-        $this->assertSame('https://tiles.openfreemap.org/styles/light', $response->viewData('mapLightStyleUrl'));
+        $this->assertSame('https://tiles.openfreemap.org/styles/positron', $response->viewData('mapLightStyleUrl'));
         $this->assertSame('https://tiles.openfreemap.org/styles/dark', $response->viewData('mapStyleUrl'));
         $this->assertStringNotContainsString('author_email', (string) $response->getContent());
 
@@ -98,7 +98,7 @@ class HomePageTest extends TestCase
         $data = json_decode($match[1] ?? '[]', true);
 
         $this->assertSame('Warung Bu Sari', $data['locations'][0]['name'] ?? null);
-        $this->assertSame('https://tiles.openfreemap.org/styles/light', $data['mapLightStyleUrl'] ?? null);
+        $this->assertSame('https://tiles.openfreemap.org/styles/positron', $data['mapLightStyleUrl'] ?? null);
     }
 
     public function test_explore_and_report_pages_render_and_are_linked_from_the_nav(): void

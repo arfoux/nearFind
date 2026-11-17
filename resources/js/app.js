@@ -1,3 +1,5 @@
+import './vendor/liquidglass/components.js';
+
 // MapLibre is only needed by the map page. Loading it on first paint of every
 // other tab costs ~1 MB of JS, so the module is fetched on first map use.
 // The classes are assigned before the promise resolves, so every existing
@@ -24,7 +26,7 @@ function ensureMapLibre() {
 }
 
 // Design read, kept next to the code it drives: a civic map tool for warga,
-// utilitarian warm-neutral language, one violet signal accent. ENERGY 2 /
+// utilitarian warm-neutral language, no brand hue. ENERGY 2 /
 // RHYTHM 2 / MOTION 1 because a map utility must stay calm, low-motion and
 // legible on a phone. The camera is the only thing that moves on purpose.
 const NOMINATIM_SEARCH_ENDPOINT = 'https://nominatim.openstreetmap.org/search';
@@ -37,7 +39,8 @@ const THEME_DARK = 'dark';
 const THEME_LIGHT = 'light';
 const THEME_META_COLOR = { [THEME_DARK]: '#0B0E12', [THEME_LIGHT]: '#F7F5F1' };
 const FALLBACK_DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark';
-const FALLBACK_LIGHT_STYLE = 'https://tiles.openfreemap.org/styles/light';
+// OpenFreeMap's light style is `positron`; `/styles/light` returns 404.
+const FALLBACK_LIGHT_STYLE = 'https://tiles.openfreemap.org/styles/positron';
 
 // Filled from the map page payload so a theme press uses the two styles the
 // deployment actually advertises, not a hard-coded copy of them.
@@ -79,21 +82,18 @@ function icon(name, className = 'size-5') {
     return `<svg class="${className}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#nf-${name}"></use></svg>`;
 }
 
-// This reads the same key and the same OS signal as the layout's pre-paint
+// This reads the same key and the same light default as the layout's pre-paint
 // script. If the two ever disagree, the first paint flashes the wrong theme.
+// R-31: first visit is light by design; a stored nf-theme choice stays authoritative.
 function resolveTheme() {
     let stored = null;
     try {
         stored = window.localStorage.getItem(THEME_STORAGE_KEY);
     } catch {
-        // Storage can be blocked; the OS preference is still a real signal.
+        // Storage can be blocked; the light default still applies for this document.
     }
 
-    if (stored === THEME_DARK || stored === THEME_LIGHT) {
-        return stored;
-    }
-
-    return window.matchMedia('(prefers-color-scheme: light)').matches ? THEME_LIGHT : THEME_DARK;
+    return stored === THEME_DARK || stored === THEME_LIGHT ? stored : THEME_LIGHT;
 }
 
 function currentTheme() {
@@ -886,16 +886,13 @@ function tabForPathname(pathname) {
     }
 }
 
-// The nav is rendered once by the server, so its "current tab" styling has to be
-// repainted by the client on every swap: without this the highlight keeps
-// pointing at whichever tab the document was first served for.
-const NAV_ICON_ACTIVE = 'bg-brand-700 text-canvas shadow-[0_8px_18px_-12px_rgba(0,0,0,0.8)]';
-const NAV_ICON_IDLE = 'text-muted group-hover:bg-brand-50 group-hover:text-brand-200';
-const NAV_LABEL_ACTIVE = 'text-brand-200';
-const NAV_LABEL_IDLE = 'text-muted group-hover:text-brand-200';
-
+// The nav is rendered once by the server, so the current tab has to be
+// repainted on every shell swap. `<lg-navbar>` owns the sliding indicator:
+// setCurrent() moves it and mirrors aria-current, so no class swapping here.
 function syncNav(tab) {
-    document.querySelectorAll('[data-nav-link]').forEach((link) => {
+    const navbar = document.querySelector('lg-navbar');
+
+    document.querySelectorAll('[data-nav-link]').forEach((link, index) => {
         const isActive = link.dataset.navKey === tab;
 
         if (isActive) {
@@ -904,17 +901,8 @@ function syncNav(tab) {
             link.removeAttribute('aria-current');
         }
 
-        const icon = link.querySelector('[data-nav-icon]');
-        const label = link.querySelector('[data-nav-label]');
-
-        if (icon) {
-            icon.classList.remove(...(isActive ? NAV_ICON_IDLE : NAV_ICON_ACTIVE).split(' ').filter(Boolean));
-            icon.classList.add(...(isActive ? NAV_ICON_ACTIVE : NAV_ICON_IDLE).split(' ').filter(Boolean));
-        }
-
-        if (label) {
-            label.classList.remove(...(isActive ? NAV_LABEL_IDLE : NAV_LABEL_ACTIVE).split(' ').filter(Boolean));
-            label.classList.add(...(isActive ? NAV_LABEL_ACTIVE : NAV_LABEL_IDLE).split(' ').filter(Boolean));
+        if (isActive && navbar && typeof navbar.setCurrent === 'function') {
+            navbar.setCurrent(index);
         }
     });
 }
@@ -1208,6 +1196,7 @@ function initNearFind(
     const needPanel = document.getElementById('need-panel');
     const needPeekElement = document.getElementById('need-peek');
     const mapControls = document.querySelector('[data-map-controls]');
+    const mapLoading = document.querySelector('[data-map-loading]');
     const desktopQuery = window.matchMedia('(min-width: 1024px)');
     const params = new URLSearchParams(window.location.search);
     const requestedNeedId = params.get('need');
@@ -1292,7 +1281,13 @@ function initNearFind(
         }
     });
 
+    // R-27: the status covers the initial style load and every later swap.
+    function setMapLoading(loading) {
+        if (mapLoading) mapLoading.hidden = !loading;
+    }
+
     function initMap() {
+        setMapLoading(true);
         try {
             map = new MapLibreMap({
                 container: mapElement,
@@ -1308,6 +1303,7 @@ function initNearFind(
                 renderWorldCopies: false,
             });
         } catch (error) {
+            setMapLoading(false);
             console.error('nearFind: peta gagal dibuat.', error);
             showToast('Peta tidak dapat dimuat di browser ini.');
             return;
@@ -1316,6 +1312,8 @@ function initNearFind(
         map.setZoomSnap(0.25);
         map.touchZoomRotate.disableRotation();
         map.keyboard.disableRotation();
+        map.once('load', () => setMapLoading(false));
+        map.on('style.load', () => setMapLoading(false));
 
         map.on('error', (event) => {
             if (!event?.error) {
@@ -1326,6 +1324,7 @@ function initNearFind(
 
             if (mapErrors >= 4 && !mapErrorShown) {
                 mapErrorShown = true;
+                setMapLoading(false);
                 showToast('Peta tidak dapat memuat tile. Periksa koneksi internetmu.');
             }
         });
@@ -1387,7 +1386,9 @@ function initNearFind(
                     openLoginGate('Masuk untuk mengakses akun nearFind.', actionElement);
                     break;
                 case 'add-place':
-                    openLocationSheet(actionElement);
+                    if (requireLogin('add-place', actionElement)) {
+                        openLocationSheet(actionElement);
+                    }
                     break;
                 case 'submit-need':
                     if (requireLogin('submit-need', actionElement)) {
@@ -1725,6 +1726,7 @@ function initNearFind(
             support: 'Masuk dulu untuk menambahkan dukunganmu pada kebutuhan ini.',
             report: 'Masuk dulu untuk mengirim laporan ketidaksesuaian.',
             'submit-need': 'Masuk dulu untuk mengajukan kebutuhan baru di peta.',
+            'add-place': 'Masuk dulu untuk menyimpan tempat baru di peta.',
         };
 
         openLoginGate(messages[action] ?? 'Masuk atau daftar untuk melanjutkan.', trigger);
@@ -1771,6 +1773,12 @@ function initNearFind(
             return;
         }
 
+        const centerPoint = reticlePoint();
+
+        if (centerPoint) {
+            setPickerPoint(needLatInput, needLngInput, centerPoint);
+        }
+
         closeFilterSheet();
         submitReturnFocus = trigger instanceof HTMLElement ? trigger : document.activeElement;
 
@@ -1783,7 +1791,11 @@ function initNearFind(
 
         // The map inside the sheet cannot be laid out while it is `display:none`,
         // so it is only created once the sheet is actually on screen.
-        needPicker.ensure();
+        const created = needPicker.ensure();
+
+        if (!created && centerPoint) {
+            needPicker.centerOn(centerPoint[1], centerPoint[0]);
+        }
     }
 
     function closeSubmitSheet() {
@@ -1826,6 +1838,25 @@ function initNearFind(
         }
 
         return [107.5944, -6.8903];
+    }
+
+    /** The reticle marks the main map centre; that is the point a sheet saves. */
+    function reticlePoint() {
+        if (!map) {
+            return null;
+        }
+
+        const center = map.getCenter();
+        const lat = Number(center?.lat);
+        const lng = Number(center?.lng);
+
+        return Number.isFinite(lat) && Number.isFinite(lng) ? [lng, lat] : null;
+    }
+
+    /** Write a [lng, lat] point into the hidden inputs the sheet and picker read. */
+    function setPickerPoint(latInput, lngInput, [lng, lat]) {
+        if (latInput) latInput.value = lat.toFixed(6);
+        if (lngInput) lngInput.value = lng.toFixed(6);
     }
 
     const needPicker = createPointPicker({
@@ -1876,8 +1907,10 @@ function initNearFind(
     document.addEventListener('nearfind:themechange', (event) => {
         const styleUrl = event?.detail?.styleUrl ?? themeStyles[currentTheme()];
         try {
+            if (map) setMapLoading(true);
             map?.setStyle(styleUrl);
         } catch {
+            setMapLoading(false);
             // A style swap during a camera transition is harmless.
         }
         needPicker.setStyle(styleUrl);
@@ -2362,7 +2395,11 @@ function initNearFind(
         saveButton.className = 'mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-50 px-3 text-[11px] font-semibold text-brand-200 transition hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40';
         saveButton.setAttribute('aria-label', `Simpan ${place.name} sebagai tempat`);
         saveButton.innerHTML = `${icon('plus', 'size-4')}<span>Jadikan tempat</span>`;
-        saveButton.addEventListener('click', () => openLocationSheet(saveButton, place));
+        saveButton.addEventListener('click', () => {
+            if (requireLogin('add-place', saveButton)) {
+                openLocationSheet(saveButton, place);
+            }
+        });
 
         content.append(label, title, meta, notice, saveButton);
 
@@ -2421,6 +2458,12 @@ function initNearFind(
             return;
         }
 
+        const centerPoint = reticlePoint();
+
+        if (centerPoint) {
+            setPickerPoint(locationLatInput, locationLngInput, centerPoint);
+        }
+
         closeFilterSheet();
         locationReturnFocus = trigger instanceof HTMLElement ? trigger : document.activeElement;
 
@@ -2436,7 +2479,13 @@ function initNearFind(
                 return;
             }
 
-            locationPicker.ensure();
+            const created = locationPicker.ensure();
+            const lat = Number.parseFloat(locationLatInput?.value ?? '');
+            const lng = Number.parseFloat(locationLngInput?.value ?? '');
+
+            if (!created && Number.isFinite(lat) && Number.isFinite(lng)) {
+                locationPicker.centerOn(lat, lng);
+            }
             locationNameInput?.focus({ preventScroll: true });
         });
     }
@@ -2534,7 +2583,7 @@ function initNearFind(
     function locationMarkerMarkup(location, isSelected) {
         const category = categoryById[location.category] ?? fallbackCategory;
 
-        return `<div class="nf-location-marker ${isSelected ? 'is-selected' : ''}" style="--marker-color:${escapeHtml(category?.color ?? '#7C3AED')}">
+        return `<div class="nf-location-marker ${isSelected ? 'is-selected' : ''}" style="--marker-color:${escapeHtml(category?.color ?? '#6b6256')}">
                     <span class="nf-location-marker-icon">${icon('pin', 'size-3.5')}</span>
                     <span class="nf-location-marker-name">${escapeHtml(location.name)}</span>
                 </div>`;
@@ -2729,6 +2778,7 @@ function initNearFind(
         needCardElement.scrollTop = previousScrollTop;
     }
 
+    // Solid palette steps in generated cards: no alpha surfaces over the map.
     function needPeekMarkup(need) {
         const category = categoryById[need.category] ?? fallbackCategory;
         const supporters = displaySupporters(need);
@@ -2753,7 +2803,7 @@ function initNearFind(
                 aria-expanded="${cardExpanded ? 'true' : 'false'}"
                 aria-controls="need-card"
                 aria-label="${cardExpanded ? 'Tutup detail kebutuhan' : 'Buka detail kebutuhan'}"
-                class="inline-flex h-11 shrink-0 items-center gap-1 rounded-full bg-surface/80 px-3 text-[10px] font-semibold text-brand-200 shadow-sm ring-1 ring-white/10 transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
+                class="inline-flex h-11 shrink-0 items-center gap-1 rounded-full bg-surface px-3 text-[10px] font-semibold text-brand-200 shadow-sm ring-1 ring-white/10 transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
             >
                 <span data-card-toggle-label>${cardExpanded ? 'Tutup' : 'Detail'}</span>
                 ${icon('chevron-down', 'nf-chevron size-3.5 transition-transform duration-200')}
@@ -2778,7 +2828,7 @@ function initNearFind(
                 aria-expanded="${cardExpanded ? 'true' : 'false'}"
                 aria-controls="need-card"
                 aria-label="${cardExpanded ? 'Tutup detail kebutuhan' : 'Buka detail kebutuhan'}"
-                class="inline-flex h-11 shrink-0 items-center gap-1 rounded-full bg-surface/80 px-3 text-[10px] font-semibold text-brand-200 shadow-sm ring-1 ring-white/10 transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
+                class="inline-flex h-11 shrink-0 items-center gap-1 rounded-full bg-surface px-3 text-[10px] font-semibold text-brand-200 shadow-sm ring-1 ring-white/10 transition hover:bg-surface-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand-500/20"
             >
                 <span data-card-toggle-label>${cardExpanded ? 'Tutup' : 'Detail'}</span>
                 ${icon('chevron-down', 'nf-chevron size-3.5 transition-transform duration-200')}
@@ -2798,12 +2848,12 @@ function initNearFind(
 
                 <p class="mt-2 line-clamp-3 text-[12.5px] leading-[1.6] text-muted [@media(max-height:719px)]:line-clamp-2">${escapeHtml(need.description)}</p>
 
-                <div class="mt-3 flex items-center gap-3 rounded-2xl bg-white/5 px-3 py-2">
+                <div class="mt-3 flex items-center gap-3 rounded-2xl bg-surface-2 px-3 py-2">
                     ${icon('heart', 'size-3.5 shrink-0 fill-[#FB7185] text-[#FB7185]')}
                     <p class="min-w-0 flex-1 text-[11px] font-semibold leading-tight text-ink">
                         <span data-support-count>${supporters}</span> warga mendukung
                     </p>
-                    ${need.opportunity ? '<span class="shrink-0 rounded-lg bg-surface/80 px-2 py-1 text-[8.5px] font-semibold text-brand-200">Peluang Usaha</span>' : ''}
+                    ${need.opportunity ? '<span class="shrink-0 rounded-lg bg-surface px-2 py-1 text-[8.5px] font-semibold text-brand-200">Peluang Usaha</span>' : ''}
                 </div>
 
                 <div class="mt-2.5 flex gap-2">
