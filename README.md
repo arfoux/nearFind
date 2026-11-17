@@ -13,6 +13,19 @@ endpoint-nya bisa diganti lewat `NEARFIND_OVERPASS_ENDPOINT` dan `NEARFIND_NOMIN
 Data POI hanya dibaca dan tidak pernah disimpan di D1, dan kegagalan layanan ini tidak boleh
 mengganggu peta.
 
+## SEO
+
+Metadata halaman (judul, deskripsi, kata kunci, canonical, robots, Open Graph,
+Twitter Card, dan JSON-LD) disatukan di `resources/views/partials/seo/head.blade.php`
+dan dipakai oleh kedua layout. Nilai per halaman berasal dari view rute; nilai
+bawaan dan daftar kata kunci ada di `config/needs.php` pada `needs.seo`.
+Halaman privat `/auth` dan `/profile` memakai `noindex` agar tidak masuk indeks.
+Salinan halaman mengikuti fitur yang benar-benar ada; halaman publik memakai `index,follow`, halaman privat memakai `noindex`.
+
+`public/sitemap.xml` adalah file statis untuk tiga halaman publik (`/`, `/explore`,
+dan `/reports`) dan ikut terdeploy seperti `public/robots.txt`, yang berisi arahan
+`Sitemap:`. Tidak ada rute baru, API key, atau layanan SEO eksternal yang dipakai.
+
 ## Menjalankan di lokal
 
 Butuh PHP 8.3+, Composer, dan Node 22+. Perintahnya ada di

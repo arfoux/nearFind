@@ -1,5 +1,11 @@
 @extends('layouts.app')
-@php $title = 'nearFind: Peta Kebutuhan Warga'; $active = 'peta'; @endphp
+@php
+    $active = 'peta';
+    $seoTitle = 'nearFind: Peta Kebutuhan dan Fasilitas Terdekat di Sekitarmu';
+    $seoDescription = 'Temukan kebutuhan warga dan fasilitas umum terdekat di sekitarmu lewat peta OpenStreetMap. Cari tempat ibadah, klinik, sekolah, kafe, bank, ATM, taman, dan peluang usaha lokal dekat sini.';
+    $seoPath = '/';
+    $seoRobots = 'index,follow';
+@endphp
 @section('content')
     @php
         $nearFindData = [
@@ -21,8 +27,8 @@
 
     <div class="relative min-h-0 flex-1">
         <main class="absolute inset-0 overflow-hidden">
-            <section class="absolute inset-0 overflow-hidden" aria-label="Peta interaktif kebutuhan warga di Sukajadi dan sekitarnya">
-                <div id="map" class="absolute inset-0 z-0" role="region" aria-label="Peta interaktif kebutuhan warga di Sukajadi dan sekitarnya"></div>
+            <section class="absolute inset-0 overflow-hidden" aria-label="Peta interaktif kebutuhan warga, fasilitas umum, dan tempat terdekat di Sukajadi serta sekitarnya">
+                <div id="map" class="absolute inset-0 z-0" role="region" aria-label="Peta interaktif kebutuhan warga, fasilitas umum, dan tempat terdekat di Sukajadi serta sekitarnya"></div>
 
                 {{-- The crosshair marks the exact point captured when either map
                      action is pressed. It stays fixed to the canvas centre,

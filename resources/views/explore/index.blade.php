@@ -1,10 +1,16 @@
 @extends('layouts.app')
-@php $title = 'Jelajahi · nearFind'; $active = 'jelajahi'; @endphp
+@php
+    $active = 'jelajahi';
+    $seoTitle = 'Jelajahi Kebutuhan Warga Terdekat · nearFind';
+    $seoDescription = 'Cari dan saring kebutuhan warga di sekitarmu: laundry, servis AC, fotokopi, warung sayur, klinik, dan bibit tanaman. Temukan lokasi terdekat, buka peta, dan dukung fasilitas umum di Sukajadi, Bandung.';
+    $seoPath = '/explore';
+    $seoRobots = 'index,follow';
+@endphp
 @section('content')
     <main class="min-h-0 flex-1 overflow-y-auto px-4 pb-6 pt-5 sm:px-6 lg:px-8">
         <div class="mx-auto w-full max-w-7xl">
             <p class="text-[9px] font-semibold uppercase tracking-[0.16em] text-brand-300">Jelajahi</p>
-            <h1 class="mt-1 text-xl font-semibold tracking-[-0.03em] text-ink">Kebutuhan di sekitarmu</h1>
+            <h1 class="mt-1 text-xl font-semibold tracking-[-0.03em] text-ink">Kebutuhan dan fasilitas terdekat di sekitarmu</h1>
             <p class="mt-1 text-[11.5px] leading-relaxed text-muted">
                 {{ count($needs) }} kebutuhan warga di Sukajadi dan sekitarnya. Cari, saring per kategori, lalu buka di peta.
             </p>

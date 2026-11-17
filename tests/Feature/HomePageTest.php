@@ -106,7 +106,7 @@ class HomePageTest extends TestCase
         $explore = $this->get('/explore');
 
         $explore->assertOk();
-        $explore->assertSee('Kebutuhan di sekitarmu');
+        $explore->assertSee('Kebutuhan dan fasilitas terdekat di sekitarmu');
         $explore->assertSee('Jasa Laundry Kiloan');
         $explore->assertSee('data-needs-list', false);
         $explore->assertSee('data-list-search', false);
@@ -116,7 +116,7 @@ class HomePageTest extends TestCase
         $report = $this->get('/reports');
 
         $report->assertOk();
-        $report->assertSee('Laporan kebutuhan warga');
+        $report->assertSee('Laporan kebutuhan warga di sekitarmu');
         $report->assertSee('Per kategori');
         $report->assertSee('Paling didukung');
         $report->assertSee('Peluang usaha');
