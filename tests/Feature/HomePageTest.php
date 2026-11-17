@@ -31,7 +31,7 @@ class HomePageTest extends TestCase
         $response->assertSee('Jasa Servis AC');
         $response->assertSee('OpenStreetMap');
         $response->assertSee('mapStyleUrl');
-        $response->assertSee('tiles.openfreemap.org');
+        $response->assertSee('tile.openstreetmap.org');
         $response->assertSee('id="login-gate"', false);
         $response->assertSee('Masuk untuk melanjutkan');
     }
@@ -54,7 +54,7 @@ class HomePageTest extends TestCase
         $this->assertNotContains('Klinik 24 Jam', $titles);
     }
 
-    public function test_home_passes_location_rows_and_both_map_styles(): void
+    public function test_home_passes_location_rows_and_all_map_styles(): void
     {
         Location::create([
             'name' => 'Warung Bu Sari',
@@ -89,16 +89,16 @@ class HomePageTest extends TestCase
         $this->assertIsFloat($locations[0]['latitude']);
         $this->assertIsFloat($locations[0]['longitude']);
 
-        $this->assertSame('https://tiles.openfreemap.org/styles/dark', $response->viewData('mapDarkStyleUrl'));
-        $this->assertSame('https://tiles.openfreemap.org/styles/positron', $response->viewData('mapLightStyleUrl'));
-        $this->assertSame('https://tiles.openfreemap.org/styles/dark', $response->viewData('mapStyleUrl'));
+        $this->assertSame('https://tile.openstreetmap.org/{z}/{x}/{y}.png', $response->viewData('mapDarkStyleUrl'));
+        $this->assertSame('https://tile.openstreetmap.org/{z}/{x}/{y}.png', $response->viewData('mapLightStyleUrl'));
+        $this->assertSame('https://tile.openstreetmap.org/{z}/{x}/{y}.png', $response->viewData('mapStyleUrl'));
         $this->assertStringNotContainsString('author_email', (string) $response->getContent());
 
         preg_match('/<script type="application\/json" id="nearfind-data">(.*?)<\/script>/s', (string) $response->getContent(), $match);
         $data = json_decode($match[1] ?? '[]', true);
 
         $this->assertSame('Warung Bu Sari', $data['locations'][0]['name'] ?? null);
-        $this->assertSame('https://tiles.openfreemap.org/styles/positron', $data['mapLightStyleUrl'] ?? null);
+        $this->assertSame('https://tile.openstreetmap.org/{z}/{x}/{y}.png', $data['mapLightStyleUrl'] ?? null);
     }
 
     public function test_explore_and_report_pages_render_and_are_linked_from_the_nav(): void
