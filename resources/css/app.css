@@ -541,25 +541,6 @@ body.leaflet-dragging #map.leaflet-container *,
     background: transparent !important;
 }
 
-.nf-marker {
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.35));
-    transform: translateX(-50%);
-    transition: transform 0.18s ease;
-}
-
-/* The shared root owns the hover lift and focus-visible ring. This legacy
-   hook keeps a focus-within outline as a fallback affordance only. */
-.nf-marker:focus-within {
-    outline: 3px solid var(--nf-focus);
-    outline-offset: 2px;
-}
-
 /* Saved places use the same marker vocabulary as needs, with a pin glyph. */
 .nf-location-marker-wrapper {
     border: 0 !important;
@@ -569,54 +550,6 @@ body.leaflet-dragging #map.leaflet-container *,
 
 .nf-location-marker-wrapper:focus-visible {
     border-radius: 14px;
-}
-
-.nf-location-marker {
-    display: flex;
-    height: 32px;
-    align-items: center;
-    gap: 5px;
-    border: 1px solid var(--nf-border);
-    border-radius: 999px;
-    background: var(--nf-overlay);
-    padding: 0 8px 0 4px;
-    box-shadow: var(--nf-shadow);
-    color: var(--color-ink);
-    transition:
-        background 0.18s ease,
-        border-color 0.18s ease,
-        transform 0.18s ease;
-}
-
-.nf-location-marker-wrapper:hover .nf-location-marker,
-.nf-location-marker-wrapper:focus-visible .nf-location-marker {
-    transform: translateY(-1px);
-}
-
-.nf-location-marker.is-selected {
-    height: 36px;
-    border-color: var(--marker-color);
-    background: var(--nf-overlay-strong);
-    box-shadow:
-        var(--nf-shadow),
-        0 0 0 2px color-mix(in srgb, var(--marker-color) 45%, transparent);
-}
-
-.nf-location-marker-icon {
-    display: flex;
-    width: 24px;
-    height: 24px;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--marker-color) 22%, transparent);
-    color: var(--marker-color);
-}
-
-.nf-location-marker.is-selected .nf-location-marker-icon {
-    background: var(--marker-color);
-    color: var(--color-canvas);
 }
 
 .leaflet-popup.nf-location-popup-shell .leaflet-popup-content-wrapper {
@@ -649,25 +582,6 @@ body.leaflet-dragging #map.leaflet-container *,
     border: 0 !important;
     background: transparent !important;
     cursor: default;
-}
-
-.nf-area-marker {
-    display: flex;
-    width: 36px;
-    height: 36px;
-    align-items: center;
-    justify-content: center;
-    border: 1px dashed var(--nf-border-strong);
-    border-radius: 999px;
-    background: var(--nf-overlay);
-    color: var(--color-muted);
-    box-shadow: var(--nf-shadow);
-}
-
-.nf-area-marker-wrapper:hover .nf-area-marker,
-.nf-area-marker-wrapper:focus-visible .nf-area-marker {
-    border-color: var(--color-brand-500);
-    color: var(--color-brand-200);
 }
 
 .leaflet-popup.nf-area-preview-shell .leaflet-popup-content-wrapper {
@@ -1191,42 +1105,8 @@ body.leaflet-dragging #map.leaflet-container *,
     cursor: default;
 }
 
-.nf-poi-marker {
-    display: flex;
-    height: 28px;
-    align-items: center;
-    gap: 5px;
-    border: 1px solid var(--nf-border);
-    border-radius: 999px;
-    background: var(--nf-overlay-strong);
-    padding: 0 8px 0 3px;
-    box-shadow: var(--nf-shadow);
-    color: var(--color-ink);
-}
-
-.nf-poi-marker-icon {
-    display: flex;
-    width: 22px;
-    height: 22px;
-    flex: none;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    background: var(--color-brand-50);
-    color: var(--color-muted);
-}
-
-[data-theme='light'] .nf-poi-marker {
-    background: var(--color-surface);
-}
-
-[data-theme='light'] .nf-poi-marker-icon {
-    color: var(--color-brand-200);
-}
-
 @media (prefers-reduced-motion: reduce) {
     .nf-poi-panel,
-    .nf-poi-marker,
     .nf-poi-action {
         animation: none !important;
         transition: none !important;
@@ -1350,14 +1230,15 @@ body.leaflet-dragging #map.leaflet-container *,
 }
 
 .nf-map-marker__label {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 6px;
+    row-gap: 0;
     min-width: 0;
     width: auto;
     max-width: 150px;
     height: auto;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: center;
+    align-items: center;
     border: 1px solid var(--nf-border);
     border-radius: 10px;
     background: var(--nf-overlay-strong);
@@ -1365,21 +1246,13 @@ body.leaflet-dragging #map.leaflet-container *,
     box-shadow: var(--nf-shadow);
 }
 
-/* The legacy marker class stays on the label hook for compatibility, so drop
-   its absolute positioning, hover transform and drop shadow without losing
-   the shared surface. */
-.nf-map-marker .nf-map-marker__label {
-    position: static;
-    inset: auto;
-    filter: none;
-    transform: none;
-}
-
 .nf-map-marker.nf-area-marker-wrapper .nf-map-marker__label {
     border-style: dashed;
 }
 
 .nf-map-marker__title {
+    grid-column: 1;
+    grid-row: 1;
     overflow: hidden;
     color: var(--color-ink);
     font-size: 11px;
@@ -1390,7 +1263,8 @@ body.leaflet-dragging #map.leaflet-container *,
 }
 
 .nf-map-marker__source {
-    margin-top: 1px;
+    grid-column: 1 / -1;
+    grid-row: 2;
     color: var(--color-muted);
     font-size: 9px;
     font-weight: 600;
@@ -1401,11 +1275,13 @@ body.leaflet-dragging #map.leaflet-container *,
 
 .nf-map-marker__count {
     display: flex;
+    grid-column: 2;
+    grid-row: 1;
     min-width: 20px;
-    height: 18px;
-    align-self: flex-start;
+    height: 16px;
     align-items: center;
     justify-content: center;
+    justify-self: end;
     border-radius: 999px;
     background: var(--color-ink);
     padding: 0 5px;
@@ -1434,9 +1310,7 @@ body.leaflet-dragging #map.leaflet-container *,
 }
 
 .nf-map-marker--osm-poi .nf-map-marker__pin svg,
-.nf-map-marker--osm-place .nf-map-marker__pin svg,
-.nf-map-marker--osm-poi .nf-poi-marker-icon,
-.nf-map-marker--osm-place .nf-poi-marker-icon {
+.nf-map-marker--osm-place .nf-map-marker__pin svg {
     color: var(--marker-color);
 }
 

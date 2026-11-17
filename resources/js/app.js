@@ -86,6 +86,11 @@ const POI_DEFAULTS = {
         tourism: ['museum'],
     },
 };
+const OVERPASS_FALLBACK_ENDPOINT = 'https://overpass.nextgis.com/api/interpreter';
+const POI_LANDMARK_TAGS = new Set([
+    'hospital', 'museum', 'place_of_worship', 'school', 'park',
+    'supermarket', 'police', 'library', 'bank',
+]);
 const POI_REFRESH_DEBOUNCE_MS = 350;
 const POI_REVERSE_MIN_INTERVAL_MS = 1000;
 const DECLUTTER_LIMITS = { 13: 10, 14: 16, 15: 26 };
@@ -308,6 +313,12 @@ function poiCategoryId(tags = {}) {
     return '';
 }
 
+function isLandmarkPoi(poi) {
+    const tags = poi?.tags ?? {};
+    return ['amenity', 'shop', 'leisure', 'tourism']
+        .some((key) => POI_LANDMARK_TAGS.has(String(tags[key] ?? '')));
+}
+
 function poiAddressFromTags(tags = {}) {
     const street = [tags['addr:housenumber'], tags['addr:street']].filter(Boolean).join(' ');
     const city = [tags['addr:suburb'], tags['addr:district'], tags['addr:city'], tags['addr:town'], tags['addr:village']]
@@ -369,25 +380,21 @@ function normalizePoi(element) {
     };
 }
 
-async function fetchOverpassPois(center, { signal } = {}) {
-    const query = buildOverpassQuery(center);
-
-    if (query === '') {
-        return [];
-    }
-
+async function fetchOverpassOnce(endpoint, query, outerSignal) {
     const controller = new AbortController();
     const relayAbort = () => controller.abort();
-    const timeoutId = window.setTimeout(relayAbort, poiConfig.request_timeout_ms);
-
-    signal?.addEventListener('abort', relayAbort, { once: true });
-
-    if (signal?.aborted) {
+    const timeoutId = window.setTimeout(() => {
         relayAbort();
+    }, poiConfig.request_timeout_ms);
+
+    if (outerSignal?.aborted) {
+        relayAbort();
+    } else {
+        outerSignal?.addEventListener('abort', relayAbort, { once: true });
     }
 
     try {
-        const response = await fetch(poiConfig.overpass_endpoint, {
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
@@ -404,24 +411,61 @@ async function fetchOverpassPois(center, { signal } = {}) {
         const payload = await response.json();
 
         if (!Array.isArray(payload?.elements)) {
-            return [];
+            throw new Error('Format respons Overpass tidak dikenali.');
         }
 
-        return payload.elements
-            .slice(0, poiConfig.max_results)
-            .map((element) => normalizePoi(element))
-            .filter(Boolean);
+        return {
+            ok: true,
+            pois: payload.elements
+                .slice(0, poiConfig.max_results)
+                .map((element) => normalizePoi(element))
+                .filter(Boolean),
+        };
     } catch (error) {
-        if (controller.signal.aborted) {
-            return [];
-        }
-
-        console.warn('nearFind: tempat dari OpenStreetMap tidak dapat dimuat.', error);
-        return [];
+        return { ok: false, error };
     } finally {
         window.clearTimeout(timeoutId);
-        signal?.removeEventListener('abort', relayAbort);
+        outerSignal?.removeEventListener('abort', relayAbort);
     }
+}
+
+async function fetchOverpassPois(center, { signal } = {}) {
+    const query = buildOverpassQuery(center);
+
+    if (query === '') {
+        return [];
+    }
+
+    const endpoints = [poiConfig.overpass_endpoint];
+    if (endpoints[0] !== OVERPASS_FALLBACK_ENDPOINT) {
+        endpoints.push(OVERPASS_FALLBACK_ENDPOINT);
+    }
+
+    let lastError = null;
+
+    for (const endpoint of endpoints) {
+        if (signal?.aborted) {
+            return [];
+        }
+
+        const attempt = await fetchOverpassOnce(endpoint, query, signal);
+
+        if (attempt.ok) {
+            return attempt.pois;
+        }
+
+        lastError = attempt.error;
+
+        if (signal?.aborted) {
+            return [];
+        }
+    }
+
+    if (lastError && lastError.name !== 'AbortError') {
+        console.warn('nearFind: tempat dari OpenStreetMap tidak dapat dimuat.', lastError);
+    }
+
+    return [];
 }
 
 async function reverseGeocodePoi(poi, signal) {
@@ -1892,7 +1936,7 @@ function initNearFind(
         locations: mappableLocations,
         category: 'all',
         query: '',
-        sort: 'relevance',
+        sort: 'nearest',
         selectedId: null,
         selectedLocationId: null,
         filtered: [],
@@ -2105,8 +2149,12 @@ function initNearFind(
 
         const zoom = map.getZoom();
         const limit = DECLUTTER_LIMITS[Math.floor(zoom)] ?? Infinity;
-        const priority = { need: 0, saved: 1, 'osm-poi': 2 };
+        const priority = { need: 0, saved: 1, 'osm-poi': 2, 'osm-place': 0 };
         const entries = [];
+        if (areaPreview?.marker) {
+            const latLng = areaPreview.marker.getLatLng();
+            entries.push({ marker: areaPreview.marker, point: [latLng.lng, latLng.lat], kind: 'osm-place' });
+        }
 
         state.markers.forEach((marker, id) => {
             const need = state.needs.find((item) => item.id === id);
@@ -2526,7 +2574,7 @@ function initNearFind(
 
     function resetFilters() {
         state.category = 'all';
-        state.sort = 'relevance';
+        state.sort = 'nearest';
         state.query = '';
 
         if (searchInput) {
@@ -2948,7 +2996,7 @@ function initNearFind(
         const markerStyle = `--marker-color:${category.color}`;
 
         return `<span class="nf-map-marker__pin" style="${markerStyle}">${icon(category.icon, 'size-3.5')}</span>
-                <div class="nf-marker nf-map-marker__label ${isSelected ? 'is-selected' : ''}" style="${markerStyle}">
+                <div class="nf-map-marker__label ${isSelected ? 'is-selected' : ''}" style="${markerStyle}">
                     <span class="nf-map-marker__title">${escapeHtml(need.marker_label)}</span>
                     <span class="nf-map-marker__count">${supporters}</span>
                     <span class="nf-map-marker__source">Pengajuan warga</span>
@@ -3045,7 +3093,10 @@ function initNearFind(
             closePoiPanel();
         }
 
-        currentPois.forEach((poi) => {
+        // Landmarks lead the POI display; proximity still orders places within each group.
+        const displayPois = [...currentPois].sort((first, second) => Number(isLandmarkPoi(second)) - Number(isLandmarkPoi(first)));
+
+        displayPois.forEach((poi) => {
             const wrapper = document.createElement('div');
             const categoryId = poiCategoryId(poi.tags) ?? '';
             const category = categoryById[categoryId] ?? fallbackCategory;
@@ -3058,8 +3109,8 @@ function initNearFind(
             wrapper.setAttribute('data-category', String(categoryId));
             wrapper.setAttribute('data-shape', String(categoryId || 'osm'));
             wrapper.setAttribute('aria-label', `${poi.name}, ${poi.category}, titik dari OpenStreetMap`);
-            wrapper.innerHTML = `<span class="nf-map-marker__pin" style="${markerStyle}">${icon('pin', 'size-3.5')}</span>
-                    <div class="nf-poi-marker nf-map-marker__label" style="${markerStyle}">
+            wrapper.innerHTML = `<span class="nf-map-marker__pin" style="${markerStyle}">${icon(category.icon ?? 'pin', 'size-3.5')}</span>
+                    <div class="nf-map-marker__label" style="${markerStyle}">
                         <span class="nf-map-marker__title">${escapeHtml(poi.name)}</span>
                         <span class="nf-map-marker__source">OpenStreetMap</span>
                     </div>`;
@@ -3434,18 +3485,25 @@ function initNearFind(
         }
 
         const words = query.toLocaleLowerCase('id-ID');
-        const places = state.locations
-            .filter((location) => matchesWords([location.name, location.address, location.area].join(' '), words))
-            .slice(0, NOMINATIM_RESULT_LIMIT);
-        const needs = state.needs
-            .filter((need) => matchesWords(
+        // Rank by proximity before capping so a nearer item is never discarded by source order.
+        const places = rankByProximity(
+            state.locations.filter((location) => matchesWords([location.name, location.address, location.area].join(' '), words)),
+            (location) => [location.latitude, location.longitude],
+        ).slice(0, NOMINATIM_RESULT_LIMIT);
+        const needs = rankByProximity(
+            state.needs.filter((need) => matchesWords(
                 [need.title, need.marker_label, need.location, need.area, need.description].join(' '),
                 words,
-            ))
-            .slice(0, NOMINATIM_RESULT_LIMIT);
-        const pois = currentPois
-            .filter((poi) => matchesWords([poi.name, poi.category, poi.address, poi.area].join(' '), words))
-            .slice(0, NOMINATIM_RESULT_LIMIT);
+            )),
+            (need) => {
+                const point = needPoint(need);
+                return point ? [point[1], point[0]] : null;
+            },
+        ).slice(0, NOMINATIM_RESULT_LIMIT);
+        const pois = rankByProximity(
+            currentPois.filter((poi) => matchesWords([poi.name, poi.category, poi.address, poi.area].join(' '), words)),
+            (poi) => [poi.lat, poi.lng],
+        ).slice(0, NOMINATIM_RESULT_LIMIT);
         const areas = topAreaQuery === query ? topAreaResults : [];
 
         const rows = [];
@@ -3633,8 +3691,8 @@ function initNearFind(
         element.setAttribute('aria-label', `Area ${place.name} di peta`);
         element.style.minWidth = '44px';
         element.style.minHeight = '44px';
-        element.innerHTML = `<span class="nf-map-marker__pin" style="${markerStyle}">${icon('map', 'size-4')}</span>
-                    <div class="nf-area-marker nf-map-marker__label" style="${markerStyle}">
+        element.innerHTML = `<span class="nf-map-marker__pin" style="${markerStyle}">${icon(category.icon ?? 'map', 'size-4')}</span>
+                    <div class="nf-map-marker__label" style="${markerStyle}">
                         <span class="nf-map-marker__title">${escapeHtml(place.name)}</span>
                         <span class="nf-map-marker__source">OpenStreetMap</span>
                     </div>`;
@@ -4089,8 +4147,8 @@ function initNearFind(
         const category = categoryById[location.category] ?? fallbackCategory;
         const markerStyle = `--marker-color:${escapeHtml(category?.color ?? '#6b6256')}`;
 
-        return `<span class="nf-map-marker__pin" style="${markerStyle}">${icon('pin', 'size-3.5')}</span>
-                <div class="nf-location-marker nf-map-marker__label ${isSelected ? 'is-selected' : ''}" style="${markerStyle}">
+        return `<span class="nf-map-marker__pin" style="${markerStyle}">${icon(category.icon ?? 'pin', 'size-3.5')}</span>
+                <div class="nf-map-marker__label ${isSelected ? 'is-selected' : ''}" style="${markerStyle}">
                     <span class="nf-map-marker__title">${escapeHtml(location.name)}</span>
                     <span class="nf-map-marker__source">Tempat tersimpan</span>
                 </div>`;

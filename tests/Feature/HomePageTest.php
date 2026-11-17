@@ -6,6 +6,7 @@ use App\Models\Location;
 use App\Models\Need;
 use App\Models\Profile;
 use Database\Seeders\NeedSeeder;
+use DOMDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -34,6 +35,33 @@ class HomePageTest extends TestCase
         $response->assertSee('tile.openstreetmap.org');
         $response->assertSee('id="login-gate"', false);
         $response->assertSee('Masuk untuk melanjutkan');
+    }
+
+    public function test_home_defaults_the_sort_filter_to_nearest(): void
+    {
+        $response = $this->get('/');
+        $response->assertOk();
+
+        $html = (string) $response->getContent();
+        $dom = new DOMDocument;
+        $dom->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
+
+        $checkedNearest = 0;
+        $otherChecked = 0;
+        foreach ($dom->getElementsByTagName('input') as $input) {
+            if ($input->getAttribute('name') !== 'filter-sort') {
+                continue;
+            }
+
+            if ($input->getAttribute('value') === 'nearest' && $input->hasAttribute('checked')) {
+                $checkedNearest++;
+            } elseif ($input->hasAttribute('checked')) {
+                $otherChecked++;
+            }
+        }
+
+        $this->assertSame(1, $checkedNearest);
+        $this->assertSame(0, $otherChecked);
     }
 
     public function test_home_does_not_render_a_center_reticle(): void
