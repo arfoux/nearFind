@@ -2,7 +2,7 @@
     $title = $title ?? 'nearFind: Peta Kebutuhan Warga';
     $active = $active ?? 'peta';
 
-    // The map page IS the canvas: the MapLibre surface runs edge to edge under a
+    // The map page IS the canvas: the Leaflet surface runs edge to edge under a
     // full-bleed shell and every control floats above solid surfaces. Jelajahi,
     // Laporan and Profil share that full-bleed shell so their content owns the
     // whole viewport. No tab renders a floating card over a map surface.

@@ -1,5 +1,4 @@
 @import 'tailwindcss';
-@import 'maplibre-gl/dist/maplibre-gl.css';
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
@@ -456,34 +455,52 @@ lg-navbar.nf-nav > a[aria-current='page'] {
     filter: drop-shadow(0 1px 2px rgba(247, 245, 241, 0.75));
 }
 
-.maplibregl-map {
+/* Leaflet's stylesheet is imported lazily by the map adapter, so its rules
+   arrive after ours. The #map id and paired classes below keep these
+   overrides winning without !important. */
+#map.leaflet-container {
     background: var(--color-canvas);
     font-family: var(--font-sans);
     cursor: grab;
 }
 
-.maplibregl-canvas {
+.leaflet-tile-pane {
     opacity: 1;
 }
 
-.maplibregl-control-container {
+/* R-31: OSM's bright yellows and greens are softened so markers stay the
+   focal point; this is a surface adjustment, not a new brand hue. */
+[data-theme='light'] .leaflet-tile-pane {
+    filter: saturate(0.82) contrast(0.96) brightness(1.02);
+}
+
+/* R-31: invert plus hue-rotate yields a neutral night basemap; the remaining
+   steps keep labels legible without a glow. */
+[data-theme='dark'] .leaflet-tile-pane {
+    filter: invert(1) hue-rotate(180deg) brightness(0.85) contrast(0.9) saturate(0.8);
+}
+
+.leaflet-control-container {
     display: none;
 }
 
-.maplibregl-canvas:focus-visible {
+#map.leaflet-container:focus-visible {
     outline: 3px solid var(--nf-focus);
     outline-offset: -3px;
 }
 
-.maplibregl-marker {
+.leaflet-marker-icon {
     z-index: 400;
 }
 
-.maplibregl-popup {
+.leaflet-popup {
     z-index: 450;
 }
 
-.maplibregl-popup.nf-tooltip .maplibregl-popup-content {
+/* Leaflet tooltips hold their content directly; there is no inner content
+   element to style. */
+.leaflet-tooltip.nf-tooltip {
+    box-sizing: border-box;
     border: 1px solid var(--nf-border);
     border-radius: 10px;
     background: var(--nf-overlay-strong);
@@ -496,13 +513,66 @@ lg-navbar.nf-nav > a[aria-current='page'] {
     white-space: nowrap;
 }
 
-.maplibregl-popup-anchor-bottom.nf-tooltip .maplibregl-popup-tip {
+/* Direction 'top' puts the arrow under the bubble. All four are coloured so
+   a direction change can never leave a white arrow on a dark tooltip. */
+.leaflet-tooltip.nf-tooltip.leaflet-tooltip-top:before {
     border-top-color: var(--nf-overlay-strong);
+}
+
+.leaflet-tooltip.nf-tooltip.leaflet-tooltip-bottom:before {
+    border-bottom-color: var(--nf-overlay-strong);
+}
+
+.leaflet-tooltip.nf-tooltip.leaflet-tooltip-left:before {
+    border-left-color: var(--nf-overlay-strong);
+}
+
+.leaflet-tooltip.nf-tooltip.leaflet-tooltip-right:before {
+    border-right-color: var(--nf-overlay-strong);
+}
+
+/* Leaflet's div icon is a box anchored at its bottom centre. Centering its
+   child keeps wide marker pills and every tail aligned to the coordinate.
+   The user dot is a separate 18x18 centre-anchored icon. */
+.nf-leaflet-icon {
+    box-sizing: border-box;
+    border: 0;
+    background: transparent;
+}
+
+.nf-leaflet-icon:not(.nf-user-icon) {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+}
+
+.nf-user-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+}
+
+.nf-leaflet-icon > * {
+    position: relative;
+    flex: none;
+}
+
+/* R-32: Leaflet sets keyboard:false on the icon; the inner wrapper owns the
+   tab stop, so give it a ring no utility can erase. */
+.nf-leaflet-icon > [tabindex]:focus-visible {
+    border-radius: 14px;
+    outline: 3px solid var(--nf-focus);
+    outline-offset: 2px;
 }
 
 /* Custom map markers ------------------------------------------------------- */
 
 .nf-marker-wrapper {
+    position: relative;
     width: max-content;
     border: 0 !important;
     background: transparent !important;
@@ -511,17 +581,18 @@ lg-navbar.nf-nav > a[aria-current='page'] {
 .nf-marker {
     position: absolute;
     bottom: 0;
-    left: 0;
+    left: 50%;
     display: flex;
     flex-direction: column;
     align-items: center;
     filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.35));
+    transform: translateX(-50%);
     transition: transform 0.18s ease;
 }
 
 .nf-marker:hover,
 .nf-marker:focus-within {
-    transform: translateY(-1px);
+    transform: translate(-50%, -1px);
 }
 
 .nf-marker-pill {
@@ -682,33 +753,33 @@ lg-navbar.nf-nav > a[aria-current='page'] {
     max-width: 132px;
 }
 
-.maplibregl-popup.nf-location-popup-shell .maplibregl-popup-content {
+.leaflet-popup.nf-location-popup-shell .leaflet-popup-content-wrapper {
     border: 1px solid var(--nf-border);
     border-radius: 12px;
     background: var(--nf-panel);
     box-shadow: var(--nf-shadow-lg);
     color: var(--color-ink);
+    padding: 0;
+    text-align: left;
 }
 
-.maplibregl-popup-anchor-bottom.nf-location-popup-shell .maplibregl-popup-tip {
-    border-top-color: var(--nf-panel);
+.leaflet-popup.nf-location-popup-shell .leaflet-popup-content {
+    margin: 10px;
+    line-height: inherit;
 }
 
-.maplibregl-popup-anchor-top.nf-location-popup-shell .maplibregl-popup-tip {
-    border-bottom-color: var(--nf-panel);
-}
-
-.maplibregl-popup-anchor-left.nf-location-popup-shell .maplibregl-popup-tip {
-    border-right-color: var(--nf-panel);
-}
-
-.maplibregl-popup-anchor-right.nf-location-popup-shell .maplibregl-popup-tip {
-    border-left-color: var(--nf-panel);
+/* Keep the popup tip on the shell's panel surface so the marker pin and its
+   selected-state contrast stay legible over the OSM basemap. */
+.leaflet-popup.nf-location-popup-shell .leaflet-popup-tip {
+    background: var(--nf-panel);
 }
 
 /* Area previews borrow the map glyph and a dashed outline so an OpenStreetMap
    area never reads as a saved pin or a warga proposal. No motion is added. */
 .nf-area-marker-wrapper {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
     border: 0 !important;
     background: transparent !important;
     cursor: pointer;
@@ -733,32 +804,27 @@ lg-navbar.nf-nav > a[aria-current='page'] {
     color: var(--color-brand-200);
 }
 
-.maplibregl-popup.nf-area-preview-shell .maplibregl-popup-content {
+.leaflet-popup.nf-area-preview-shell .leaflet-popup-content-wrapper {
     border: 1px dashed var(--nf-border-strong);
     border-radius: 12px;
     background: var(--nf-panel);
     box-shadow: var(--nf-shadow-lg);
     color: var(--color-ink);
+    padding: 0;
+    text-align: left;
 }
 
-.maplibregl-popup.nf-area-preview-shell .maplibregl-popup-close-button {
+.leaflet-popup.nf-area-preview-shell .leaflet-popup-content {
+    margin: 10px;
+    line-height: inherit;
+}
+
+.leaflet-popup.nf-area-preview-shell .leaflet-popup-close-button {
     color: var(--color-muted);
 }
 
-.maplibregl-popup-anchor-bottom.nf-area-preview-shell .maplibregl-popup-tip {
-    border-top-color: var(--nf-panel);
-}
-
-.maplibregl-popup-anchor-top.nf-area-preview-shell .maplibregl-popup-tip {
-    border-bottom-color: var(--nf-panel);
-}
-
-.maplibregl-popup-anchor-left.nf-area-preview-shell .maplibregl-popup-tip {
-    border-right-color: var(--nf-panel);
-}
-
-.maplibregl-popup-anchor-right.nf-area-preview-shell .maplibregl-popup-tip {
-    border-left-color: var(--nf-panel);
+.leaflet-popup.nf-area-preview-shell .leaflet-popup-tip {
+    background: var(--nf-panel);
 }
 
 [data-map-announcer].sr-only {

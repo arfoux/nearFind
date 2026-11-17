@@ -3,20 +3,23 @@
 return [
     /*
     |--------------------------------------------------------------------------
-    | Gaya peta vector tile
+    | Gaya peta raster Leaflet
     |--------------------------------------------------------------------------
     |
-    | URL style MapLibre untuk peta. Default memakai OpenFreeMap yang gratis
-    | dan tidak memerlukan API key. Ganti nilainya bila ingin memakai style
-    | atau penyedia vector tile lain.
+    | URL template untuk tile raster Leaflet. Default memakai tile
+    | OpenStreetMap yang gratis dan tidak memerlukan API key. Mode gelap
+    | diterapkan dengan filter CSS pada `.leaflet-tile-pane`, bukan style
+    | terpisah, sehingga ketiga URL memakai template yang sama.
+    | Ganti nilainya bila ingin memakai penyedia tile raster lain.
     |
     */
 
     'map' => [
-        'style_url' => env('NEARFIND_MAP_STYLE_URL', 'https://tiles.openfreemap.org/styles/dark'),
-        'dark_style_url' => env('NEARFIND_MAP_DARK_STYLE_URL', 'https://tiles.openfreemap.org/styles/dark'),
-        // OpenFreeMap's light style is `positron`; `/styles/light` returns 404.
-        'light_style_url' => env('NEARFIND_MAP_LIGHT_STYLE_URL', 'https://tiles.openfreemap.org/styles/positron'),
+        'style_url' => env('NEARFIND_MAP_STYLE_URL', 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
+        'dark_style_url' => env('NEARFIND_MAP_DARK_STYLE_URL', 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
+        // Template yang sama untuk terang dan gelap; lihat filter CSS pada
+        // `.leaflet-tile-pane` untuk tampilan mode gelap.
+        'light_style_url' => env('NEARFIND_MAP_LIGHT_STYLE_URL', 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'),
     ],
 
     /*

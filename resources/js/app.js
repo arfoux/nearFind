@@ -1,28 +1,34 @@
 import './vendor/liquidglass/components.js';
 
-// MapLibre is only needed by the map page. Loading it on first paint of every
-// other tab costs ~1 MB of JS, so the module is fetched on first map use.
-// The classes are assigned before the promise resolves, so every existing
-// `new MapLibreMap` / `new Marker` / `new Popup` call site is unchanged.
-let MapLibreMap;
-let Marker;
-let Popup;
+// Leaflet is only needed by the map page. Loading it on first paint of every
+// other tab costs JS the visitor never uses, so the adapter is fetched on first
+// map use. The bindings are assigned before the promise resolves, so every
+// call site can use them directly once initMapPage() has awaited it.
+let L;
+let createLeafletMap;
+let createTileLayer;
+let setViewWithPadding;
+let fitBoundsWithPadding;
+let panTo;
+let zoomTo;
+let resizeMap;
 
-let mapLibrePromise = null;
+let leafletPromise = null;
 
-function ensureMapLibre() {
-    if (!mapLibrePromise) {
-        mapLibrePromise = Promise.all([
-            import('maplibre-gl'),
-            import('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'),
-        ]).then(([mod, worker]) => {
-            MapLibreMap = mod.Map;
-            Marker = mod.Marker;
-            Popup = mod.Popup;
-            mod.setWorkerUrl(worker.default);
+function ensureLeaflet() {
+    if (!leafletPromise) {
+        leafletPromise = import('./leaflet-adapter.js').then((adapter) => {
+            L = adapter.L;
+            createLeafletMap = adapter.createLeafletMap;
+            createTileLayer = adapter.createTileLayer;
+            setViewWithPadding = adapter.setViewWithPadding;
+            fitBoundsWithPadding = adapter.fitBoundsWithPadding;
+            panTo = adapter.panTo;
+            zoomTo = adapter.zoomTo;
+            resizeMap = adapter.resizeMap;
         });
     }
-    return mapLibrePromise;
+    return leafletPromise;
 }
 
 // Design read, kept next to the code it drives: a civic map tool for warga,
@@ -38,9 +44,10 @@ const THEME_STORAGE_KEY = 'nf-theme';
 const THEME_DARK = 'dark';
 const THEME_LIGHT = 'light';
 const THEME_META_COLOR = { [THEME_DARK]: '#0B0E12', [THEME_LIGHT]: '#F7F5F1' };
-const FALLBACK_DARK_STYLE = 'https://tiles.openfreemap.org/styles/dark';
-// OpenFreeMap's light style is `positron`; `/styles/light` returns 404.
-const FALLBACK_LIGHT_STYLE = 'https://tiles.openfreemap.org/styles/positron';
+// Both themes load the same keyless OSM raster tiles; a CSS filter on the
+// tile pane supplies the dark basemap instead of a separate dark tile style.
+const FALLBACK_DARK_STYLE = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const FALLBACK_LIGHT_STYLE = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 // Filled from the map page payload so a theme press uses the two styles the
 // deployment actually advertises, not a hard-coded copy of them.
@@ -250,6 +257,12 @@ function needPoint(need) {
     return Number.isFinite(lat) && Number.isFinite(lng) ? [lng, lat] : null;
 }
 
+// Payloads and hidden inputs keep [lng, lat]; Leaflet camera and marker calls
+// take [lat, lng]. Every crossing goes through this one conversion.
+function toLeafletLatLng([lng, lat]) {
+    return [lat, lng];
+}
+
 async function fetchNominatimPlaces(query, { signal } = {}) {
     const url = new URL(NOMINATIM_SEARCH_ENDPOINT);
     url.searchParams.set('format', 'jsonv2');
@@ -405,6 +418,8 @@ function createPointPicker({
     let areaTimer = null;
     let areaRequest = 0;
     let disposed = false;
+    let tileLayer = null;
+    let tileUrl = '';
 
     function putPoint(lat, lng) {
         if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
@@ -472,7 +487,7 @@ function createPointPicker({
         syncing = true;
 
         try {
-            map.jumpTo({ center: [lng, lat], ...(Number.isFinite(zoom) ? { zoom } : {}) });
+            setViewWithPadding(map, [lat, lng], zoom);
         } finally {
             syncing = false;
         }
@@ -491,8 +506,8 @@ function createPointPicker({
         fetchArea(center.lat, center.lng);
     }
 
-    // Zero duration takes MapLibre's immediate easeTo path, so moveend commits
-    // the point even when animation frames are throttled.
+    // A deterministic camera move fires moveend even when animation frames are
+    // throttled, so the point is committed without waiting for a transition.
     function nudge(direction) {
         if (!map) {
             return;
@@ -502,12 +517,12 @@ function createPointPicker({
             : direction === 'east' ? [0.0015, 0]
                 : direction === 'north' ? [0, 0.0015] : [0, -0.0015];
         const center = map.getCenter();
-        map.easeTo({ center: [center.lng + step[0], center.lat + step[1]], duration: 0 });
+        setViewWithPadding(map, [center.lat + step[1], center.lng + step[0]], map.getZoom());
     }
 
     function zoomBy(delta) {
         if (map) {
-            map.easeTo({ zoom: map.getZoom() + delta, duration: 0 });
+            zoomTo(map, map.getZoom() + delta, 0);
         }
     }
 
@@ -541,26 +556,22 @@ function createPointPicker({
         const start = initialPoint();
 
         try {
-            map = new MapLibreMap({
-                container: canvas,
-                style: styleUrl(),
-                center: start,
+            map = createLeafletMap(canvas, {
+                center: toLeafletLatLng(start),
                 zoom: 16,
                 minZoom: 12,
                 maxZoom: 18,
-                attributionControl: false,
-                dragRotate: false,
-                pitchWithRotate: false,
-                maxPitch: 0,
-                renderWorldCopies: false,
             });
+            tileUrl = styleUrl();
+            tileLayer = createTileLayer(tileUrl);
+            tileLayer.addTo(map);
+            resizeMap(map);
         } catch (error) {
             console.error('nearFind: pemilih lokasi gagal dimuat.', error);
             map = null;
             return false;
         }
 
-        map.on('load', () => map?.resize());
         map.on('moveend', commit);
         map.on('click', commit);
         centerOn(start[1], start[0]);
@@ -585,7 +596,10 @@ function createPointPicker({
 
     function setStyle(url) {
         try {
-            map?.setStyle(url);
+            if (map && tileLayer && url && url !== tileUrl) {
+                tileUrl = url;
+                tileLayer.setUrl(url);
+            }
         } catch {
             // A style swap during a camera transition is harmless.
         }
@@ -609,7 +623,7 @@ function createPointPicker({
     return { ensure, bind, centerOn, setStyle, destroy };
 }
 
-const DEFAULT_MAP_STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
+const DEFAULT_MAP_STYLE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
 // The four tabs are separate endpoints, but they share one shell. Navigating
 // between them is a fetch + swap (with a skeleton in between) instead of a fresh
@@ -660,7 +674,7 @@ async function initMapPage() {
     const generation = ++mapInitGeneration;
 
     try {
-        await ensureMapLibre();
+        await ensureLeaflet();
         if (generation !== mapInitGeneration) {
             return;
         }
@@ -771,9 +785,8 @@ async function navigateTo(url, { pushState = true } = {}) {
     // skeleton can be very fast, so give the paint a frame to land.
     const skeleton = buildSkeleton(targetTab);
 
-    // Dispose BEFORE the old markup goes: MapLibre's remove() needs the container
-    // it was given, and emptying the slot first left it calling
-    // getCanvasContainer() on a detached node ("Cannot read properties of null").
+    // Dispose BEFORE the old markup goes: Leaflet's remove() needs the container
+    // it was given, and emptying the slot first detaches it mid-teardown.
     disposePage();
 
     content.innerHTML = '';
@@ -1133,8 +1146,8 @@ function initNearFind(
     { categories, needs, locations = [], authenticated = false, mapStyleUrl = DEFAULT_MAP_STYLE_URL, mapDarkStyleUrl, mapLightStyleUrl, flash = null },
     { mapElement, needCardElement },
 ) {
-    // A deployment may advertise two styles; a legacy deployment only has one.
-    // Either way the map starts in the resolved theme and a press swaps styles.
+    // Tile URLs are shared across themes; dark mode is a CSS filter on the
+    // tile pane, so both keys resolve to a raster template either way.
     themeStyles.dark = mapDarkStyleUrl || mapStyleUrl || FALLBACK_DARK_STYLE;
     themeStyles.light = mapLightStyleUrl || mapStyleUrl || FALLBACK_LIGHT_STYLE;
 
@@ -1206,17 +1219,15 @@ function initNearFind(
     state.selectedId = initialNeed?.id ?? null;
     let cardExpanded = desktopQuery.matches;
 
-    const tooltip = new Popup({
-        closeButton: false,
-        closeOnClick: false,
-        focusAfterOpen: false,
-        anchor: 'bottom',
-        offset: [0, -50],
-        maxWidth: '260px',
+    const tooltip = L.tooltip({
         className: 'nf-tooltip',
+        direction: 'top',
+        offset: [0, -12],
     });
 
     let map = null;
+    let mainTileLayer = null;
+    let mainTileUrl = '';
     let userMarker = null;
     let toastTimeout = null;
     let loginReturnFocus = null;
@@ -1264,7 +1275,7 @@ function initNearFind(
             return;
         }
 
-        map?.resize();
+        if (map) resizeMap(map);
 
         // A deep link asks for ONE thing. Auto-locating on top of it moved the
         // camera to the visitor a moment later, so the pin they came for drifted
@@ -1289,19 +1300,17 @@ function initNearFind(
     function initMap() {
         setMapLoading(true);
         try {
-            map = new MapLibreMap({
-                container: mapElement,
-                style: themeStyles[currentTheme()],
-                center: [107.5944, -6.8903],
+            map = createLeafletMap(mapElement, {
+                center: toLeafletLatLng([107.5944, -6.8903]),
                 zoom: 15,
                 minZoom: 13,
                 maxZoom: 19,
-                attributionControl: false,
-                dragRotate: false,
-                pitchWithRotate: false,
-                maxPitch: 0,
-                renderWorldCopies: false,
             });
+            mainTileUrl = themeStyles[currentTheme()];
+            mainTileLayer = createTileLayer(mainTileUrl);
+            mainTileLayer.addTo(map);
+            resizeMap(map);
+            setMapLoading(false);
         } catch (error) {
             setMapLoading(false);
             console.error('nearFind: peta gagal dibuat.', error);
@@ -1309,17 +1318,7 @@ function initNearFind(
             return;
         }
 
-        map.setZoomSnap(0.25);
-        map.touchZoomRotate.disableRotation();
-        map.keyboard.disableRotation();
-        map.once('load', () => setMapLoading(false));
-        map.on('style.load', () => setMapLoading(false));
-
-        map.on('error', (event) => {
-            if (!event?.error) {
-                return;
-            }
-
+        mainTileLayer.on('tileerror', () => {
             mapErrors += 1;
 
             if (mapErrors >= 4 && !mapErrorShown) {
@@ -1330,7 +1329,9 @@ function initNearFind(
         });
 
         if ('ResizeObserver' in window) {
-            resizeObserver = new ResizeObserver(() => map?.resize());
+            resizeObserver = new ResizeObserver(() => {
+                if (map) resizeMap(map);
+            });
             resizeObserver.observe(mapElement);
         }
     }
@@ -1907,11 +1908,12 @@ function initNearFind(
     document.addEventListener('nearfind:themechange', (event) => {
         const styleUrl = event?.detail?.styleUrl ?? themeStyles[currentTheme()];
         try {
-            if (map) setMapLoading(true);
-            map?.setStyle(styleUrl);
+            if (map && mainTileLayer && styleUrl && styleUrl !== mainTileUrl) {
+                mainTileUrl = styleUrl;
+                mainTileLayer.setUrl(styleUrl);
+            }
         } catch {
-            setMapLoading(false);
-            // A style swap during a camera transition is harmless.
+            // A tile URL swap during a camera transition is harmless.
         }
         needPicker.setStyle(styleUrl);
         locationPicker.setStyle(styleUrl);
@@ -1954,21 +1956,25 @@ function initNearFind(
                 return;
             }
             const element = createMarkerElement(need, need.id === state.selectedId);
-            const marker = new Marker({
-                element,
-                anchor: 'bottom',
-                subpixelPositioning: true,
-            })
-                .setLngLat(point)
-                .addTo(map);
+            const marker = L.marker(toLeafletLatLng(point), {
+                icon: L.divIcon({
+                    html: element.outerHTML,
+                    className: 'nf-leaflet-icon',
+                    iconSize: [44, 44],
+                    iconAnchor: [22, 44],
+                }),
+                keyboard: false,
+                riseOnHover: true,
+            }).addTo(map);
 
             marker.on('click', () => selectNeed(need.id));
 
-            element.addEventListener('mouseenter', () => showMarkerTooltip(need));
-            element.addEventListener('focus', () => showMarkerTooltip(need));
-            element.addEventListener('mouseleave', hideMarkerTooltip);
-            element.addEventListener('blur', hideMarkerTooltip);
-            element.addEventListener('keydown', (event) => {
+            const markerElement = marker.getElement();
+            markerElement.addEventListener('mouseenter', () => showMarkerTooltip(need));
+            markerElement.addEventListener('focusin', () => showMarkerTooltip(need));
+            markerElement.addEventListener('mouseleave', hideMarkerTooltip);
+            markerElement.addEventListener('focusout', hideMarkerTooltip);
+            markerElement.addEventListener('keydown', (event) => {
                 if (event.key !== 'Enter' && event.key !== ' ') {
                     return;
                 }
@@ -2028,8 +2034,8 @@ function initNearFind(
         }
 
         tooltip
-            .setLngLat(point)
-            .setText(`${need.marker_label} · ${displaySupporters(need)} warga`)
+            .setLatLng(toLeafletLatLng(point))
+            .setContent(escapeHtml(`${need.marker_label} · ${displaySupporters(need)} warga`))
             .addTo(map);
     }
 
@@ -2059,7 +2065,7 @@ function initNearFind(
 
         if (point) {
             if (pan && map) {
-                map.panTo(point, { duration: 350 });
+                panTo(map, toLeafletLatLng(point), 0.35);
             }
             announce(`${need.title} dipilih di peta.`);
         } else {
@@ -2102,7 +2108,7 @@ function initNearFind(
         // A result press must move the camera deterministically, not start an
         // animation that can stall under frame throttling.
         if (map) {
-            map.panTo([place.lng, place.lat], { duration: 0 });
+            setViewWithPadding(map, [place.lat, place.lng]);
         }
 
         const saved = findSavedLocation(place);
@@ -2349,15 +2355,23 @@ function initNearFind(
         element.style.minHeight = '44px';
         element.innerHTML = `<span class="nf-area-marker">${icon('map', 'size-4')}</span>`;
 
-        const marker = new Marker({ element, anchor: 'bottom', subpixelPositioning: true })
-            .setLngLat([place.lng, place.lat])
-            .addTo(map);
+        const marker = L.marker([place.lat, place.lng], {
+            icon: L.divIcon({
+                html: element.outerHTML,
+                className: 'nf-leaflet-icon',
+                iconSize: [44, 44],
+                iconAnchor: [22, 44],
+            }),
+            keyboard: false,
+            riseOnHover: true,
+        }).addTo(map);
         const popup = createAreaPopup(place)
-            .setLngLat([place.lng, place.lat])
+            .setLatLng([place.lat, place.lng])
             .addTo(map);
 
-        element.addEventListener('click', () => popup.addTo(map));
-        element.addEventListener('keydown', (searchEvent) => {
+        const markerElement = marker.getElement();
+        markerElement.addEventListener('click', () => popup.addTo(map));
+        markerElement.addEventListener('keydown', (searchEvent) => {
             if (searchEvent.key !== 'Enter' && searchEvent.key !== ' ') {
                 return;
             }
@@ -2403,13 +2417,13 @@ function initNearFind(
 
         content.append(label, title, meta, notice, saveButton);
 
-        return new Popup({
+        return L.popup({
             closeButton: true,
             closeOnClick: false,
-            focusAfterOpen: false,
-            maxWidth: '260px',
+            autoPan: false,
+            maxWidth: 260,
             className: 'nf-area-preview-shell',
-        }).setDOMContent(content);
+        }).setContent(content);
     }
 
     function scheduleLocationPlaceSearch() {
@@ -2541,17 +2555,25 @@ function initNearFind(
 
         state.locations.forEach((location) => {
             const element = createLocationMarkerElement(location, location.id === state.selectedLocationId);
-            const marker = new Marker({ element, anchor: 'bottom', subpixelPositioning: true })
-                .setLngLat([location.longitude, location.latitude])
-                .addTo(map);
+            const marker = L.marker([location.latitude, location.longitude], {
+                icon: L.divIcon({
+                    html: element.outerHTML,
+                    className: 'nf-leaflet-icon',
+                    iconSize: [44, 44],
+                    iconAnchor: [22, 44],
+                }),
+                keyboard: false,
+                riseOnHover: true,
+            }).addTo(map);
             const popup = createLocationPopup(location);
 
+            const markerElement = marker.getElement();
             marker.on('click', () => selectLocation(location.id, { pan: false }));
-            element.addEventListener('mouseenter', () => popup.addTo(map));
-            element.addEventListener('focus', () => popup.addTo(map));
-            element.addEventListener('mouseleave', () => popup.remove());
-            element.addEventListener('blur', () => popup.remove());
-            element.addEventListener('keydown', (event) => {
+            markerElement.addEventListener('mouseenter', () => popup.addTo(map));
+            markerElement.addEventListener('focusin', () => popup.addTo(map));
+            markerElement.addEventListener('mouseleave', () => popup.remove());
+            markerElement.addEventListener('focusout', () => popup.remove());
+            markerElement.addEventListener('keydown', (event) => {
                 if (event.key !== 'Enter' && event.key !== ' ') {
                     return;
                 }
@@ -2605,14 +2627,13 @@ function initNearFind(
 
         content.append(title, meta);
 
-        return new Popup({
+        return L.popup({
             closeButton: false,
             closeOnClick: false,
-            focusAfterOpen: false,
-            offset: 12,
-            maxWidth: '260px',
+            autoPan: false,
+            maxWidth: 260,
             className: 'nf-location-popup-shell',
-        }).setDOMContent(content);
+        }).setLatLng([location.latitude, location.longitude]).setContent(content);
     }
 
     function refreshLocationMarker(locationId) {
@@ -2624,10 +2645,11 @@ function initNearFind(
         }
 
         const isSelected = locationId === state.selectedLocationId;
-        const element = marker.getElement();
+        const iconElement = marker.getElement();
+        const element = iconElement?.firstElementChild ?? iconElement;
         element.innerHTML = locationMarkerMarkup(location, isSelected);
-        element.style.zIndex = isSelected ? '430' : '';
         element.setAttribute('aria-label', `Lokasi ${location.name}${isSelected ? ', dipilih' : ''}`);
+        iconElement.style.zIndex = isSelected ? '430' : '';
     }
 
     function selectLocation(locationId, { pan = true } = {}) {
@@ -2641,8 +2663,9 @@ function initNearFind(
         state.selectedLocationId = location.id;
         state.selectedId = null;
         state.markers.forEach((marker, id) => {
-            const element = marker.getElement();
-            element.style.zIndex = '';
+            const iconElement = marker.getElement();
+            const element = iconElement?.firstElementChild ?? iconElement;
+            iconElement.style.zIndex = '';
             const need = state.needs.find((item) => item.id === id);
 
             if (need) {
@@ -2656,7 +2679,7 @@ function initNearFind(
         syncUrlSelection();
 
         if (pan && map) {
-            map.panTo([location.longitude, location.latitude], { duration: 350 });
+            panTo(map, toLeafletLatLng([location.longitude, location.latitude]), 0.35);
         }
 
         announce(`Lokasi ${location.name} dipilih di peta.`);
@@ -2757,11 +2780,12 @@ function initNearFind(
             return;
         }
 
-        const element = marker.getElement();
+        const iconElement = marker.getElement();
+        const element = iconElement?.firstElementChild ?? iconElement;
         const isSelected = need.id === state.selectedId;
         element.style.minWidth = '44px';
         element.style.minHeight = '44px';
-        element.style.zIndex = isSelected ? '420' : '';
+        iconElement.style.zIndex = isSelected ? '420' : '';
         element.innerHTML = markerMarkup(need, isSelected);
         updateMarkerAria(element, need);
     }
@@ -2889,7 +2913,7 @@ function initNearFind(
             return;
         }
 
-        const coordinates = state.filtered.map(needPoint).filter(Boolean);
+        const coordinates = state.filtered.map(needPoint).filter(Boolean).map(toLeafletLatLng);
         if (coordinates.length === 0) {
             return;
         }
@@ -2913,17 +2937,12 @@ function initNearFind(
         const bottomPadding = Math.min(isDesktop ? 80 : 230, Math.max(60, mapHeight * 0.32));
         const rightPadding = isDesktop ? Math.min(430, Math.max(120, mapWidth * 0.4)) : 80;
 
-        map.fitBounds(bounds, {
-            padding: {
-                top: topPadding,
-                right: rightPadding,
-                bottom: bottomPadding,
-                left: isDesktop ? 40 : 32,
-            },
-            maxZoom: isDesktop ? 16 : 15.5,
-            linear: true,
-            duration: 350,
-        });
+        fitBoundsWithPadding(map, bounds, {
+            top: topPadding,
+            right: rightPadding,
+            bottom: bottomPadding,
+            left: isDesktop ? 40 : 32,
+        }, isDesktop ? 16 : 15.5, 0.35);
     }
 
     /**
@@ -2936,6 +2955,12 @@ function initNearFind(
             return;
         }
 
+        const need = state.needs.find((item) => item.id === needId);
+
+        if (!need) {
+            return;
+        }
+
         const point = needPoint(need);
 
         if (!point) {
@@ -2945,15 +2970,11 @@ function initNearFind(
         const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
         const mapHeight = mapElement.clientHeight || window.innerHeight;
 
-        map.jumpTo({
-            center: point,
-            zoom: Math.max(map.getZoom(), 15.5),
-            padding: {
-                top: isDesktop ? 180 : 210,
-                right: isDesktop ? Math.min(430, Math.max(120, (mapElement.clientWidth || window.innerWidth) * 0.4)) : 80,
-                bottom: Math.min(isDesktop ? 80 : 230, Math.max(60, mapHeight * 0.32)),
-                left: isDesktop ? 40 : 32,
-            },
+        setViewWithPadding(map, toLeafletLatLng(point), Math.max(map.getZoom(), 15.5), {
+            top: isDesktop ? 180 : 210,
+            right: isDesktop ? Math.min(430, Math.max(120, (mapElement.clientWidth || window.innerWidth) * 0.4)) : 80,
+            bottom: Math.min(isDesktop ? 80 : 230, Math.max(60, mapHeight * 0.32)),
+            left: isDesktop ? 40 : 32,
         });
     }
 
@@ -2962,8 +2983,7 @@ function initNearFind(
             return;
         }
 
-        map.stop();
-        map.easeTo({ zoom: map.getZoom() + delta, duration: 200 });
+        zoomTo(map, map.getZoom() + delta, 0.2);
     }
 
     async function shareNeed(needId) {
@@ -3041,14 +3061,13 @@ function initNearFind(
         navigator.geolocation.getCurrentPosition(
             ({ coords }) => {
                 // The callback can arrive after the tab was left: `disposed` is set
-                // by the page teardown and `map` is null by then, so anything that
-                // touches MapLibre here would throw "getCanvasContainer" on a
-                // detached container.
+                // by the page teardown and `map` is null by then, so a stale
+                // camera move would throw on a detached container.
                 if (disposed || !map) {
                     return;
                 }
 
-                const location = [coords.longitude, coords.latitude];
+                const location = toLeafletLatLng([coords.longitude, coords.latitude]);
 
                 if (userMarker) {
                     userMarker.remove();
@@ -3059,14 +3078,18 @@ function initNearFind(
                 element.style.pointerEvents = 'none';
                 element.innerHTML = '<span class="nf-user-dot"></span>';
 
-                userMarker = new Marker({
-                    element,
-                    anchor: 'center',
-                })
-                    .setLngLat(location)
-                    .addTo(map);
+                userMarker = L.marker(location, {
+                    icon: L.divIcon({
+                        html: element.outerHTML,
+                        className: 'nf-leaflet-icon nf-user-icon',
+                        iconSize: [18, 18],
+                        iconAnchor: [9, 9],
+                    }),
+                    keyboard: false,
+                    riseOnHover: false,
+                }).addTo(map);
 
-                map.flyTo({ center: location, zoom: 16, duration: 600 });
+                map.flyTo(location, 16, { animate: true, duration: 0.6 });
 
                 if (!silent) {
                     showToast('Lokasi kamu ditemukan.');
@@ -3139,15 +3162,21 @@ function initNearFind(
             // An already-aborted controller is harmless.
         }
 
-        resizeObserver?.disconnect();
-        tooltip.remove();
         window.clearTimeout(toastTimeout);
         window.clearTimeout(placeSearchTimer);
         window.clearTimeout(locationSearchTimer);
         placeSearchController?.abort();
         locationSearchController?.abort();
+
         needPicker.destroy();
         locationPicker.destroy();
+
+        tooltip.remove();
+        clearAreaPreview();
+        state.markers.forEach((marker) => marker.remove());
+        state.locationMarkers.forEach((marker) => marker.remove());
+        userMarker?.remove();
+        resizeObserver?.disconnect();
 
         if (map) {
             try {
@@ -3160,6 +3189,7 @@ function initNearFind(
         }
 
         userMarker = null;
+        state.markers.clear();
         state.locationMarkers.clear();
     };
 }
