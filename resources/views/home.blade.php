@@ -30,17 +30,6 @@
             <section class="absolute inset-0 overflow-hidden" aria-label="Peta interaktif kebutuhan warga, fasilitas umum, dan tempat terdekat di Sukajadi serta sekitarnya">
                 <div id="map" class="absolute inset-0 z-0" role="region" aria-label="Peta interaktif kebutuhan warga, fasilitas umum, dan tempat terdekat di Sukajadi serta sekitarnya"></div>
 
-                {{-- The crosshair marks the exact point captured when either map
-                     action is pressed. It stays fixed to the canvas centre,
-                     never takes pointer events, and the hidden copy below
-                     explains its purpose to screen readers. --}}
-                <div class="nf-map-reticle pointer-events-none absolute left-1/2 top-1/2 z-[100] -translate-x-1/2 -translate-y-1/2" aria-hidden="true">
-                    <span class="nf-map-reticle__arm nf-map-reticle__arm--x"></span>
-                    <span class="nf-map-reticle__arm nf-map-reticle__arm--y"></span>
-                    <span class="nf-map-reticle__dot"></span>
-                </div>
-                <p class="sr-only">Tanda + di tengah peta menunjukkan titik yang dipakai saat kamu menekan Ajukan Kebutuhan atau Tambah Tempat. Geser peta untuk memindahkan titik ini.</p>
-
                 {{-- R-27: honest style-load status, hidden again once the map is ready. --}}
                 <p
                     data-map-loading

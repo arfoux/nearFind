@@ -36,6 +36,18 @@ class HomePageTest extends TestCase
         $response->assertSee('Masuk untuk melanjutkan');
     }
 
+    public function test_home_does_not_render_a_center_reticle(): void
+    {
+        $response = $this->get('/');
+        $response->assertOk();
+        $response->assertSee('id="map"', false);
+        $response->assertSee('role="region"', false);
+
+        $html = (string) $response->getContent();
+        $this->assertStringNotContainsString('nf-map-reticle', $html);
+        $this->assertStringNotContainsString('Tanda + di tengah peta', $html);
+    }
+
     public function test_the_map_reads_its_needs_from_the_database(): void
     {
         Need::where('title', 'Klinik 24 Jam')->update(['title' => 'Klinik Siaga Malam']);
