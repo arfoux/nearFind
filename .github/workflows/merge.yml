@@ -5,9 +5,11 @@ name: merge
 # workflow `GITHUB_TOKEN` does not emit that event, so the follow-up runs are
 # requested explicitly here.
 #
-# Usage:
+# Usage (mode defaults to `merge`):
 #   gh workflow run merge.yml -f pr=52
 #   gh workflow run merge.yml -f pr=52 -f mode=squash -f deploy=false
+#   gh workflow run merge.yml -f pr=52 -f mode=merge
+#   gh workflow run merge.yml -f pr=52 -f mode=rebase
 
 on:
   workflow_dispatch:
@@ -19,11 +21,12 @@ on:
       mode:
         description: Merge method
         required: false
-        default: rebase
+        default: merge
         type: choice
         options:
-          - rebase
+          - merge
           - squash
+          - rebase
       deploy:
         description: Start deploy.yml afterwards
         required: false
