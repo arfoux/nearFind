@@ -408,60 +408,22 @@ lg-navbar.nf-nav > a[aria-current='page'] {
     pointer-events: none;
 }
 
-/* The centre reticle is a targeting aid, not a control: it never takes pointer
-   events. Ink keeps the cross legible over tiles in both themes, and the
-   canvas-coloured ring separates the dot from whatever tile sits under it. */
-.nf-map-reticle {
-    width: 34px;
-    height: 34px;
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
-}
-
-.nf-map-reticle__arm {
-    position: absolute;
-    background: var(--color-ink);
-    border-radius: 2px;
-}
-
-.nf-map-reticle__arm--x {
-    top: 50%;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    transform: translateY(-50%);
-}
-
-.nf-map-reticle__arm--y {
-    top: 0;
-    left: 50%;
-    width: 2px;
-    height: 100%;
-    transform: translateX(-50%);
-}
-
-.nf-map-reticle__dot {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 6px;
-    height: 6px;
-    border: 2px solid var(--color-canvas);
-    border-radius: 50%;
-    background: var(--color-ink);
-    transform: translate(-50%, -50%);
-}
-
-[data-theme='light'] .nf-map-reticle {
-    filter: drop-shadow(0 1px 2px rgba(247, 245, 241, 0.75));
-}
-
 /* Leaflet's stylesheet is imported lazily by the map adapter, so its rules
    arrive after ours. The #map id and paired classes below keep these
    overrides winning without !important. */
 #map.leaflet-container {
     background: var(--color-canvas);
     font-family: var(--font-sans);
-    cursor: grab;
+    cursor: default;
+}
+
+/* Leaflet flags an active pan on the body and on the container. Cover both,
+   and include descendants so their own cursor cannot win mid-drag. */
+body.leaflet-dragging #map.leaflet-container,
+body.leaflet-dragging #map.leaflet-container *,
+#map.leaflet-container.leaflet-dragging,
+#map.leaflet-container.leaflet-dragging * {
+    cursor: grabbing;
 }
 
 .leaflet-tile-pane {
@@ -497,18 +459,18 @@ lg-navbar.nf-nav > a[aria-current='page'] {
     z-index: 450;
 }
 
-/* Leaflet tooltips hold their content directly; there is no inner content
-   element to style. */
+/* Tooltip text is escaped plain text written straight into the bubble, so the
+   bubble itself carries the compact neutral label treatment. */
 .leaflet-tooltip.nf-tooltip {
     box-sizing: border-box;
     border: 1px solid var(--nf-border);
     border-radius: 10px;
     background: var(--nf-overlay-strong);
-    padding: 5px 9px;
+    padding: 6px 10px;
     color: var(--color-ink);
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.35;
     box-shadow: var(--nf-shadow);
     white-space: nowrap;
 }
@@ -531,9 +493,10 @@ lg-navbar.nf-nav > a[aria-current='page'] {
     border-right-color: var(--nf-overlay-strong);
 }
 
-/* Leaflet's div icon is a box anchored at its bottom centre. Centering its
-   child keeps wide marker pills and every tail aligned to the coordinate.
-   The user dot is a separate 18x18 centre-anchored icon. */
+/* Leaflet's div icon is a 44x44 box anchored at its bottom centre. The pin
+   hook is left-aligned at x=0 and is 30px wide, so its centre sits at x=15
+   inside that box; the label flows to its right. The user dot is a separate
+   18x18 centre-anchored icon. */
 .nf-leaflet-icon {
     box-sizing: border-box;
     border: 0;
@@ -543,7 +506,7 @@ lg-navbar.nf-nav > a[aria-current='page'] {
 .nf-leaflet-icon:not(.nf-user-icon) {
     display: flex;
     align-items: flex-end;
-    justify-content: center;
+    justify-content: flex-start;
     width: 44px;
     height: 44px;
 }
@@ -590,102 +553,18 @@ lg-navbar.nf-nav > a[aria-current='page'] {
     transition: transform 0.18s ease;
 }
 
-.nf-marker:hover,
+/* The shared root owns the hover lift and focus-visible ring. This legacy
+   hook keeps a focus-within outline as a fallback affordance only. */
 .nf-marker:focus-within {
-    transform: translate(-50%, -1px);
-}
-
-.nf-marker-pill {
-    display: flex;
-    height: 32px;
-    align-items: center;
-    gap: 5px;
-    border: 1px solid var(--nf-border);
-    border-radius: 999px;
-    background: var(--nf-overlay);
-    padding: 0 7px 0 5px;
-    box-shadow: var(--nf-shadow);
-    transition:
-        background 0.18s ease,
-        border-color 0.18s ease;
-}
-
-.nf-marker.is-selected .nf-marker-pill {
-    height: 36px;
-    border-color: var(--marker-color);
-    background: var(--nf-overlay-strong);
-    box-shadow:
-        var(--nf-shadow),
-        0 0 0 2px color-mix(in srgb, var(--marker-color) 45%, transparent);
-}
-
-.nf-marker-pill-icon {
-    display: flex;
-    width: 23px;
-    height: 23px;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--marker-color) 22%, transparent);
-    color: var(--marker-color);
-}
-
-/* Selected icon keeps the category rim but uses the legible ink/canvas pair. */
-.nf-marker.is-selected .nf-marker-pill-icon {
-    width: 26px;
-    height: 26px;
-    background: var(--color-ink);
-    color: var(--color-canvas);
-    box-shadow: inset 0 0 0 1px var(--marker-color);
-}
-
-.nf-marker-pill-title {
-    max-width: 104px;
-    overflow: hidden;
-    color: var(--color-ink);
-    font-size: 10px;
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.nf-marker.is-selected .nf-marker-pill-title {
-    max-width: 128px;
-    font-size: 10.5px;
-}
-
-/* Count stays legible on every category color: ink background, canvas text. */
-.nf-marker-pill-count {
-    display: flex;
-    min-width: 20px;
-    height: 18px;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    background: var(--color-ink);
-    padding: 0 5px;
-    color: var(--color-canvas);
-    font-size: 8.5px;
-    font-weight: 700;
-    line-height: 1;
-}
-
-.nf-marker-tail {
-    width: 8px;
-    height: 8px;
-    margin-top: -4px;
-    border-right: 1.5px solid var(--marker-color);
-    border-bottom: 1.5px solid var(--marker-color);
-    border-radius: 1px;
-    background: var(--nf-overlay);
-    transform: rotate(45deg);
+    outline: 3px solid var(--nf-focus);
+    outline-offset: 2px;
 }
 
 /* Saved places use the same marker vocabulary as needs, with a pin glyph. */
 .nf-location-marker-wrapper {
     border: 0 !important;
     background: transparent !important;
-    cursor: pointer;
+    cursor: default;
 }
 
 .nf-location-marker-wrapper:focus-visible {
@@ -740,19 +619,6 @@ lg-navbar.nf-nav > a[aria-current='page'] {
     color: var(--color-canvas);
 }
 
-.nf-location-marker-name {
-    max-width: 110px;
-    overflow: hidden;
-    font-size: 10px;
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.nf-location-marker.is-selected .nf-location-marker-name {
-    max-width: 132px;
-}
-
 .leaflet-popup.nf-location-popup-shell .leaflet-popup-content-wrapper {
     border: 1px solid var(--nf-border);
     border-radius: 12px;
@@ -782,7 +648,7 @@ lg-navbar.nf-nav > a[aria-current='page'] {
     justify-content: center;
     border: 0 !important;
     background: transparent !important;
-    cursor: pointer;
+    cursor: default;
 }
 
 .nf-area-marker {
@@ -1250,7 +1116,7 @@ lg-navbar.nf-nav > a[aria-current='page'] {
 
 /* The panel shares the bottom slot with the need and location panels, but
    stays above map controls (530) and below the FAB (800) and sheets (1200+).
-   It never reaches the top reticle or the header theme toggle. */
+   It stays within the map viewport and never covers the header controls. */
 .nf-poi-panel {
     z-index: 670;
     height: auto;
@@ -1322,7 +1188,7 @@ lg-navbar.nf-nav > a[aria-current='page'] {
 }
 
 .nf-poi-marker-wrapper {
-    cursor: pointer;
+    cursor: default;
 }
 
 .nf-poi-marker {
@@ -1348,15 +1214,6 @@ lg-navbar.nf-nav > a[aria-current='page'] {
     border-radius: 8px;
     background: var(--color-brand-50);
     color: var(--color-muted);
-}
-
-.nf-poi-marker-title {
-    max-width: 96px;
-    overflow: hidden;
-    font-size: 10px;
-    font-weight: 600;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
 [data-theme='light'] .nf-poi-marker {
@@ -1429,6 +1286,302 @@ lg-navbar.nf-nav > a[aria-current='page'] {
 @media (prefers-reduced-motion: reduce) {
     .nf-area-panel,
     .nf-area-geometry {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Shared Google-like map markers                                             */
+/* -------------------------------------------------------------------------- */
+
+/* Every marker root carries .nf-map-marker plus a kind modifier. The pin sits
+   beside a fixed-size label built only from the shared title, source and count
+   hooks, so every kind paints the same compact surface. */
+.nf-map-marker,
+.nf-map-marker.nf-marker-wrapper,
+.nf-map-marker.nf-location-marker-wrapper,
+.nf-map-marker.nf-poi-marker-wrapper,
+.nf-map-marker.nf-area-marker-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 6px;
+    width: max-content;
+    height: auto;
+    inset: auto;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+    cursor: default;
+}
+
+.nf-map-marker:hover,
+.nf-map-marker:focus-visible {
+    transform: translateY(-1px);
+}
+
+.nf-map-marker .nf-map-marker__pin {
+    position: relative;
+    display: flex;
+    width: 30px;
+    height: 34px;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    background: var(--marker-color);
+    color: var(--color-canvas);
+    box-shadow: var(--nf-shadow);
+}
+
+.nf-map-marker .nf-map-marker__pin svg {
+    display: flex;
+    width: 16px;
+    height: 16px;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    color: var(--color-canvas);
+}
+
+.nf-map-marker__label {
+    display: flex;
+    min-width: 0;
+    width: auto;
+    max-width: 150px;
+    height: auto;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    border: 1px solid var(--nf-border);
+    border-radius: 10px;
+    background: var(--nf-overlay-strong);
+    padding: 4px 8px;
+    box-shadow: var(--nf-shadow);
+}
+
+/* The legacy marker class stays on the label hook for compatibility, so drop
+   its absolute positioning, hover transform and drop shadow without losing
+   the shared surface. */
+.nf-map-marker .nf-map-marker__label {
+    position: static;
+    inset: auto;
+    filter: none;
+    transform: none;
+}
+
+.nf-map-marker.nf-area-marker-wrapper .nf-map-marker__label {
+    border-style: dashed;
+}
+
+.nf-map-marker__title {
+    overflow: hidden;
+    color: var(--color-ink);
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.nf-map-marker__source {
+    margin-top: 1px;
+    color: var(--color-muted);
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    line-height: 1.3;
+    text-transform: uppercase;
+}
+
+.nf-map-marker__count {
+    display: flex;
+    min-width: 20px;
+    height: 18px;
+    align-self: flex-start;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--color-ink);
+    padding: 0 5px;
+    color: var(--color-canvas);
+    font-size: 8.5px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+/* Provenance: the source line is authoritative; the pin only reinforces it.
+   Need pins are filled, saved pins gain an inner rim, OSM pins stay quiet
+   outlines, and the area preview keeps its existing dashed cue. */
+.nf-map-marker--saved .nf-map-marker__pin {
+    box-shadow:
+        inset 0 0 0 2px var(--color-canvas),
+        var(--nf-shadow);
+}
+
+.nf-map-marker--osm-poi .nf-map-marker__pin,
+.nf-map-marker--osm-place .nf-map-marker__pin {
+    background: transparent;
+    box-shadow:
+        inset 0 0 0 2px var(--marker-color),
+        var(--nf-shadow);
+    color: var(--marker-color);
+}
+
+.nf-map-marker--osm-poi .nf-map-marker__pin svg,
+.nf-map-marker--osm-place .nf-map-marker__pin svg,
+.nf-map-marker--osm-poi .nf-poi-marker-icon,
+.nf-map-marker--osm-place .nf-poi-marker-icon {
+    color: var(--marker-color);
+}
+
+.nf-map-marker--osm-poi .nf-map-marker__label,
+.nf-map-marker--osm-place .nf-map-marker__label {
+    background: var(--nf-overlay);
+}
+
+/* Hover and keyboard activation raise the surface and strengthen the ink,
+   with no glow and no motion beyond the tiny existing lift. */
+.nf-map-marker.is-hovered .nf-map-marker__label,
+.nf-map-marker:focus-visible .nf-map-marker__label {
+    border-color: var(--marker-color);
+    background: var(--nf-panel);
+    box-shadow: var(--nf-shadow-lg);
+}
+
+.nf-map-marker.is-hovered .nf-map-marker__title,
+.nf-map-marker:focus-visible .nf-map-marker__title {
+    color: var(--color-ink);
+}
+
+.nf-map-marker.is-hovered .nf-map-marker__source,
+.nf-map-marker:focus-visible .nf-map-marker__source {
+    color: var(--color-brand-200);
+}
+
+.nf-map-marker.is-hovered .nf-map-marker__pin,
+.nf-map-marker:focus-visible .nf-map-marker__pin {
+    box-shadow:
+        inset 0 0 0 1px var(--color-canvas),
+        var(--nf-shadow-lg);
+}
+
+.nf-map-marker--saved.is-hovered .nf-map-marker__pin,
+.nf-map-marker--saved:focus-visible .nf-map-marker__pin {
+    box-shadow:
+        inset 0 0 0 2px var(--color-canvas),
+        var(--nf-shadow-lg);
+}
+
+.nf-map-marker--osm-poi.is-hovered .nf-map-marker__pin,
+.nf-map-marker--osm-place.is-hovered .nf-map-marker__pin,
+.nf-map-marker--osm-poi:focus-visible .nf-map-marker__pin,
+.nf-map-marker--osm-place:focus-visible .nf-map-marker__pin {
+    box-shadow:
+        inset 0 0 0 2px var(--marker-color),
+        var(--nf-shadow-lg);
+}
+
+/* Per-category silhouettes. The root's data-shape drives the pin outline; no
+   new asset or hue is introduced, only geometry and existing tokens. */
+.nf-map-marker[data-shape='household'] .nf-map-marker__pin {
+    clip-path: polygon(50% 2%, 98% 34%, 98% 98%, 2% 98%, 2% 34%);
+}
+
+.nf-map-marker[data-shape='repair'] .nf-map-marker__pin {
+    clip-path: polygon(50% 0, 62% 8%, 76% 5%, 79% 19%, 93% 24%, 88% 38%, 100% 50%, 88% 62%, 93% 76%, 79% 81%, 76% 95%, 62% 92%, 50% 100%, 38% 92%, 24% 95%, 21% 81%, 7% 76%, 12% 62%, 0 50%, 12% 38%, 7% 24%, 21% 19%, 24% 5%, 38% 8%);
+}
+
+.nf-map-marker[data-shape='culinary'] .nf-map-marker__pin {
+    border-radius: 999px;
+}
+
+.nf-map-marker[data-shape='retail'] .nf-map-marker__pin {
+    clip-path: polygon(8% 26%, 92% 26%, 100% 100%, 0 100%);
+}
+
+.nf-map-marker[data-shape='retail'] .nf-map-marker__pin::before {
+    position: absolute;
+    top: 12%;
+    left: 32%;
+    width: 36%;
+    height: 26%;
+    border: 2px solid var(--color-canvas);
+    border-bottom: 0;
+    border-radius: 8px 8px 0 0;
+    content: '';
+}
+
+.nf-map-marker[data-shape='health'] .nf-map-marker__pin {
+    clip-path: polygon(35% 4%, 65% 4%, 65% 35%, 96% 35%, 96% 65%, 65% 65%, 65% 96%, 35% 96%, 35% 65%, 4% 65%, 4% 35%, 35% 35%);
+}
+
+.nf-map-marker[data-shape='worship'] .nf-map-marker__pin {
+    clip-path: polygon(50% 0, 100% 45%, 100% 72%, 78% 100%, 22% 100%, 0 72%, 0 45%);
+}
+
+.nf-map-marker[data-shape='education'] .nf-map-marker__pin {
+    border-radius: 8px;
+}
+
+.nf-map-marker[data-shape='bank'] .nf-map-marker__pin {
+    clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%);
+}
+
+.nf-map-marker[data-shape='atm'] .nf-map-marker__pin {
+    border-radius: 50% 50% 12% 50%;
+}
+
+.nf-map-marker[data-shape='postal'] .nf-map-marker__pin {
+    clip-path: polygon(0 8%, 50% 46%, 100% 8%, 100% 100%, 0 100%);
+}
+
+.nf-map-marker[data-shape='library'] .nf-map-marker__pin {
+    border-radius: 3px 8px 8px 3px;
+}
+
+.nf-map-marker[data-shape='library'] .nf-map-marker__pin::before {
+    position: absolute;
+    top: 16%;
+    bottom: 16%;
+    left: 5px;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--color-canvas);
+    content: '';
+    opacity: 0.7;
+}
+
+.nf-map-marker[data-shape='police'] .nf-map-marker__pin {
+    clip-path: polygon(50% 0, 100% 18%, 92% 68%, 50% 100%, 8% 68%, 0 18%);
+}
+
+.nf-map-marker[data-shape='park'] .nf-map-marker__pin {
+    border-radius: 0 100% 0 100%;
+}
+
+.nf-map-marker[data-shape='museum'] .nf-map-marker__pin {
+    clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.nf-map-marker[data-shape='osm'] .nf-map-marker__pin {
+    background: transparent;
+    box-shadow:
+        inset 0 0 0 2px var(--marker-color),
+        var(--nf-shadow);
+    clip-path: polygon(50% 0, 100% 45%, 100% 72%, 78% 100%, 22% 100%, 0 72%, 0 45%);
+    color: var(--marker-color);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nf-map-marker,
+    .nf-map-marker__pin,
+    .nf-map-marker__label {
         animation: none !important;
         transition: none !important;
     }

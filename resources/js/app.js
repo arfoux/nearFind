@@ -88,6 +88,9 @@ const POI_DEFAULTS = {
 };
 const POI_REFRESH_DEBOUNCE_MS = 350;
 const POI_REVERSE_MIN_INTERVAL_MS = 1000;
+const DECLUTTER_LIMITS = { 13: 10, 14: 16, 15: 26 };
+const DECLUTTER_MIN_DISTANCE_PX = 26;
+const DECLUTTER_MOVE_DEBOUNCE_MS = 200;
 
 let poiConfig = { ...POI_DEFAULTS };
 const poiMarkers = new Map();
@@ -831,12 +834,17 @@ function toLeafletLatLng([lng, lat]) {
     return [lat, lng];
 }
 
-async function fetchNominatimPlaces(query, { signal } = {}) {
+async function fetchNominatimPlaces(query, { signal, viewbox } = {}) {
     const url = new URL(NOMINATIM_SEARCH_ENDPOINT);
     url.searchParams.set('format', 'jsonv2');
     url.searchParams.set('q', query);
-    url.searchParams.set('limit', String(NOMINATIM_RESULT_LIMIT));
+    // Upstream returns up to 10; the top-search path applies the local limit of 5.
+    url.searchParams.set('limit', '10');
     url.searchParams.set('addressdetails', '1');
+    // Bias toward the current viewport without restricting results to it.
+    if (Array.isArray(viewbox) && viewbox.length === 4) {
+        url.searchParams.set('viewbox', viewbox.join(','));
+    }
 
     const response = await fetch(url, { signal, headers: { Accept: 'application/json' } });
 
@@ -1958,6 +1966,7 @@ function initNearFind(
     let mainTileLayer = null;
     let mainTileUrl = '';
     let userMarker = null;
+    let userPoint = null;
     let toastTimeout = null;
     let loginReturnFocus = null;
     let mapErrors = 0;
@@ -1980,6 +1989,173 @@ function initNearFind(
     let areaLookupSeq = 0;
     const controller = new AbortController();
     const listenerOptions = { signal: controller.signal };
+
+    // These build on the shared haversine logic and close over the map and the
+    // located point so every ranking path agrees on the origin.
+    function mapCenterPoint() {
+        if (!map) {
+            return null;
+        }
+
+        const center = map.getCenter();
+        const lat = Number(center?.lat);
+        const lng = Number(center?.lng);
+
+        return Number.isFinite(lat) && Number.isFinite(lng) ? [lat, lng] : null;
+    }
+
+    function currentViewbox() {
+        if (!map) {
+            return null;
+        }
+
+        const bounds = map.getBounds();
+        const west = bounds?.getWest?.();
+        const north = bounds?.getNorth?.();
+        const east = bounds?.getEast?.();
+        const south = bounds?.getSouth?.();
+
+        return [west, north, east, south].every(Number.isFinite) ? [west, north, east, south] : null;
+    }
+
+
+    function rankByProximity(items, getPoint) {
+        const center = mapCenterPoint();
+        const origin = userPoint ?? center;
+
+        return items
+            .map((item, index) => {
+                const point = getPoint(item);
+                const fromOrigin = point && origin
+                    ? haversineMeters(origin[0], origin[1], point[0], point[1])
+                    : Infinity;
+                const fromCenter = !userPoint
+                    ? 0
+                    : (point && center
+                        ? haversineMeters(center[0], center[1], point[0], point[1])
+                        : Infinity);
+
+                return { item, index, fromOrigin, fromCenter };
+            })
+            .sort((first, second) => first.fromOrigin - second.fromOrigin
+                || first.fromCenter - second.fromCenter
+                || first.index - second.index)
+            .map(({ item }) => item);
+    }
+
+    // One binding path for the four marker kinds: hover and focus show the
+    // label plus the shared tooltip, click or Enter/Space opens the panel.
+    function bindMarkerInteractions(marker, meta) {
+        if (!marker) {
+            return;
+        }
+
+        marker.nfMarkerMeta = meta;
+        marker.on('click', meta.onSelect);
+        bindMarkerDomEvents(marker);
+    }
+
+    function bindMarkerDomEvents(marker) {
+        const meta = marker?.nfMarkerMeta;
+        const element = marker?.getElement();
+
+        if (!meta || !element || meta.nfBoundElement === element) {
+            return;
+        }
+
+        meta.nfBoundElement = element;
+        const root = element.querySelector('.nf-map-marker') ?? element;
+
+        const show = () => {
+            root.classList.add('is-hovered');
+            showMarkerTooltip(meta);
+        };
+        const hide = () => {
+            root.classList.remove('is-hovered');
+            hideMarkerTooltip();
+        };
+
+        element.addEventListener('mouseenter', show);
+        element.addEventListener('focusin', show);
+        element.addEventListener('mouseleave', hide);
+        element.addEventListener('focusout', hide);
+        element.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') {
+                return;
+            }
+
+            event.preventDefault();
+            (meta.onKeySelect ?? meta.onSelect)();
+        });
+    }
+
+    function syncMarkerHtml(marker) {
+        const element = marker?.getElement();
+        const root = element?.querySelector('.nf-map-marker');
+
+        if (root && marker.options?.icon?.options) {
+            marker.options.icon.options.html = root.outerHTML;
+        }
+    }
+
+    function applyMarkerDeclutter() {
+        if (!map) {
+            return;
+        }
+
+        const zoom = map.getZoom();
+        const limit = DECLUTTER_LIMITS[Math.floor(zoom)] ?? Infinity;
+        const priority = { need: 0, saved: 1, 'osm-poi': 2 };
+        const entries = [];
+
+        state.markers.forEach((marker, id) => {
+            const need = state.needs.find((item) => item.id === id);
+            const point = needPoint(need);
+
+            if (point) {
+                entries.push({ marker, point, kind: 'need' });
+            }
+        });
+        state.locationMarkers.forEach((marker, id) => {
+            const location = state.locations.find((item) => item.id === id);
+
+            if (location) {
+                entries.push({ marker, point: [location.longitude, location.latitude], kind: 'saved' });
+            }
+        });
+        poiMarkers.forEach((marker, id) => {
+            const poi = currentPois.find((item) => item.id === id);
+
+            if (poi) {
+                entries.push({ marker, point: [poi.lng, poi.lat], kind: 'osm-poi' });
+            }
+        });
+
+        entries.sort((first, second) => priority[first.kind] - priority[second.kind]);
+
+        const keptPoints = [];
+        let kept = 0;
+
+        entries.forEach(({ marker, point }) => {
+            const containerPoint = map.latLngToContainerPoint([point[1], point[0]]);
+            const tooClose = keptPoints.some((keptPoint) => keptPoint.distanceTo(containerPoint) < DECLUTTER_MIN_DISTANCE_PX);
+            const show = limit === Infinity || (kept < limit && !tooClose);
+
+            if (!show) {
+                marker.remove();
+                return;
+            }
+            syncMarkerHtml(marker);
+
+            marker.addTo(map);
+            bindMarkerDomEvents(marker);
+
+            if (limit !== Infinity) {
+                kept += 1;
+                keptPoints.push(containerPoint);
+            }
+        });
+    }
 
     initMap();
     bindEvents();
@@ -2031,6 +2207,7 @@ function initNearFind(
 
     function initMap() {
         setMapLoading(true);
+        let declutterTimer = null;
         try {
             map = createLeafletMap(mapElement, {
                 center: toLeafletLatLng([107.5944, -6.8903]),
@@ -2058,6 +2235,12 @@ function initNearFind(
                 setMapLoading(false);
                 showToast('Peta tidak dapat memuat tile. Periksa koneksi internetmu.');
             }
+        });
+
+        map.on('zoomend', applyMarkerDeclutter);
+        map.on('moveend', () => {
+            window.clearTimeout(declutterTimer);
+            declutterTimer = window.setTimeout(applyMarkerDeclutter, DECLUTTER_MOVE_DEBOUNCE_MS);
         });
 
         if ('ResizeObserver' in window) {
@@ -2102,7 +2285,7 @@ function initNearFind(
             resetPlaceResults(placeTopResults);
         });
 
-        document.querySelectorAll('[data-category]').forEach((button) => {
+        document.querySelectorAll('.category-chip[data-category]').forEach((button) => {
             button.addEventListener('click', () => {
                 state.category = button.dataset.category ?? 'all';
                 applyFilters({ fit: true });
@@ -2405,7 +2588,7 @@ function initNearFind(
     }
 
     function sortNeeds(filteredNeeds) {
-        const sortedNeeds = [...filteredNeeds];
+        let sortedNeeds = [...filteredNeeds];
 
         switch (state.sort) {
             case 'newest':
@@ -2417,7 +2600,11 @@ function initNearFind(
                 sortedNeeds.sort((first, second) => second.supporters - first.supporters);
                 break;
             case 'nearest':
-                sortedNeeds.sort((first, second) => first.distance_km - second.distance_km);
+                sortedNeeds = rankByProximity(sortedNeeds, (need) => {
+                    const point = needPoint(need);
+
+                    return point ? [point[1], point[0]] : null;
+                });
                 break;
             default:
                 break;
@@ -2427,7 +2614,7 @@ function initNearFind(
     }
 
     function syncChips() {
-        document.querySelectorAll('[data-category]').forEach((button) => {
+        document.querySelectorAll('.category-chip[data-category]').forEach((button) => {
             const isActive = button.dataset.category === state.category;
             button.classList.toggle('is-active', isActive);
             button.setAttribute('aria-pressed', isActive ? 'true' : 'false');
@@ -2601,17 +2788,11 @@ function initNearFind(
         return [107.5944, -6.8903];
     }
 
-    /** The reticle marks the main map centre; that is the point a sheet saves. */
+    /** The visual reticle was removed; the map centre remains the capture point for a sheet. */
     function reticlePoint() {
-        if (!map) {
-            return null;
-        }
+        const center = mapCenterPoint();
 
-        const center = map.getCenter();
-        const lat = Number(center?.lat);
-        const lng = Number(center?.lng);
-
-        return Number.isFinite(lat) && Number.isFinite(lng) ? [lng, lat] : null;
+        return center ? [center[1], center[0]] : null;
     }
 
     /** Write a [lng, lat] point into the hidden inputs the sheet and picker read. */
@@ -2721,39 +2902,37 @@ function initNearFind(
                     html: element.outerHTML,
                     className: 'nf-leaflet-icon',
                     iconSize: [44, 44],
-                    iconAnchor: [22, 44],
+                    iconAnchor: [15, 44],
                 }),
                 keyboard: false,
                 riseOnHover: true,
             }).addTo(map);
 
-            marker.on('click', () => selectNeed(need.id));
-
-            const markerElement = marker.getElement();
-            markerElement.addEventListener('mouseenter', () => showMarkerTooltip(need));
-            markerElement.addEventListener('focusin', () => showMarkerTooltip(need));
-            markerElement.addEventListener('mouseleave', hideMarkerTooltip);
-            markerElement.addEventListener('focusout', hideMarkerTooltip);
-            markerElement.addEventListener('keydown', (event) => {
-                if (event.key !== 'Enter' && event.key !== ' ') {
-                    return;
-                }
-
-                event.preventDefault();
-                selectNeed(need.id);
+            bindMarkerInteractions(marker, {
+                point,
+                label: need.marker_label,
+                source: 'Pengajuan warga',
+                supporters: displaySupporters(need),
+                onSelect: () => selectNeed(need.id),
             });
 
             state.markers.set(need.id, marker);
         });
 
         renderLocationMarkers();
+        applyMarkerDeclutter();
     }
 
     function createMarkerElement(need, isSelected) {
         const element = document.createElement('div');
-        element.className = 'nf-marker-wrapper';
+        const categoryId = need.category ?? '';
+        element.className = 'nf-marker-wrapper nf-map-marker nf-map-marker--need';
         element.setAttribute('role', 'button');
         element.setAttribute('tabindex', '0');
+        element.setAttribute('data-marker-kind', 'need');
+        element.setAttribute('data-source', 'Pengajuan warga');
+        element.setAttribute('data-category', String(categoryId));
+        element.setAttribute('data-shape', String(categoryId || 'osm'));
         element.style.minWidth = '44px';
         element.style.minHeight = '44px';
         element.style.zIndex = isSelected ? '420' : '';
@@ -2768,13 +2947,11 @@ function initNearFind(
         const supporters = displaySupporters(need);
         const markerStyle = `--marker-color:${category.color}`;
 
-        return `<div class="nf-marker ${isSelected ? 'is-selected' : ''}" style="${markerStyle}">
-                    <div class="nf-marker-pill">
-                        <span class="nf-marker-pill-icon">${icon(category.icon, 'size-3.5')}</span>
-                        <span class="nf-marker-pill-title">${escapeHtml(need.marker_label)}</span>
-                        <span class="nf-marker-pill-count">${supporters}</span>
-                    </div>
-                    <span class="nf-marker-tail"></span>
+        return `<span class="nf-map-marker__pin" style="${markerStyle}">${icon(category.icon, 'size-3.5')}</span>
+                <div class="nf-marker nf-map-marker__label ${isSelected ? 'is-selected' : ''}" style="${markerStyle}">
+                    <span class="nf-map-marker__title">${escapeHtml(need.marker_label)}</span>
+                    <span class="nf-map-marker__count">${supporters}</span>
+                    <span class="nf-map-marker__source">Pengajuan warga</span>
                 </div>`;
     }
 
@@ -2786,16 +2963,15 @@ function initNearFind(
         );
     }
 
-    function showMarkerTooltip(need) {
-        const point = needPoint(need);
-
+    function showMarkerTooltip({ point, label, source, supporters = null }) {
         if (disposed || !map || !point) {
             return;
         }
 
+        const count = supporters === null ? '' : ` · ${supporters} warga`;
         tooltip
             .setLatLng(toLeafletLatLng(point))
-            .setContent(escapeHtml(`${need.marker_label} · ${displaySupporters(need)} warga`))
+            .setContent(escapeHtml(`${label} · ${source}${count}`))
             .addTo(map);
     }
 
@@ -2863,7 +3039,7 @@ function initNearFind(
 
         poiMarkers.forEach((marker) => marker.remove());
         poiMarkers.clear();
-        currentPois = Array.isArray(pois) ? pois : [];
+        currentPois = rankByProximity(Array.isArray(pois) ? pois : [], (poi) => [poi.lat, poi.lng]);
 
         if (selectedPoiId !== null && !currentPois.some((poi) => poi.id === selectedPoiId)) {
             closePoiPanel();
@@ -2871,21 +3047,29 @@ function initNearFind(
 
         currentPois.forEach((poi) => {
             const wrapper = document.createElement('div');
-            wrapper.className = 'nf-marker-wrapper nf-poi-marker-wrapper';
+            const categoryId = poiCategoryId(poi.tags) ?? '';
+            const category = categoryById[categoryId] ?? fallbackCategory;
+            const markerStyle = `--marker-color:${category.color}`;
+            wrapper.className = 'nf-marker-wrapper nf-poi-marker-wrapper nf-map-marker nf-map-marker--osm-poi';
             wrapper.setAttribute('role', 'button');
             wrapper.setAttribute('tabindex', '0');
-            wrapper.setAttribute('aria-label', escapeHtml(`${poi.name}, ${poi.category}, titik dari OpenStreetMap`));
-            wrapper.innerHTML = `<div class="nf-poi-marker">
-                    <span class="nf-poi-marker-icon">${icon('pin', 'size-3.5')}</span>
-                    <span class="nf-poi-marker-title">${escapeHtml(poi.name)}</span>
-                </div>`;
+            wrapper.setAttribute('data-marker-kind', 'osm-poi');
+            wrapper.setAttribute('data-source', 'OpenStreetMap');
+            wrapper.setAttribute('data-category', String(categoryId));
+            wrapper.setAttribute('data-shape', String(categoryId || 'osm'));
+            wrapper.setAttribute('aria-label', `${poi.name}, ${poi.category}, titik dari OpenStreetMap`);
+            wrapper.innerHTML = `<span class="nf-map-marker__pin" style="${markerStyle}">${icon('pin', 'size-3.5')}</span>
+                    <div class="nf-poi-marker nf-map-marker__label" style="${markerStyle}">
+                        <span class="nf-map-marker__title">${escapeHtml(poi.name)}</span>
+                        <span class="nf-map-marker__source">OpenStreetMap</span>
+                    </div>`;
 
             const marker = L.marker([poi.lat, poi.lng], {
                 icon: L.divIcon({
                     html: wrapper.outerHTML,
                     className: 'nf-leaflet-icon nf-poi-icon',
-                    iconSize: [28, 36],
-                    iconAnchor: [14, 36],
+                    iconSize: [44, 44],
+                    iconAnchor: [15, 44],
                 }),
                 keyboard: false,
                 riseOnHover: false,
@@ -2895,19 +3079,16 @@ function initNearFind(
             // always paints underneath both of them.
             marker.setZIndexOffset(-1000);
 
-            const element = marker.getElement();
-            element?.addEventListener('click', () => selectPoi(poi.id));
-            element?.addEventListener('keydown', (event) => {
-                if (event.key !== 'Enter' && event.key !== ' ') {
-                    return;
-                }
-
-                event.preventDefault();
-                selectPoi(poi.id);
+            bindMarkerInteractions(marker, {
+                point: [poi.lng, poi.lat],
+                label: poi.name,
+                source: 'OpenStreetMap',
+                onSelect: () => selectPoi(poi.id),
             });
 
             poiMarkers.set(poi.id, marker);
         });
+        applyMarkerDeclutter();
     }
 
     function currentSelectedPoi() {
@@ -3196,13 +3377,14 @@ function initNearFind(
         placeSearchController = new AbortController();
         const { signal } = placeSearchController;
 
-        fetchNominatimPlaces(query, { signal })
+        const viewbox = currentViewbox();
+        fetchNominatimPlaces(query, { signal, viewbox })
             .then((results) => {
                 if (disposed || seq !== placeSearchSeq || searchInput.value.trim() !== query) {
                     return;
                 }
 
-                topAreaResults = results;
+                topAreaResults = rankByProximity(results, (place) => [place.lat, place.lng]).slice(0, NOMINATIM_RESULT_LIMIT);
                 topAreaQuery = query;
                 renderTopSearchResults();
             })
@@ -3239,24 +3421,6 @@ function initNearFind(
         return button;
     }
 
-    function appendSearchGroup(list, label, buttons) {
-        if (buttons.length === 0) {
-            return;
-        }
-
-        const heading = document.createElement('li');
-        heading.setAttribute('role', 'presentation');
-        heading.className = 'px-3 pb-1 pt-2 text-[9px] font-semibold uppercase tracking-[0.12em] text-muted';
-        heading.textContent = label;
-        list.append(heading);
-
-        buttons.forEach((button) => {
-            const row = document.createElement('li');
-            row.append(button);
-            list.append(row);
-        });
-    }
-
     function renderTopSearchResults({ status = 'ready' } = {}) {
         if (!placeTopResults || !searchInput) {
             return;
@@ -3279,53 +3443,93 @@ function initNearFind(
                 words,
             ))
             .slice(0, NOMINATIM_RESULT_LIMIT);
+        const pois = currentPois
+            .filter((poi) => matchesWords([poi.name, poi.category, poi.address, poi.area].join(' '), words))
+            .slice(0, NOMINATIM_RESULT_LIMIT);
         const areas = topAreaQuery === query ? topAreaResults : [];
 
-        const placeButtons = places.map((location) => {
+        const rows = [];
+
+        places.forEach((location) => {
             const category = categoryById[location.category] ?? fallbackCategory;
-            return makeSearchResultButton({
-                kind: 'location',
-                title: location.name,
-                meta: [category?.label, location.address || location.area].filter(Boolean).join(' · '),
-                iconName: 'pin',
-                iconClass: 'bg-brand-50 text-brand-200',
-                ariaLabel: `Pilih tempat tersimpan ${location.name}`,
-                dataset: { locationId: location.id },
+            rows.push({
+                point: [location.latitude, location.longitude],
+                button: makeSearchResultButton({
+                    kind: 'location',
+                    title: location.name,
+                    meta: `Tempat tersimpan · ${[category?.label, location.address || location.area].filter(Boolean).join(' · ')}`,
+                    iconName: 'pin',
+                    iconClass: 'bg-brand-50 text-brand-200',
+                    ariaLabel: `Pilih tempat tersimpan ${location.name} · Tempat tersimpan`,
+                    dataset: { locationId: location.id },
+                }),
             });
         });
-        const needButtons = needs.map((need) => {
+
+        needs.forEach((need) => {
             const category = categoryById[need.category] ?? fallbackCategory;
             const point = needPoint(need);
-            return makeSearchResultButton({
-                kind: 'need',
-                title: need.title,
-                meta: point ? `${need.location} · ${category?.label ?? 'Kebutuhan'}` : `${need.location} · belum ada titik peta`,
-                iconName: 'clipboard',
-                iconClass: '',
-                iconStyle: `background:${category?.soft_color ?? 'var(--color-brand-50)'};color:${category?.color ?? 'var(--color-brand-200)'}`,
-                ariaLabel: `Pilih pengajuan warga ${need.title}`,
-                dataset: { needId: need.id },
+            const detail = point
+                ? `${need.location} · ${category?.label ?? 'Kebutuhan'}`
+                : `${need.location} · belum ada titik peta`;
+            rows.push({
+                point: point ? [point[1], point[0]] : null,
+                button: makeSearchResultButton({
+                    kind: 'need',
+                    title: need.title,
+                    meta: `Pengajuan warga · ${detail}`,
+                    iconName: 'clipboard',
+                    iconClass: '',
+                    iconStyle: `background:${category?.soft_color ?? 'var(--color-brand-50)'};color:${category?.color ?? 'var(--color-brand-200)'}`,
+                    ariaLabel: `Pilih pengajuan warga ${need.title} · Pengajuan warga`,
+                    dataset: { needId: need.id },
+                }),
             });
         });
-        const areaButtons = areas.map((area) => makeSearchResultButton({
-            kind: 'area',
-            title: area.name,
-            meta: `${area.kindLabel} · ${area.address}`,
-            iconName: 'map',
-            iconClass: 'bg-canvas text-muted',
-            ariaLabel: `Pilih ${area.kindLabel} ${area.name} dari OpenStreetMap`,
-            dataset: placeDataset(area),
-        }));
+
+        pois.forEach((poi) => {
+            rows.push({
+                point: [poi.lat, poi.lng],
+                button: makeSearchResultButton({
+                    kind: 'poi',
+                    title: poi.name,
+                    meta: `OpenStreetMap · ${poi.category || 'Tempat'}`,
+                    iconName: 'pin',
+                    iconClass: 'bg-canvas text-muted',
+                    ariaLabel: `Pilih ${poi.name} · OpenStreetMap`,
+                    dataset: { poiId: poi.id },
+                }),
+            });
+        });
+
+        areas.forEach((area) => {
+            rows.push({
+                point: [area.lat, area.lng],
+                button: makeSearchResultButton({
+                    kind: 'area',
+                    title: area.name,
+                    meta: `OpenStreetMap · ${area.kindLabel} · ${area.address}`,
+                    iconName: 'map',
+                    iconClass: 'bg-canvas text-muted',
+                    ariaLabel: `Pilih ${area.kindLabel} ${area.name} dari OpenStreetMap`,
+                    dataset: placeDataset(area),
+                }),
+            });
+        });
+
+        const rankedRows = rankByProximity(rows, (row) => row.point);
 
         const list = placeTopResults.querySelector(TOP_RESULT_HOOKS.list);
         if (list) {
             list.textContent = '';
-            appendSearchGroup(list, 'Tempat tersimpan', placeButtons);
-            appendSearchGroup(list, 'Pengajuan warga', needButtons);
-            appendSearchGroup(list, 'Daerah dari OpenStreetMap', areaButtons);
+            rankedRows.forEach(({ button }) => {
+                const row = document.createElement('li');
+                row.append(button);
+                list.append(row);
+            });
         }
 
-        const total = placeButtons.length + needButtons.length + areaButtons.length;
+        const total = rankedRows.length;
         const isPending = query.length >= PLACE_SEARCH_MIN_CHARS && status === 'loading';
         setChildHidden(placeTopResults, TOP_RESULT_HOOKS.loading, !isPending);
         setChildHidden(placeTopResults, TOP_RESULT_HOOKS.error, status !== 'error');
@@ -3364,6 +3568,12 @@ function initNearFind(
                 searchInput.blur();
             }
             selectLocation(button.dataset.locationId);
+            return;
+        }
+
+        if (button.dataset.searchResult === 'poi') {
+            resetPlaceResults(placeTopResults);
+            selectPoi(button.dataset.poiId);
             return;
         }
 
@@ -3410,20 +3620,31 @@ function initNearFind(
         closePoiPanel();
 
         const element = document.createElement('div');
-        element.className = 'nf-area-marker-wrapper';
+        const categoryId = place.categoryId || '';
+        const category = categoryById[categoryId] ?? fallbackCategory;
+        const markerStyle = `--marker-color:${category.color}`;
+        element.className = 'nf-area-marker-wrapper nf-map-marker nf-map-marker--osm-place';
         element.setAttribute('role', 'button');
         element.setAttribute('tabindex', '0');
+        element.setAttribute('data-marker-kind', 'osm-place');
+        element.setAttribute('data-source', 'OpenStreetMap');
+        element.setAttribute('data-category', String(categoryId));
+        element.setAttribute('data-shape', String(categoryId || 'osm'));
         element.setAttribute('aria-label', `Area ${place.name} di peta`);
         element.style.minWidth = '44px';
         element.style.minHeight = '44px';
-        element.innerHTML = `<span class="nf-area-marker">${icon('map', 'size-4')}</span>`;
+        element.innerHTML = `<span class="nf-map-marker__pin" style="${markerStyle}">${icon('map', 'size-4')}</span>
+                    <div class="nf-area-marker nf-map-marker__label" style="${markerStyle}">
+                        <span class="nf-map-marker__title">${escapeHtml(place.name)}</span>
+                        <span class="nf-map-marker__source">OpenStreetMap</span>
+                    </div>`;
 
         const marker = L.marker([place.lat, place.lng], {
             icon: L.divIcon({
                 html: element.outerHTML,
                 className: 'nf-leaflet-icon',
                 iconSize: [44, 44],
-                iconAnchor: [22, 44],
+                iconAnchor: [15, 44],
             }),
             keyboard: false,
             riseOnHover: true,
@@ -3438,15 +3659,11 @@ function initNearFind(
             popup.addTo(map);
         };
 
-        const markerElement = marker.getElement();
-        markerElement.addEventListener('click', openPanel);
-        markerElement.addEventListener('keydown', (searchEvent) => {
-            if (searchEvent.key !== 'Enter' && searchEvent.key !== ' ') {
-                return;
-            }
-
-            searchEvent.preventDefault();
-            openPanel();
+        bindMarkerInteractions(marker, {
+            point: [place.lng, place.lat],
+            label: place.name,
+            source: 'OpenStreetMap',
+            onSelect: openPanel,
         });
 
         selectedArea = place;
@@ -3712,7 +3929,7 @@ function initNearFind(
         locationSearchController = new AbortController();
         const { signal } = locationSearchController;
 
-        fetchNominatimPlaces(query, { signal })
+        fetchNominatimPlaces(query, { signal, viewbox: currentViewbox() })
             .then((results) => {
                 if (disposed || seq !== locationSearchSeq) {
                     return;
@@ -3828,37 +4045,35 @@ function initNearFind(
                     html: element.outerHTML,
                     className: 'nf-leaflet-icon',
                     iconSize: [44, 44],
-                    iconAnchor: [22, 44],
+                    iconAnchor: [15, 44],
                 }),
                 keyboard: false,
                 riseOnHover: true,
             }).addTo(map);
-            const popup = createLocationPopup(location);
 
-            const markerElement = marker.getElement();
-            marker.on('click', () => selectLocation(location.id, { pan: false }));
-            markerElement.addEventListener('mouseenter', () => popup.addTo(map));
-            markerElement.addEventListener('focusin', () => popup.addTo(map));
-            markerElement.addEventListener('mouseleave', () => popup.remove());
-            markerElement.addEventListener('focusout', () => popup.remove());
-            markerElement.addEventListener('keydown', (event) => {
-                if (event.key !== 'Enter' && event.key !== ' ') {
-                    return;
-                }
-
-                event.preventDefault();
-                selectLocation(location.id);
+            bindMarkerInteractions(marker, {
+                point: [location.longitude, location.latitude],
+                label: location.name,
+                source: 'Tempat tersimpan',
+                onSelect: () => selectLocation(location.id, { pan: false }),
+                onKeySelect: () => selectLocation(location.id),
             });
 
             state.locationMarkers.set(location.id, marker);
         });
+        applyMarkerDeclutter();
     }
 
     function createLocationMarkerElement(location, isSelected) {
         const element = document.createElement('div');
-        element.className = 'nf-location-marker-wrapper';
+        const categoryId = location.category ?? '';
+        element.className = 'nf-location-marker-wrapper nf-map-marker nf-map-marker--saved';
         element.setAttribute('role', 'button');
         element.setAttribute('tabindex', '0');
+        element.setAttribute('data-marker-kind', 'saved');
+        element.setAttribute('data-source', 'Tempat tersimpan');
+        element.setAttribute('data-category', String(categoryId));
+        element.setAttribute('data-shape', String(categoryId || 'osm'));
         element.setAttribute('aria-label', `Lokasi ${location.name}${isSelected ? ', dipilih' : ''}`);
         element.style.minWidth = '44px';
         element.style.minHeight = '44px';
@@ -3872,36 +4087,13 @@ function initNearFind(
 
     function locationMarkerMarkup(location, isSelected) {
         const category = categoryById[location.category] ?? fallbackCategory;
+        const markerStyle = `--marker-color:${escapeHtml(category?.color ?? '#6b6256')}`;
 
-        return `<div class="nf-location-marker ${isSelected ? 'is-selected' : ''}" style="--marker-color:${escapeHtml(category?.color ?? '#6b6256')}">
-                    <span class="nf-location-marker-icon">${icon('pin', 'size-3.5')}</span>
-                    <span class="nf-location-marker-name">${escapeHtml(location.name)}</span>
+        return `<span class="nf-map-marker__pin" style="${markerStyle}">${icon('pin', 'size-3.5')}</span>
+                <div class="nf-location-marker nf-map-marker__label ${isSelected ? 'is-selected' : ''}" style="${markerStyle}">
+                    <span class="nf-map-marker__title">${escapeHtml(location.name)}</span>
+                    <span class="nf-map-marker__source">Tempat tersimpan</span>
                 </div>`;
-    }
-
-    function createLocationPopup(location) {
-        const content = document.createElement('div');
-        content.className = 'nf-location-popup max-w-[240px] p-1';
-        content.setAttribute('role', 'note');
-
-        const title = document.createElement('p');
-        title.className = 'text-[12px] font-semibold text-ink';
-        title.textContent = location.name;
-
-        const meta = document.createElement('p');
-        meta.className = 'mt-0.5 text-[10.5px] leading-snug text-muted';
-        const category = categoryById[location.category] ?? fallbackCategory;
-        meta.textContent = [category?.label, location.address || location.area].filter(Boolean).join(' · ');
-
-        content.append(title, meta);
-
-        return L.popup({
-            closeButton: false,
-            closeOnClick: false,
-            autoPan: false,
-            maxWidth: 260,
-            className: 'nf-location-popup-shell',
-        }).setLatLng([location.latitude, location.longitude]).setContent(content);
     }
 
     function refreshLocationMarker(locationId) {
@@ -3914,10 +4106,14 @@ function initNearFind(
 
         const isSelected = locationId === state.selectedLocationId;
         const iconElement = marker.getElement();
+        if (!iconElement) {
+            return;
+        }
         const element = iconElement?.firstElementChild ?? iconElement;
         element.innerHTML = locationMarkerMarkup(location, isSelected);
         element.setAttribute('aria-label', `Lokasi ${location.name}${isSelected ? ', dipilih' : ''}`);
         iconElement.style.zIndex = isSelected ? '430' : '';
+        syncMarkerHtml(marker);
     }
 
     function selectLocation(locationId, { pan = true } = {}) {
@@ -3933,6 +4129,9 @@ function initNearFind(
         state.selectedId = null;
         state.markers.forEach((marker, id) => {
             const iconElement = marker.getElement();
+            if (!iconElement) {
+                return;
+            }
             const element = iconElement?.firstElementChild ?? iconElement;
             iconElement.style.zIndex = '';
             const need = state.needs.find((item) => item.id === id);
@@ -3940,6 +4139,7 @@ function initNearFind(
             if (need) {
                 element.innerHTML = markerMarkup(need, false);
             }
+            syncMarkerHtml(marker);
         });
         state.locationMarkers.forEach((marker, id) => refreshLocationMarker(id));
         closeLocationSheet();
@@ -4051,6 +4251,9 @@ function initNearFind(
         }
 
         const iconElement = marker.getElement();
+        if (!iconElement) {
+            return;
+        }
         const element = iconElement?.firstElementChild ?? iconElement;
         const isSelected = need.id === state.selectedId;
         element.style.minWidth = '44px';
@@ -4058,6 +4261,7 @@ function initNearFind(
         iconElement.style.zIndex = isSelected ? '420' : '';
         element.innerHTML = markerMarkup(need, isSelected);
         updateMarkerAria(element, need);
+        syncMarkerHtml(marker);
     }
 
     function renderCard({ preserveScroll = false } = {}) {
@@ -4338,6 +4542,7 @@ function initNearFind(
                 }
 
                 const location = toLeafletLatLng([coords.longitude, coords.latitude]);
+                userPoint = [coords.latitude, coords.longitude];
 
                 if (userMarker) {
                     userMarker.remove();
@@ -4369,6 +4574,10 @@ function initNearFind(
                 button?.classList.remove('opacity-60');
             },
             () => {
+                if (disposed || !map) {
+                    return;
+                }
+
                 if (!silent) {
                     showToast('Lokasi tidak dapat diakses. Izinkan akses lokasi di browser.');
                 }

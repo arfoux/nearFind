@@ -23,6 +23,30 @@ perpustakaan, kepolisian, taman, dan museum. Kategori ini memakai ikon yang
 sudah ada di sprite, tanpa aset baru. Saat tempat dari OpenStreetMap disimpan,
 formulir lokasi memilih kategori nearFind yang cocok bila kategorinya tersedia.
 
+## Perilaku peta
+
+Peta tidak menampilkan tanda silang di tengah. Titik tengah peta tetap dipakai
+saat Ajukan Kebutuhan atau Tambah Tempat ditekan; logika pengambilan titik itu
+tidak berubah. Kursor berada pada bentuk normal di atas peta maupun penanda,
+dan hanya berubah menjadi `grabbing` selagi peta diseret.
+
+Setiap penanda, baik pengajuan warga, tempat tersimpan, tempat maupun daerah
+dari OpenStreetMap, memuat label ringkas yang menguat saat hover atau fokus dan
+membuka panel detail saat diklik. Label memuat judul dan baris sumber
+(`Pengajuan warga`, `Tempat tersimpan`, atau `OpenStreetMap`). Pin memakai
+ukuran tetap dalam piksel dan bentuk yang mengikuti kategori: rumah, perbaikan,
+kuliner, ritel, kesehatan, ibadah, pendidikan, bank, ATM, pos, perpustakaan,
+kepolisian, taman, dan museum, ditambah bentuk pin garis untuk data
+OpenStreetMap tanpa kategori. Warna berasal dari warna kategori yang sudah ada;
+tidak ada aset atau warna baru.
+
+Pin pengajuan warga terisi, pin tempat tersimpan memiliki garis tepi lebih
+kuat, dan pin OpenStreetMap lebih tenang dengan bentuk garis luar. Pratinjau
+daerah mempertahankan garis putus-putus. Saat peta diperkecil, penanda yang
+rapat disaring agar peta tetap terbaca. Pencarian terdekat memeringkat hasil
+berdasarkan jarak dari lokasi browser dan tampilan peta saat ini; batas
+fair-use tidak berubah.
+
 ## SEO
 
 Metadata halaman (judul, deskripsi, kata kunci, canonical, robots, Open Graph,
