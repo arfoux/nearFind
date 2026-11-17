@@ -39,6 +39,35 @@ const NOMINATIM_SEARCH_ENDPOINT = 'https://nominatim.openstreetmap.org/search';
 const NOMINATIM_RESULT_LIMIT = 5;
 const PLACE_SEARCH_DEBOUNCE_MS = 350;
 const PLACE_SEARCH_MIN_CHARS = 3;
+const NOMINATIM_LOOKUP_ENDPOINT = 'https://nominatim.openstreetmap.org/lookup';
+const AREA_DETAIL_CACHE_MS = 300000;
+const AREA_GEOMETRY_MAX_POINTS = 6000;
+const OSM_KIND_LABELS = {
+    road: 'Jalan',
+    village: 'Desa',
+    city: 'Kota',
+    district: 'Kabupaten',
+    province: 'Provinsi',
+    country: 'Negara',
+    place: 'Tempat',
+    area: 'Area',
+};
+const OSM_ROAD_TYPES = new Set([
+    'road', 'street', 'residential', 'unclassified', 'living_street', 'pedestrian',
+    'service', 'track', 'footway', 'path', 'cycleway', 'motorway', 'motorway_link',
+    'trunk', 'trunk_link', 'primary', 'primary_link', 'secondary', 'secondary_link',
+    'tertiary', 'tertiary_link', 'lane', 'avenue', 'alley', 'steps',
+]);
+const OSM_VILLAGE_TYPES = new Set(['village', 'hamlet', 'isolated_dwelling']);
+const OSM_CITY_TYPES = new Set(['city', 'town']);
+const OSM_DISTRICT_TYPES = new Set(['district', 'county', 'city_district', 'municipality', 'subregion']);
+const OSM_PROVINCE_TYPES = new Set(['province', 'state', 'region']);
+const OSM_AREA_TYPES = new Set(['suburb', 'neighbourhood', 'quarter', 'borough', 'administrative', 'boundary']);
+const OSM_PLACE_DATASET_FIELDS = [
+    'name', 'address', 'area', 'lat', 'lng', 'osmType', 'osmId', 'kindKey', 'kindLabel',
+    'osmClass', 'osmTypeValue', 'addresstype', 'postcode', 'country', 'wikidata',
+    'wikipedia', 'website', 'phone', 'openingHours', 'categoryId',
+];
 // Read-only OpenStreetMap POI overlay. Overpass and Nominatim are plain
 // fetches; nothing here writes to the server. The panel only prefills the
 // existing location sheet when a visitor explicitly saves a place.
@@ -235,6 +264,42 @@ function poiCategoryId(tags = {}) {
 
     if (['supermarket', 'convenience'].includes(shop)) {
         return 'retail';
+    }
+
+    if (amenity === 'place_of_worship') {
+        return 'worship';
+    }
+
+    if (amenity === 'school') {
+        return 'education';
+    }
+
+    if (amenity === 'bank') {
+        return 'bank';
+    }
+
+    if (amenity === 'atm') {
+        return 'atm';
+    }
+
+    if (amenity === 'post_office') {
+        return 'postal';
+    }
+
+    if (amenity === 'library') {
+        return 'library';
+    }
+
+    if (amenity === 'police') {
+        return 'police';
+    }
+
+    if (String(tags.leisure ?? '') === 'park') {
+        return 'park';
+    }
+
+    if (String(tags.tourism ?? '') === 'museum') {
+        return 'museum';
     }
 
     return '';
@@ -598,6 +663,71 @@ function areaFromAddress(address = {}) {
     ].filter(Boolean).join(', ');
 }
 
+function parseBoundingBox(raw) {
+    const parts = Array.isArray(raw) ? raw : String(raw ?? '').split(',');
+
+    if (parts.length !== 4) {
+        return null;
+    }
+
+    const values = parts.map((value) => Number(value));
+
+    if (values.some((value) => !Number.isFinite(value))) {
+        return null;
+    }
+
+    const [south, north, west, east] = values;
+
+    if (south > north || west > east) {
+        return null;
+    }
+
+    return values;
+}
+
+function classifyOsmKind(item = {}) {
+    const category = String(item?.category ?? item?.class ?? '').trim().toLocaleLowerCase('id-ID');
+    const type = String(item?.type ?? '').trim().toLocaleLowerCase('id-ID');
+    const addressType = String(item?.addresstype ?? '').trim().toLocaleLowerCase('id-ID');
+    const adminLevel = Number(item?.extratags?.admin_level ?? item?.admin_level ?? NaN);
+    const placeRank = Number(item?.place_rank ?? NaN);
+
+    if (addressType === 'country' || type === 'country') {
+        return 'country';
+    }
+
+    if (OSM_PROVINCE_TYPES.has(addressType) || OSM_PROVINCE_TYPES.has(type) || adminLevel === 4) {
+        return 'province';
+    }
+
+    if (OSM_DISTRICT_TYPES.has(addressType) || OSM_DISTRICT_TYPES.has(type)
+        || (Number.isFinite(adminLevel) && adminLevel >= 5 && adminLevel <= 7)) {
+        return 'district';
+    }
+
+    if (OSM_CITY_TYPES.has(addressType) || OSM_CITY_TYPES.has(type)) {
+        return 'city';
+    }
+
+    if (OSM_VILLAGE_TYPES.has(addressType) || OSM_VILLAGE_TYPES.has(type)) {
+        return 'village';
+    }
+
+    if (category === 'highway' || addressType === 'road' || OSM_ROAD_TYPES.has(type)) {
+        return 'road';
+    }
+
+    if (category === 'boundary' || type === 'administrative' || OSM_AREA_TYPES.has(addressType)) {
+        return 'area';
+    }
+
+    if (Number.isFinite(placeRank) && placeRank <= 12) {
+        return 'area';
+    }
+
+    return 'place';
+}
+
 function normalizePlaceResult(item) {
     const lat = Number(item?.lat);
     const lng = Number(item?.lon);
@@ -606,14 +736,80 @@ function normalizePlaceResult(item) {
         return null;
     }
 
+    const address = item?.address ?? {};
+    const extras = item?.extratags ?? {};
     const displayName = String(item?.display_name ?? '');
-    const name = String(item?.name ?? '').trim() || displayName.split(',')[0].trim();
+    const name = String(item?.name ?? item?.namedetails?.name ?? '').trim() || displayName.split(',')[0].trim();
 
     if (!name) {
         return null;
     }
 
-    return { name, address: displayName, area: areaFromAddress(item?.address ?? {}), lat, lng };
+    const kindKey = classifyOsmKind(item);
+
+    const osmClass = String(item?.category ?? item?.class ?? '').trim();
+    const osmTypeValue = String(item?.type ?? '').trim();
+    const osmTags = { ...extras };
+
+    if (osmClass !== '' && osmTypeValue !== '') {
+        osmTags[osmClass] = osmTypeValue;
+    }
+
+    const poiLabel = poiCategoryLabel(osmTags);
+    const kindLabel = kindKey === 'place' && poiLabel !== 'Tempat'
+        ? poiLabel
+        : (OSM_KIND_LABELS[kindKey] ?? OSM_KIND_LABELS.area);
+
+    return {
+        name,
+        address: displayName,
+        area: areaFromAddress(address),
+        lat,
+        lng,
+        osmType: String(item?.osm_type ?? ''),
+        osmId: String(item?.osm_id ?? ''),
+        kindKey,
+        kindLabel,
+        categoryId: poiCategoryId(osmTags),
+        osmClass,
+        osmTypeValue,
+        addresstype: String(item?.addresstype ?? ''),
+        postcode: String(address.postcode ?? ''),
+        country: String(address.country ?? ''),
+        wikidata: String(extras.wikidata ?? ''),
+        wikipedia: String(extras.wikipedia ?? ''),
+        website: String(extras.website ?? address.website ?? ''),
+        phone: String(extras.phone ?? address.phone ?? ''),
+        openingHours: String(extras.opening_hours ?? '').trim(),
+        boundingbox: parseBoundingBox(item?.boundingbox),
+    };
+}
+
+function placeDataset(place = {}) {
+    const dataset = {};
+
+    OSM_PLACE_DATASET_FIELDS.forEach((field) => {
+        dataset[field] = String(place[field] ?? '');
+    });
+
+    dataset.boundingbox = Array.isArray(place.boundingbox) ? place.boundingbox.join(',') : '';
+
+    return dataset;
+}
+
+function placeFromDataset(dataset = {}) {
+    const place = {};
+
+    OSM_PLACE_DATASET_FIELDS.forEach((field) => {
+        place[field] = String(dataset[field] ?? '');
+    });
+
+    place.lat = Number(dataset.lat);
+    place.lng = Number(dataset.lng);
+    place.boundingbox = parseBoundingBox(String(dataset.boundingbox ?? '').split(','));
+    place.kindLabel = place.kindLabel || OSM_KIND_LABELS[place.kindKey] || OSM_KIND_LABELS.area;
+
+    return place;
 }
 
 // A need without coordinates stays searchable and selectable. It has no
@@ -655,6 +851,160 @@ async function fetchNominatimPlaces(query, { signal } = {}) {
     }
 
     return payload.map(normalizePlaceResult).filter(Boolean);
+}
+
+const osmDetailCache = new Map();
+
+function normalizedOsmType(value) {
+    const raw = String(value ?? '').trim().toLocaleLowerCase('id-ID');
+
+    if (['n', 'node'].includes(raw)) {
+        return 'N';
+    }
+
+    if (['w', 'way'].includes(raw)) {
+        return 'W';
+    }
+
+    if (['r', 'relation'].includes(raw)) {
+        return 'R';
+    }
+
+    return '';
+}
+
+function osmDetailKey(place) {
+    const type = normalizedOsmType(place?.osmType);
+    const id = String(place?.osmId ?? '').trim();
+
+    return type && id ? `${type}${id}` : '';
+}
+
+function cachedOsmDetail(key) {
+    const entry = osmDetailCache.get(key);
+
+    if (!entry) {
+        return null;
+    }
+
+    if (Date.now() - entry.at > AREA_DETAIL_CACHE_MS) {
+        osmDetailCache.delete(key);
+        return null;
+    }
+
+    return entry.detail;
+}
+
+function normalizeOsmDetail(item, place) {
+    const detailPlace = normalizePlaceResult(item);
+    const address = item?.address ?? {};
+    const extras = item?.extratags ?? {};
+
+    return {
+        ...place,
+        address: detailPlace?.address || place.address,
+        area: detailPlace?.area || place.area,
+        kindLabel: detailPlace?.kindLabel && detailPlace.kindLabel !== OSM_KIND_LABELS.place
+            ? detailPlace.kindLabel
+            : (place.kindLabel || detailPlace?.kindLabel || OSM_KIND_LABELS.area),
+        categoryId: detailPlace?.categoryId || place.categoryId || '',
+        postcode: String(address.postcode ?? place.postcode ?? ''),
+        country: String(address.country ?? place.country ?? ''),
+        wikidata: String(extras.wikidata ?? place.wikidata ?? ''),
+        wikipedia: String(extras.wikipedia ?? place.wikipedia ?? ''),
+        website: String(extras.website ?? address.website ?? place.website ?? ''),
+        phone: String(extras.phone ?? address.phone ?? place.phone ?? ''),
+        openingHours: String(extras.opening_hours ?? place.openingHours ?? '').trim(),
+        geojson: item?.geojson ?? null,
+        boundingbox: parseBoundingBox(item?.boundingbox ?? place.boundingbox),
+    };
+}
+
+async function fetchOsmPlaceDetail(place, { signal } = {}) {
+    const key = osmDetailKey(place);
+
+    if (!key) {
+        return null;
+    }
+
+    const cached = cachedOsmDetail(key);
+
+    if (cached) {
+        return cached;
+    }
+
+    const url = new URL(NOMINATIM_LOOKUP_ENDPOINT);
+    url.searchParams.set('osm_ids', key);
+    url.searchParams.set('format', 'jsonv2');
+    url.searchParams.set('addressdetails', '1');
+    url.searchParams.set('extratags', '1');
+    url.searchParams.set('namedetails', '1');
+    url.searchParams.set('polygon_geojson', '1');
+
+    const response = await fetch(url, { signal, headers: { Accept: 'application/json' } });
+
+    if (!response.ok) {
+        throw new Error(`Nominatim lookup HTTP ${response.status}`);
+    }
+
+    const payload = await response.json();
+    const item = Array.isArray(payload) ? payload[0] : null;
+
+    if (!item) {
+        return null;
+    }
+
+    const detail = normalizeOsmDetail(item, place);
+    osmDetailCache.set(key, { at: Date.now(), detail });
+
+    return detail;
+}
+
+function countCoordinatePairs(value, depth = 0) {
+    if (depth > 8 || value == null) {
+        return 0;
+    }
+
+    if (Array.isArray(value)) {
+        if (value.length === 2 && value.every((entry) => Number.isFinite(entry))) {
+            return 1;
+        }
+
+        return value.reduce((total, entry) => total + countCoordinatePairs(entry, depth + 1), 0);
+    }
+
+    if (typeof value === 'object') {
+        if (Array.isArray(value.coordinates)) {
+            return countCoordinatePairs(value.coordinates, depth + 1);
+        }
+
+        if (Array.isArray(value.geometries)) {
+            return countCoordinatePairs(value.geometries, depth + 1);
+        }
+
+        if (value.geometry) {
+            return countCoordinatePairs(value.geometry, depth + 1);
+        }
+
+        if (Array.isArray(value.features)) {
+            return countCoordinatePairs(value.features, depth + 1);
+        }
+    }
+
+    return 0;
+}
+
+function osmObjectPath(place) {
+    const type = normalizedOsmType(place?.osmType);
+    const id = String(place?.osmId ?? '').trim();
+
+    if (!type || !id) {
+        return '';
+    }
+
+    const names = { N: 'node', W: 'way', R: 'relation' };
+
+    return `${names[type]}/${encodeURIComponent(id)}`;
 }
 
 function setChildHidden(root, selector, hidden) {
@@ -722,18 +1072,16 @@ function renderPlaceResults(root, { status, results = [], hooks }) {
         const button = document.createElement('button');
         button.type = 'button';
         button.dataset.placeResult = '';
-        button.dataset.name = place.name;
-        button.dataset.address = place.address;
-        button.dataset.area = place.area;
-        button.dataset.lat = String(place.lat);
-        button.dataset.lng = String(place.lng);
+        Object.entries(placeDataset(place)).forEach(([key, value]) => {
+            button.dataset[key] = value;
+        });
         button.className = 'flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40';
         button.setAttribute('aria-label', `Pilih ${place.name}`);
         button.innerHTML = `
             <span class="flex size-8 shrink-0 items-center justify-center rounded-xl bg-brand-50 text-brand-200">${icon('pin', 'size-4')}</span>
             <span class="min-w-0 flex-1">
                 <span class="block truncate text-[12px] font-semibold text-ink">${escapeHtml(place.name)}</span>
-                <span class="block truncate text-[10.5px] leading-snug text-muted">${escapeHtml(place.address)}</span>
+                <span class="block truncate text-[10.5px] leading-snug text-muted">${escapeHtml([place.kindLabel, place.address].filter(Boolean).join(' · '))}</span>
             </span>
         `;
         item.append(button);
@@ -753,13 +1101,7 @@ function bindPlaceResults(root, handler) {
             return;
         }
 
-        handler({
-            name: button.dataset.name ?? '',
-            address: button.dataset.address ?? '',
-            area: button.dataset.area ?? '',
-            lat: Number(button.dataset.lat),
-            lng: Number(button.dataset.lng),
-        });
+        handler(placeFromDataset(button.dataset));
     });
 }
 
@@ -1583,6 +1925,13 @@ function initNearFind(
     const poiPanelBody = poiPanel?.querySelector('[data-poi-panel-body]');
     const poiPanelClose = poiPanel?.querySelector('[data-poi-panel-close]');
     const poiRouteLink = poiPanel?.querySelector('[data-poi-route]');
+    const areaPanel = document.querySelector('[data-area-panel]');
+    const areaPanelTitle = areaPanel?.querySelector('[data-area-panel-title]');
+    const areaPanelMeta = areaPanel?.querySelector('[data-area-panel-meta]');
+    const areaPanelKicker = areaPanel?.querySelector('[data-area-panel-kicker]');
+    const areaPanelBody = areaPanel?.querySelector('[data-area-panel-body]');
+    const areaPanelClose = areaPanel?.querySelector('[data-area-panel-close]');
+    const areaRouteLink = areaPanel?.querySelector('[data-area-route]');
     const toast = document.getElementById('toast');
     const toastMessage = toast?.querySelector('[data-toast-message]');
     const mapTip = document.querySelector('[data-map-tip]');
@@ -1626,6 +1975,9 @@ function initNearFind(
     let topAreaResults = [];
     let topAreaQuery = '';
     let areaPreview = null;
+    let selectedArea = null;
+    let areaLookupController = null;
+    let areaLookupSeq = 0;
     const controller = new AbortController();
     const listenerOptions = { signal: controller.signal };
 
@@ -1774,7 +2126,9 @@ function initNearFind(
                 case 'add-place':
                     if (requireLogin('add-place', actionElement)) {
                         const poi = actionElement.closest('[data-poi-panel]') ? currentSelectedPoi() : null;
-                        openLocationSheet(actionElement, poi ? poiSheetPrefill(poi) : null);
+                        const fromArea = actionElement.closest('[data-area-panel], .nf-area-preview-shell');
+                        const area = fromArea && !poi ? currentSelectedArea() : null;
+                        openLocationSheet(actionElement, poi ? poiSheetPrefill(poi) : area ? areaSheetPrefill(area) : null);
                     }
                     break;
                 case 'submit-need':
@@ -1814,6 +2168,9 @@ function initNearFind(
         poiPanel?.addEventListener('keydown', (event) => {
             trapFocus(poiPanel, event);
         }, listenerOptions);
+        areaPanel?.addEventListener('keydown', (event) => {
+            trapFocus(areaPanel, event);
+        }, listenerOptions);
 
         loginGate?.addEventListener('keydown', (event) => {
             trapFocus(loginGate, event);
@@ -1844,6 +2201,11 @@ function initNearFind(
 
             if (poiPanel && !poiPanel.hasAttribute('hidden')) {
                 closePoiPanel();
+                return;
+            }
+
+            if (areaPanel && !areaPanel.hasAttribute('hidden')) {
+                clearAreaPreview();
                 return;
             }
 
@@ -1932,6 +2294,7 @@ function initNearFind(
         locationSheet?.querySelector('[data-location-backdrop]')?.addEventListener('click', closeLocationSheet);
         locationPanelClose?.addEventListener('click', closeLocationPanel);
         poiPanelClose?.addEventListener('click', closePoiPanel);
+        areaPanelClose?.addEventListener('click', clearAreaPreview);
 
         // Validate the picked point, then leave the real POST to the browser.
         // There is no fake success toast or intercepted response here.
@@ -2795,7 +3158,7 @@ function initNearFind(
             setViewWithPadding(map, [place.lat, place.lng]);
         }
 
-        const saved = findSavedLocation(place);
+        const saved = place.kindKey === 'place' ? findSavedLocation(place) : null;
 
         if (saved) {
             selectLocation(saved.id);
@@ -2947,11 +3310,11 @@ function initNearFind(
         const areaButtons = areas.map((area) => makeSearchResultButton({
             kind: 'area',
             title: area.name,
-            meta: `Dari OpenStreetMap · ${area.address}`,
+            meta: `${area.kindLabel} · ${area.address}`,
             iconName: 'map',
             iconClass: 'bg-canvas text-muted',
-            ariaLabel: `Pilih area ${area.name} dari peta`,
-            dataset: { name: area.name, address: area.address, area: area.area, lat: String(area.lat), lng: String(area.lng) },
+            ariaLabel: `Pilih ${area.kindLabel} ${area.name} dari OpenStreetMap`,
+            dataset: placeDataset(area),
         }));
 
         const list = placeTopResults.querySelector(TOP_RESULT_HOOKS.list);
@@ -2959,7 +3322,7 @@ function initNearFind(
             list.textContent = '';
             appendSearchGroup(list, 'Tempat tersimpan', placeButtons);
             appendSearchGroup(list, 'Pengajuan warga', needButtons);
-            appendSearchGroup(list, 'Area', areaButtons);
+            appendSearchGroup(list, 'Daerah dari OpenStreetMap', areaButtons);
         }
 
         const total = placeButtons.length + needButtons.length + areaButtons.length;
@@ -3004,23 +3367,38 @@ function initNearFind(
             return;
         }
 
-        onTopPlaceSelected({
-            name: button.dataset.name,
-            address: button.dataset.address,
-            area: button.dataset.area,
-            lat: Number(button.dataset.lat),
-            lng: Number(button.dataset.lng),
-        });
+        onTopPlaceSelected(placeFromDataset(button.dataset));
+    }
+
+    function currentSelectedArea() {
+        return selectedArea;
+    }
+
+    function areaSheetPrefill(place) {
+        return {
+            name: place.name,
+            address: place.address || '',
+            area: place.area || '',
+            lat: place.lat,
+            lng: place.lng,
+            category: place.categoryId || '',
+        };
     }
 
     function clearAreaPreview() {
-        if (!areaPreview) {
-            return;
+        areaLookupSeq += 1;
+        areaLookupController?.abort();
+        areaLookupController = null;
+
+        if (areaPreview) {
+            areaPreview.popup?.remove();
+            areaPreview.geometry?.remove();
+            areaPreview.marker?.remove();
+            areaPreview = null;
         }
 
-        areaPreview.popup.remove();
-        areaPreview.marker.remove();
-        areaPreview = null;
+        closeAreaPanel();
+        selectedArea = null;
     }
 
     function showAreaPreview(place) {
@@ -3029,6 +3407,7 @@ function initNearFind(
         }
 
         clearAreaPreview();
+        closePoiPanel();
 
         const element = document.createElement('div');
         element.className = 'nf-area-marker-wrapper';
@@ -3049,22 +3428,225 @@ function initNearFind(
             keyboard: false,
             riseOnHover: true,
         }).addTo(map);
-        const popup = createAreaPopup(place)
-            .setLatLng([place.lat, place.lng])
-            .addTo(map);
+        const popup = createAreaPopup(place).setLatLng([place.lat, place.lng]);
+
+        const openPanel = () => {
+            if (selectedArea) {
+                setAreaPanel(selectedArea);
+            }
+
+            popup.addTo(map);
+        };
 
         const markerElement = marker.getElement();
-        markerElement.addEventListener('click', () => popup.addTo(map));
+        markerElement.addEventListener('click', openPanel);
         markerElement.addEventListener('keydown', (searchEvent) => {
             if (searchEvent.key !== 'Enter' && searchEvent.key !== ' ') {
                 return;
             }
 
             searchEvent.preventDefault();
-            popup.addTo(map);
+            openPanel();
         });
 
-        areaPreview = { marker, popup };
+        selectedArea = place;
+        areaPreview = { marker, popup, geometry: renderAreaGeometry(place) };
+        setAreaPanel(place);
+        fetchAreaDetails(place);
+    }
+
+    function setAreaPanel(place, { loading = false } = {}) {
+        if (!areaPanel || !place) {
+            return;
+        }
+
+        areaPanel.removeAttribute('hidden');
+        areaPanel.setAttribute('aria-hidden', 'false');
+
+        if (areaPanelTitle) {
+            areaPanelTitle.textContent = place.name;
+        }
+
+        if (areaPanelMeta) {
+            areaPanelMeta.textContent = `${place.kindLabel} · OpenStreetMap`;
+        }
+
+        if (areaPanelKicker) {
+            areaPanelKicker.textContent = place.kindKey === 'place'
+                ? 'Tempat dari OpenStreetMap'
+                : 'Daerah dari OpenStreetMap';
+        }
+
+        renderAreaPanelBody(place, loading);
+
+        const path = osmObjectPath(place);
+
+        if (areaRouteLink) {
+            if (path) {
+                areaRouteLink.href = `https://www.openstreetmap.org/${path}`;
+                areaRouteLink.textContent = 'Buka di OpenStreetMap';
+            }
+
+            areaRouteLink.target = '_blank';
+            areaRouteLink.rel = 'noopener noreferrer';
+        }
+
+        if (needPanel) {
+            needPanel.hidden = true;
+        }
+
+        if (locationPanel) {
+            locationPanel.setAttribute('hidden', '');
+            locationPanel.setAttribute('aria-hidden', 'true');
+        }
+    }
+
+    function renderAreaPanelBody(place, loading) {
+        if (!areaPanelBody) {
+            return;
+        }
+
+        areaPanelBody.textContent = '';
+
+        const coordinates = Number.isFinite(place.lat) && Number.isFinite(place.lng)
+            ? `${place.lat.toFixed(6)}, ${place.lng.toFixed(6)}`
+            : 'Koordinat belum tersedia.';
+        const rows = [
+            ['Jenis', place.kindLabel || OSM_KIND_LABELS.area],
+            ...(categoryById[place.categoryId]
+                ? [['Kategori nearFind', categoryById[place.categoryId].label]]
+                : []),
+            ['Jam buka', place.openingHours || 'Jam buka belum tercantum.'],
+            ['Alamat', place.address || 'Alamat belum tersedia.'],
+            ['Wilayah', place.area || 'Wilayah belum tersedia.'],
+            ['Kode pos', place.postcode || 'Kode pos belum tersedia.'],
+            ['Negara', place.country || 'Negara belum tersedia.'],
+            ['Situs web', place.website || 'Situs web belum tercantum.'],
+            ['Telepon', place.phone || 'Nomor telepon belum tersedia.'],
+            ['Wikidata', place.wikidata || 'Data Wikidata belum tersedia.'],
+            ['Wikipedia', place.wikipedia || 'Halaman Wikipedia belum tersedia.'],
+            ['Koordinat', coordinates],
+        ];
+
+        if (loading) {
+            rows.unshift(['Detail', 'Memuat detail dari OpenStreetMap.']);
+        }
+
+        rows.forEach(([label, value]) => {
+            const row = document.createElement('div');
+            row.className = 'nf-poi-row';
+
+            const key = document.createElement('dt');
+            key.className = 'nf-poi-row-label';
+            key.textContent = label;
+
+            const detail = document.createElement('dd');
+            detail.className = 'nf-poi-row-value';
+            detail.textContent = value;
+
+            row.append(key, detail);
+            areaPanelBody.append(row);
+        });
+    }
+
+    function closeAreaPanel() {
+        if (!areaPanel || areaPanel.hasAttribute('hidden')) {
+            return;
+        }
+
+        areaPanel.setAttribute('hidden', '');
+        areaPanel.setAttribute('aria-hidden', 'true');
+
+        if (needPanel) {
+            needPanel.hidden = false;
+            setCardExpanded(cardExpanded);
+        }
+    }
+
+    async function fetchAreaDetails(place) {
+        if (!osmDetailKey(place)) {
+            return;
+        }
+
+        const seq = ++areaLookupSeq;
+        areaLookupController?.abort();
+        const controller = new AbortController();
+        areaLookupController = controller;
+        setAreaPanel(place, { loading: true });
+
+        try {
+            const detail = await fetchOsmPlaceDetail(place, { signal: controller.signal });
+
+            if (disposed || seq !== areaLookupSeq || selectedArea !== place || controller !== areaLookupController) {
+                return;
+            }
+
+            selectedArea = detail ?? place;
+
+            if (areaPreview) {
+                areaPreview.geometry?.remove();
+                areaPreview.geometry = renderAreaGeometry(selectedArea);
+            }
+
+            setAreaPanel(selectedArea);
+        } catch (error) {
+            if (error?.name === 'AbortError' || disposed || seq !== areaLookupSeq
+                || controller !== areaLookupController) {
+                return;
+            }
+
+            setAreaPanel(place);
+        }
+    }
+
+    function renderAreaGeometry(place) {
+        if (!map || !L) {
+            return null;
+        }
+
+        const style = {
+            weight: 2,
+            fillOpacity: 0.16,
+            className: 'nf-area-geometry',
+        };
+        const pairs = countCoordinatePairs(place?.geojson);
+        let layer = null;
+
+        if (pairs > 0 && pairs <= AREA_GEOMETRY_MAX_POINTS) {
+            try {
+                layer = L.geoJSON(place.geojson, {
+                    style,
+                    pointToLayer: (feature, latlng) => L.circleMarker(latlng, { ...style, radius: 6 }),
+                });
+
+                if (layer.getLayers().length === 0) {
+                    layer = null;
+                }
+            } catch {
+                layer = null;
+            }
+        }
+
+        if (!layer && Array.isArray(place?.boundingbox) && place.boundingbox.length === 4) {
+            const [south, north, west, east] = place.boundingbox;
+
+            if ([south, north, west, east].every(Number.isFinite) && south <= north && west <= east) {
+                layer = L.rectangle([[south, west], [north, east]], style);
+            }
+        }
+
+        if (!layer) {
+            return null;
+        }
+
+        layer.on('click', () => {
+            if (selectedArea) {
+                setAreaPanel(selectedArea);
+            }
+        });
+        layer.addTo(map);
+
+        return layer;
     }
 
     function createAreaPopup(place) {
@@ -3074,7 +3656,7 @@ function initNearFind(
 
         const label = document.createElement('p');
         label.className = 'text-[9px] font-semibold uppercase tracking-[0.12em] text-muted';
-        label.textContent = 'Area dari OpenStreetMap';
+        label.textContent = `${place.kindLabel} dari OpenStreetMap`;
 
         const title = document.createElement('p');
         title.className = 'mt-1 text-[12px] font-semibold text-ink';
@@ -3090,14 +3672,10 @@ function initNearFind(
 
         const saveButton = document.createElement('button');
         saveButton.type = 'button';
+        saveButton.dataset.action = 'add-place';
         saveButton.className = 'mt-2 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-brand-50 px-3 text-[11px] font-semibold text-brand-200 transition hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40';
         saveButton.setAttribute('aria-label', `Simpan ${place.name} sebagai tempat`);
         saveButton.innerHTML = `${icon('plus', 'size-4')}<span>Jadikan tempat</span>`;
-        saveButton.addEventListener('click', () => {
-            if (requireLogin('add-place', saveButton)) {
-                openLocationSheet(saveButton, place);
-            }
-        });
 
         content.append(label, title, meta, notice, saveButton);
 

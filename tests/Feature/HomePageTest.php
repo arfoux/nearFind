@@ -244,4 +244,128 @@ class HomePageTest extends TestCase
         $data = json_decode($match[1] ?? '[]', true);
         $this->assertSame($customEndpoint, $data['poi']['overpass_endpoint'] ?? null);
     }
+
+    public function test_home_renders_the_area_detail_panel_hooks(): void
+    {
+        $response = $this->get('/');
+        $response->assertOk();
+
+        $html = (string) $response->getContent();
+
+        foreach ([
+            'data-area-panel',
+            'data-area-panel-title',
+            'data-area-panel-meta',
+            'data-area-panel-body',
+            'data-area-panel-kicker',
+            'data-area-save',
+            'data-area-route',
+        ] as $hook) {
+            $pattern = '/<[a-z][a-z0-9]*\b[^>]*\s'.preg_quote($hook, '/').'(?=[\s>])[^>]*>/i';
+
+            $this->assertSame(1, preg_match_all($pattern, $html), $hook.' must appear once on a single element');
+        }
+    }
+
+    public function test_the_area_panel_kicker_starts_as_daerah_and_switches_for_places(): void
+    {
+        $response = $this->get('/');
+        $response->assertOk();
+
+        $html = (string) $response->getContent();
+        $this->assertSame(1, preg_match('/<p\b[^>]*\sdata-area-panel-kicker(?=[\s>])[^>]*>(.*?)<\/p>/is', $html, $kicker));
+        $this->assertSame('Daerah dari OpenStreetMap', trim(strip_tags($kicker[1])));
+
+        // The kicker text is written by client code, so its two states are
+        // checked inside the setAreaPanel body that performs the DOM update.
+        $script = (string) file_get_contents(resource_path('js/app.js'));
+        $this->assertStringContainsString('[data-area-panel-kicker]', $script);
+        $this->assertSame(1, preg_match('/function setAreaPanel\([\s\S]*?\n    \}\n/', $script, $function));
+        $this->assertStringContainsString("place.kindKey === 'place'", $function[0]);
+        $this->assertStringContainsString('Tempat dari OpenStreetMap', $function[0]);
+        $this->assertStringContainsString('Daerah dari OpenStreetMap', $function[0]);
+    }
+
+    public function test_the_area_detail_panel_starts_hidden_and_labelled(): void
+    {
+        $response = $this->get('/');
+        $response->assertOk();
+
+        $html = (string) $response->getContent();
+        $pattern = '/<[a-z][a-z0-9]*\b[^>]*\sdata-area-panel(?=[\s>])[^>]*>/i';
+
+        $this->assertSame(1, preg_match($pattern, $html, $match));
+        $panel = $match[0] ?? '';
+
+        // Blank quoted values so a "hidden" CSS class cannot pass as the native attribute.
+        $attributes = preg_replace('/="[^"]*"/', '=""', $panel);
+        $this->assertMatchesRegularExpression('/\shidden(?=[\s>]|$)/', $attributes, 'The panel must start with the native hidden attribute');
+        $this->assertStringContainsString('aria-hidden="true"', $panel);
+        $this->assertStringContainsString('aria-labelledby="area-panel-title"', $panel);
+
+        // A dangling aria-labelledby is worse than none at all.
+        $this->assertSame(1, preg_match('/<[a-z][a-z0-9]*\b[^>]*\sid="area-panel-title"(?=[\s>])[^>]*>/i', $html));
+    }
+
+    public function test_the_area_panel_actions_keep_the_save_flow_and_safe_route_link(): void
+    {
+        $response = $this->get('/');
+        $response->assertOk();
+
+        $html = (string) $response->getContent();
+
+        $this->assertSame(1, preg_match('/<button\b[^>]*\sdata-area-save(?=[\s>])[^>]*>/i', $html, $save));
+        $this->assertStringContainsString('data-action="add-place"', $save[0]);
+
+        $this->assertSame(1, preg_match('/<a\b[^>]*\sdata-area-route(?=[\s>])[^>]*>/i', $html, $route));
+        $this->assertStringContainsString('target="_blank"', $route[0]);
+        $this->assertStringContainsString('rel="noopener noreferrer"', $route[0]);
+    }
+
+    public function test_home_mirrors_allowed_osm_tags_as_location_sheet_categories(): void
+    {
+        $expected = [
+            'worship' => ['Tempat Ibadah', 'pin'],
+            'education' => ['Sekolah', 'clipboard'],
+            'bank' => ['Bank', 'bag'],
+            'atm' => ['ATM', 'bag'],
+            'postal' => ['Kantor Pos', 'mail'],
+            'library' => ['Perpustakaan', 'clipboard'],
+            'police' => ['Kepolisian', 'shield-check'],
+            'park' => ['Taman', 'map'],
+            'museum' => ['Museum', 'info'],
+        ];
+
+        $configured = [];
+        foreach (config('needs.categories', []) as $category) {
+            $configured[$category['id']] = $category;
+        }
+
+        foreach ($expected as $id => [$label, $icon]) {
+            $this->assertArrayHasKey($id, $configured, $id.' must be exposed by config/needs.php');
+            $this->assertSame($label, $configured[$id]['label']);
+            $this->assertSame($icon, $configured[$id]['icon']);
+        }
+
+        foreach (['household', 'repair', 'culinary', 'retail', 'health'] as $id) {
+            $this->assertArrayHasKey($id, $configured, $id.' must keep its original category');
+        }
+
+        $response = $this->get('/');
+        $response->assertOk();
+
+        $html = (string) $response->getContent();
+        $this->assertSame(1, preg_match('/<select\b[^>]*\sid="location-category"(?=[\s>])[^>]*>(.*?)<\/select>/is', $html, $select));
+
+        preg_match_all('/<option\b[^>]*\svalue="([^"]*)"(?=[\s>])[^>]*>(.*?)<\/option>/is', $select[1], $matches, PREG_SET_ORDER);
+        $options = [];
+        foreach ($matches as $match) {
+            $options[$match[1]] = trim(strip_tags($match[2]));
+        }
+
+        foreach ($expected as $id => [$label]) {
+            $this->assertArrayHasKey($id, $options, $id.' must be selectable when saving an OSM place');
+            $this->assertSame($label, $options[$id]);
+        }
+    }
 }
