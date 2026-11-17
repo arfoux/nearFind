@@ -87,6 +87,7 @@ const POI_DEFAULTS = {
     },
 };
 const OVERPASS_FALLBACK_ENDPOINT = 'https://overpass.nextgis.com/api/interpreter';
+const OVERPASS_FALLBACK_RADIUS_M = 3000;
 const POI_LANDMARK_TAGS = new Set([
     'hospital', 'museum', 'place_of_worship', 'school', 'park',
     'supermarket', 'police', 'library', 'bank',
@@ -194,7 +195,7 @@ function poiCacheKey(center) {
     ].join('|');
 }
 
-function buildOverpassQuery(center) {
+function buildOverpassQuery(center, radius = poiConfig.search_radius_m) {
     const lat = Number(center?.lat);
     const lng = Number(center?.lng ?? center?.lon);
 
@@ -202,7 +203,7 @@ function buildOverpassQuery(center) {
         return '';
     }
 
-    const around = `(around:${Math.round(poiConfig.search_radius_m)},${lat.toFixed(6)},${lng.toFixed(6)})`;
+    const around = `(around:${Math.round(radius)},${lat.toFixed(6)},${lng.toFixed(6)})`;
     const statements = poiConfig.tags.map(({ key, values }) => {
         const filter = values.length > 0 ? `~"^(${values.map(escapePoiRegex).join('|')})$"` : '';
         return `nwr["${key}"${filter}]${around};`;
@@ -430,12 +431,6 @@ async function fetchOverpassOnce(endpoint, query, outerSignal) {
 }
 
 async function fetchOverpassPois(center, { signal } = {}) {
-    const query = buildOverpassQuery(center);
-
-    if (query === '') {
-        return [];
-    }
-
     const endpoints = [poiConfig.overpass_endpoint];
     if (endpoints[0] !== OVERPASS_FALLBACK_ENDPOINT) {
         endpoints.push(OVERPASS_FALLBACK_ENDPOINT);
@@ -445,6 +440,12 @@ async function fetchOverpassPois(center, { signal } = {}) {
 
     for (const endpoint of endpoints) {
         if (signal?.aborted) {
+            return [];
+        }
+        const isFallback = endpoint === OVERPASS_FALLBACK_ENDPOINT;
+        const query = buildOverpassQuery(center, isFallback ? OVERPASS_FALLBACK_RADIUS_M : poiConfig.search_radius_m);
+
+        if (query === '') {
             return [];
         }
 

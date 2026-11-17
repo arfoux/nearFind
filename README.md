@@ -30,8 +30,8 @@ saat Ajukan Kebutuhan atau Tambah Tempat ditekan; logika pengambilan titik itu
 tidak berubah. Kursor berada pada bentuk normal di atas peta maupun penanda,
 dan hanya berubah menjadi `grabbing` selagi peta diseret.
 
-Saat Overpass gagal, nearFind mencoba mirror Overpass sekunder agar tempat
-OSM tetap muncul.
+Saat Overpass gagal, nearFind mencoba mirror Overpass sekunder dengan radius
+lebih lebar bila perlu agar tempat OSM tetap muncul.
 
 Setiap penanda, baik pengajuan warga, tempat tersimpan, tempat maupun daerah
 dari OpenStreetMap, memuat label ringkas yang menguat saat hover atau fokus dan
