@@ -30,8 +30,12 @@ saat Ajukan Kebutuhan atau Tambah Tempat ditekan; logika pengambilan titik itu
 tidak berubah. Kursor berada pada bentuk normal di atas peta maupun penanda,
 dan hanya berubah menjadi `grabbing` selagi peta diseret.
 
-Saat Overpass gagal, nearFind mencoba mirror Overpass sekunder dengan radius
-lebih lebar bila perlu agar tempat OSM tetap muncul.
+Pengambilan data OSM berlangsung tiga tahap: titik tengah area peta yang
+terlihat lebih dulu, lalu seluruh area terlihat, lalu area yang diperluas 5x.
+Hasil tiap tahap digabung dan otomatis menjadi penanda OSM yang bisa diklik
+tanpa mengetik pencarian, termasuk tempat ibadah dan fasilitas umum lain.
+Hasilnya disimpan permanen di localStorage. Batasnya hingga 100 hasil, untuk
+endpoint Overpass utama maupun mirror sekunder.
 
 Setiap penanda, baik pengajuan warga, tempat tersimpan, tempat maupun daerah
 dari OpenStreetMap, memuat label ringkas yang menguat saat hover atau fokus dan

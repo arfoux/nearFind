@@ -39,7 +39,7 @@ return [
         'overpass_endpoint' => env('NEARFIND_OVERPASS_ENDPOINT', 'https://overpass.private.coffee/api/interpreter'),
         'nominatim_reverse_endpoint' => env('NEARFIND_NOMINATIM_REVERSE_ENDPOINT', 'https://nominatim.openstreetmap.org/reverse'),
         'search_radius_m' => (int) env('NEARFIND_POI_SEARCH_RADIUS_M', 1000),
-        'max_results' => (int) env('NEARFIND_POI_MAX_RESULTS', 20),
+        'max_results' => (int) env('NEARFIND_POI_MAX_RESULTS', 100),
         'request_timeout_ms' => (int) env('NEARFIND_POI_REQUEST_TIMEOUT_MS', 8000),
         'cache_ms' => (int) env('NEARFIND_POI_CACHE_MS', 300000),
         'tags' => [
