@@ -18,7 +18,7 @@
 @if ($tab === 'peta')
     <div class="relative min-h-0 flex-1 overflow-hidden" data-skeleton-pane="peta">
         <div class="pointer-events-none absolute inset-x-0 top-0 z-[5] px-3 pt-3 sm:px-4 lg:px-5 lg:pt-4">
-            <div class="nf-glass-strong nf-header rounded-[22px] px-3.5 py-3 sm:px-4 lg:px-5 lg:py-3.5">
+            <div class="nf-solid-panel nf-header rounded-[22px] px-3.5 py-3 sm:px-4 lg:px-5 lg:py-3.5">
                 <div class="flex items-center gap-3">
                     <div class="nf-sk nf-sk--avatar size-9 rounded-2xl"></div>
                     <div class="nf-sk nf-sk--line h-10 flex-1 rounded-2xl"></div>
@@ -33,7 +33,7 @@
             </div>
         </div>
 
-        <div class="nf-glass-strong absolute inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-[6] rounded-[20px] p-4 lg:inset-x-auto lg:bottom-24 lg:right-5 lg:w-[390px]">
+        <div class="nf-solid-panel absolute inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[6] rounded-[20px] p-4 lg:inset-x-auto lg:bottom-24 lg:right-5 lg:w-[390px]">
             <div class="flex items-center gap-3">
                 <div class="nf-sk nf-sk--avatar size-10 rounded-[14px]"></div>
                 <div class="min-w-0 flex-1 space-y-2">

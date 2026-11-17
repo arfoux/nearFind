@@ -1,22 +1,21 @@
 <!DOCTYPE html>
-<html lang="id" class="h-full" data-theme="dark">
+<html lang="id" class="h-full" data-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#0B0E12">
+    <meta name="theme-color" content="#F7F5F1">
     {{-- Pre-paint theme: no external script, no flash of the wrong palette. --}}
+    {{-- R-31: light is the calm first-visit default for a civic map; a stored nf-theme choice always wins. --}}
     <script>
         (function () {
             try {
                 var saved = localStorage.getItem('nf-theme');
-                var theme = saved === 'light' || saved === 'dark'
-                    ? saved
-                    : (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+                var theme = saved === 'light' || saved === 'dark' ? saved : 'light';
                 document.documentElement.setAttribute('data-theme', theme);
                 var meta = document.querySelector('meta[name="theme-color"]');
                 if (meta) meta.setAttribute('content', theme === 'light' ? '#F7F5F1' : '#0B0E12');
             } catch (error) {
-                /* Storage can be blocked; the dark default on <html> still applies. */
+                /* Storage can be blocked; the light default on <html> still applies. */
             }
         })();
     </script>
@@ -37,7 +36,7 @@
         type="button"
         class="nf-theme-toggle nf-theme-toggle--auth"
         data-theme-toggle
-        aria-pressed="true"
+        aria-pressed="false"
         aria-label="Ganti tema"
         title="Ganti tema"
     >

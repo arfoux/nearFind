@@ -1,7 +1,8 @@
 <form data-search-form class="relative" role="search">
     <label for="need-search" class="sr-only">Cari area, kelurahan, atau kebutuhan</label>
 
-    <div data-search-box class="flex h-12 cursor-text items-center gap-2 rounded-full border border-ink/10 bg-surface/70 px-3.5 shadow-[0_12px_30px_-22px_rgba(0,0,0,0.65)] transition focus-within:border-brand-500/40 focus-within:bg-surface/80 focus-within:ring-4 focus-within:ring-brand-500/10 lg:h-[52px] lg:gap-3 lg:px-5">
+    {{-- Solid search field: an alpha field over moving tiles looks like glass. --}}
+    <div data-search-box class="flex h-12 cursor-text items-center gap-2 rounded-full border border-ink/10 bg-surface px-3.5 shadow-[0_12px_30px_-22px_rgba(0,0,0,0.65)] transition focus-within:border-brand-500/40 focus-within:bg-surface-2 focus-within:ring-4 focus-within:ring-brand-500/10 lg:h-[52px] lg:gap-3 lg:px-5">
         @include('partials.icon', ['name' => 'search', 'class' => 'size-[19px] shrink-0 text-brand-300 lg:size-5'])
 
         <input
@@ -10,7 +11,7 @@
             inputmode="search"
             autocomplete="off"
             placeholder="Cari area, kelurahan, atau kebutuhan"
-            class="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-ink outline-none placeholder:text-muted/80 lg:text-sm"
+            class="min-w-0 flex-1 bg-transparent text-[13px] font-medium text-ink outline-none placeholder:text-muted lg:text-sm"
         >
 
         <button

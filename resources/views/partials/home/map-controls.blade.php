@@ -9,7 +9,7 @@
         @include('partials.icon', ['name' => 'locate', 'class' => 'size-[18px]'])
     </button>
 
-    <div class="nf-glass-subtle flex flex-col overflow-hidden rounded-[14px]">
+    <div class="nf-solid-panel flex flex-col overflow-hidden rounded-[14px]">
         <button
             type="button"
             data-map-zoom-in

@@ -1,5 +1,6 @@
 <div id="login-gate" class="fixed inset-0 z-[1300] hidden items-end justify-center lg:items-center" role="presentation">
-    <div data-login-backdrop class="absolute inset-0 bg-black/60 backdrop-blur-[2px]"></div>
+    {{-- Solid black backdrop: no translucent grey veil over the map. --}}
+    <div data-login-backdrop class="absolute inset-0 bg-black"></div>
 
     <div
         role="dialog"

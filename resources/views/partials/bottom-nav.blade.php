@@ -1,15 +1,12 @@
 @php
     $active = $active ?? 'peta';
     $floating = $floating ?? false;
-    // The map-first home floats the nav over the map (PR #26); every other page
-    // keeps it in the flex column. Classes are precomputed (no `@class`), so the
-    // view stays inside the compiled surface.
-    $navClass = $floating
-        ? 'pointer-events-none absolute inset-x-0 bottom-0 z-[1000] w-full border-t border-white/10 bg-surface/70 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-18px_45px_-30px_rgba(0,0,0,0.45)] backdrop-blur-2xl'
-        : 'relative z-[1000] w-full shrink-0 border-t border-white/10 bg-surface/95 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5 shadow-[0_-10px_32px_-28px_rgba(0,0,0,0.5)] backdrop-blur-xl';
-    // The same inner track on every page keeps the four tabs in the exact same
-    // spots whether the nav floats over the map or sits in the flex column.
-    $navInnerClass = 'pointer-events-auto mx-auto flex w-full max-w-[560px] items-stretch justify-around px-2.5';
+    // The nav is a compact floating bar on every page: a clear bottom gap
+    // keeps the map edge visible and groups the four tabs as one control.
+    // R-31: this is the second and last glass surface, so blur stays an accent.
+    $navPosition = $floating
+        ? 'pointer-events-none absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-[1000] w-[calc(100%-1.5rem)] max-w-[520px] -translate-x-1/2'
+        : 'relative z-[1000] mx-auto mb-[max(1rem,env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-[520px] shrink-0';
 @endphp
 @php
     // Every tab is a page of its own. Profil points at `/profile`, which needs a
@@ -23,32 +20,36 @@
     ];
 @endphp
 
-<nav class="{{ $navClass }}" aria-label="Navigasi utama">
-    <div class="{{ $navInnerClass }}">
+<div class="{{ $navPosition }}">
+    {{-- R-10/R-31: one of exactly two glass hosts. Refraction bends the map while
+         Gaussian blur frosts sharp labels; anchors stay direct children so the
+         library can clone their copy into the indicator. --}}
+    <lg-navbar
+        class="nf-nav pointer-events-auto mx-auto flex w-full max-w-[560px] items-stretch justify-around px-2.5"
+        tone="light"
+        radius="22"
+        refraction="22"
+        bezel="0.45"
+        curvature="4"
+        chroma="0.16"
+        blur="3.5"
+        specular="0.95"
+        specular-width="2.4"
+        light-angle="-90"
+        aria-label="Navigasi utama"
+    >
         @foreach ($items as $item)
-            @php
-                $isActive = $active === $item['key'];
-                $itemClass = 'group flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-2xl px-2 py-1 text-center outline-none transition-colors focus-visible:ring-4 focus-visible:ring-brand-500/15';
-                $iconClass = 'flex h-7 w-12 items-center justify-center rounded-[10px] transition-colors '.($isActive ? 'bg-brand-700 text-canvas shadow-[0_8px_18px_-12px_rgba(0,0,0,0.8)]' : 'text-muted group-hover:bg-brand-50 group-hover:text-brand-200');
-                $labelClass = 'text-[10px] font-semibold tracking-[0.01em] '.($isActive ? 'text-brand-200' : 'text-muted group-hover:text-brand-200');
-            @endphp
-
             <a
                 href="{{ route($item['route']) }}"
                 data-nav-link
                 data-nav-key="{{ $item['key'] }}"
-                @if ($isActive) aria-current="page" @endif
-                class="{{ $itemClass }}"
+                @if ($active === $item['key']) aria-current="page" @endif
             >
-                {{-- The active styling is a pair of classes the client swaps when a
-                     tab is opened in the shell (syncNav in app.js): the nav is
-                     rendered once, so it cannot depend on the server's $active
-                     after a client-side navigation. --}}
-                <span data-nav-icon class="{{ $iconClass }}">
+                <span data-nav-icon>
                     @include('partials.icon', ['name' => $item['icon'], 'class' => 'size-[21px]', 'strokeWidth' => '2'])
                 </span>
-                <span data-nav-label class="{{ $labelClass }}">{{ $item['label'] }}</span>
+                <span data-nav-label>{{ $item['label'] }}</span>
             </a>
         @endforeach
-    </div>
-</nav>
+    </lg-navbar>
+</div>
