@@ -62,6 +62,7 @@ class HomeController extends Controller
             'mapStyleUrl' => config('needs.map.style_url'),
             'mapDarkStyleUrl' => config('needs.map.dark_style_url'),
             'mapLightStyleUrl' => config('needs.map.light_style_url'),
+            'poi' => config('needs.poi'),
             'authenticated' => $user !== null,
             'sealUser' => $user,
         ]);

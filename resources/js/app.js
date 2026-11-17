@@ -39,6 +39,378 @@ const NOMINATIM_SEARCH_ENDPOINT = 'https://nominatim.openstreetmap.org/search';
 const NOMINATIM_RESULT_LIMIT = 5;
 const PLACE_SEARCH_DEBOUNCE_MS = 350;
 const PLACE_SEARCH_MIN_CHARS = 3;
+// Read-only OpenStreetMap POI overlay. Overpass and Nominatim are plain
+// fetches; nothing here writes to the server. The panel only prefills the
+// existing location sheet when a visitor explicitly saves a place.
+const POI_DEFAULTS = {
+    enabled: false,
+    overpass_endpoint: 'https://overpass.private.coffee/api/interpreter',
+    nominatim_reverse_endpoint: 'https://nominatim.openstreetmap.org/reverse',
+    search_radius_m: 1000,
+    max_results: 20,
+    request_timeout_ms: 8000,
+    cache_ms: 300000,
+    tags: {
+        amenity: ['place_of_worship', 'school', 'clinic', 'hospital', 'pharmacy', 'cafe', 'restaurant', 'bank', 'atm', 'post_office', 'library', 'police'],
+        shop: ['supermarket', 'convenience', 'bakery'],
+        leisure: ['park'],
+        tourism: ['museum'],
+    },
+};
+const POI_REFRESH_DEBOUNCE_MS = 350;
+const POI_REVERSE_MIN_INTERVAL_MS = 1000;
+
+let poiConfig = { ...POI_DEFAULTS };
+const poiMarkers = new Map();
+const poiCache = new Map();
+const reverseCache = new Map();
+let currentPois = [];
+let selectedPoiId = null;
+let poiSeq = 0;
+let poiTimer = null;
+let poiController = null;
+let poiReverseTimer = null;
+let poiReverseController = null;
+let lastPoiReverseAt = 0;
+
+function normalizePoiTags(rawTags) {
+    const entries = [];
+    const add = (key, values) => {
+        const safeKey = String(key ?? '').trim();
+
+        if (!/^[a-zA-Z_][a-zA-Z0-9_:]*$/.test(safeKey)) {
+            return;
+        }
+
+        const list = (Array.isArray(values) ? values : [values])
+            .map((value) => String(value ?? '').trim())
+            .filter((value) => value !== '' && value !== '*');
+        entries.push({ key: safeKey, values: [...new Set(list)] });
+    };
+
+    if (rawTags && typeof rawTags === 'object' && !Array.isArray(rawTags)) {
+        Object.entries(rawTags).forEach(([key, values]) => add(key, values));
+    } else if (Array.isArray(rawTags)) {
+        rawTags.forEach((tag) => {
+            if (typeof tag === 'string') {
+                const separator = tag.indexOf('=');
+                add(separator > 0 ? tag.slice(0, separator) : tag, separator > 0 ? tag.slice(separator + 1).split('|') : []);
+                return;
+            }
+
+            if (tag && typeof tag === 'object') {
+                add(tag.key ?? tag.tag ?? tag.k, tag.values ?? tag.value ?? tag.v ?? []);
+            }
+        });
+    }
+
+    return entries.slice(0, 24);
+}
+
+function normalizePoiConfig(raw) {
+    if (!raw || typeof raw !== 'object' || raw.enabled !== true) {
+        return { ...POI_DEFAULTS, enabled: false, tags: normalizePoiTags(POI_DEFAULTS.tags) };
+    }
+
+    const numberOr = (value, fallback, min, max) => {
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+    };
+    const endpoint = typeof raw.overpass_endpoint === 'string' && raw.overpass_endpoint.trim() !== ''
+        ? raw.overpass_endpoint.trim()
+        : POI_DEFAULTS.overpass_endpoint;
+    const reverseEndpoint = typeof raw.nominatim_reverse_endpoint === 'string' && raw.nominatim_reverse_endpoint.trim() !== ''
+        ? raw.nominatim_reverse_endpoint.trim()
+        : POI_DEFAULTS.nominatim_reverse_endpoint;
+    const tags = normalizePoiTags(raw.tags);
+
+    return {
+        enabled: true,
+        overpass_endpoint: endpoint,
+        nominatim_reverse_endpoint: reverseEndpoint,
+        search_radius_m: Math.round(numberOr(raw.search_radius_m, POI_DEFAULTS.search_radius_m, 50, 3000)),
+        max_results: Math.round(numberOr(raw.max_results, POI_DEFAULTS.max_results, 1, 100)),
+        request_timeout_ms: numberOr(raw.request_timeout_ms, POI_DEFAULTS.request_timeout_ms, 1000, 30000),
+        cache_ms: numberOr(raw.cache_ms, POI_DEFAULTS.cache_ms, 0, 3600000),
+        tags: tags.length > 0 ? tags : normalizePoiTags(POI_DEFAULTS.tags),
+    };
+}
+
+function escapePoiRegex(value) {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function poiCacheKey(center) {
+    const lat = Number(center?.lat);
+    const lng = Number(center?.lng ?? center?.lon);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return '';
+    }
+
+    return [
+        poiConfig.overpass_endpoint,
+        lat.toFixed(4),
+        lng.toFixed(4),
+        Math.round(poiConfig.search_radius_m),
+        Math.round(poiConfig.max_results),
+    ].join('|');
+}
+
+function buildOverpassQuery(center) {
+    const lat = Number(center?.lat);
+    const lng = Number(center?.lng ?? center?.lon);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return '';
+    }
+
+    const around = `(around:${Math.round(poiConfig.search_radius_m)},${lat.toFixed(6)},${lng.toFixed(6)})`;
+    const statements = poiConfig.tags.map(({ key, values }) => {
+        const filter = values.length > 0 ? `~"^(${values.map(escapePoiRegex).join('|')})$"` : '';
+        return `nwr["${key}"${filter}]${around};`;
+    });
+
+    if (statements.length === 0) {
+        statements.push(`nwr${around};`);
+    }
+
+    const timeout = Math.max(5, Math.ceil(poiConfig.request_timeout_ms / 1000));
+    return `[out:json][timeout:${timeout}];\n${statements.join('\n')}\nout center tags ${poiConfig.max_results};`;
+}
+
+const POI_CATEGORY_LABELS = {
+    amenity: {
+        cafe: 'Kafe',
+        restaurant: 'Restoran',
+        pharmacy: 'Apotek',
+        clinic: 'Klinik',
+        hospital: 'Rumah sakit',
+        bank: 'Bank',
+        atm: 'Anjungan tunai',
+        post_office: 'Kantor pos',
+        library: 'Perpustakaan',
+        police: 'Kantor polisi',
+        school: 'Sekolah',
+        place_of_worship: 'Tempat ibadah',
+    },
+    shop: {
+        supermarket: 'Supermarket',
+        convenience: 'Toko kelontong',
+        bakery: 'Toko roti',
+    },
+    leisure: { park: 'Taman' },
+    tourism: { museum: 'Museum' },
+};
+
+function poiCategoryLabel(tags = {}) {
+    for (const key of ['amenity', 'shop', 'leisure', 'tourism', 'healthcare', 'office']) {
+        const value = String(tags[key] ?? '').trim();
+
+        if (value === '') {
+            continue;
+        }
+
+        if (POI_CATEGORY_LABELS[key]?.[value]) {
+            return POI_CATEGORY_LABELS[key][value];
+        }
+
+        return 'Tempat';
+    }
+
+    return 'Tempat';
+}
+
+function poiCategoryId(tags = {}) {
+    const amenity = String(tags.amenity ?? '');
+    const shop = String(tags.shop ?? '');
+
+    if (['cafe', 'restaurant'].includes(amenity) || shop === 'bakery') {
+        return 'culinary';
+    }
+
+    if (['clinic', 'hospital', 'pharmacy'].includes(amenity) || String(tags.healthcare ?? '') !== '') {
+        return 'health';
+    }
+
+    if (['supermarket', 'convenience'].includes(shop)) {
+        return 'retail';
+    }
+
+    return '';
+}
+
+function poiAddressFromTags(tags = {}) {
+    const street = [tags['addr:housenumber'], tags['addr:street']].filter(Boolean).join(' ');
+    const city = [tags['addr:suburb'], tags['addr:district'], tags['addr:city'], tags['addr:town'], tags['addr:village']]
+        .filter(Boolean)
+        .join(', ');
+
+    return {
+        address: [street, city].filter(Boolean).join(', '),
+        postcode: String(tags['addr:postcode'] ?? '').trim(),
+        area: String(tags['addr:suburb'] ?? tags['addr:district'] ?? tags['addr:city'] ?? tags['addr:town'] ?? tags['addr:village'] ?? '').trim(),
+        phone: String(tags.phone ?? tags['contact:phone'] ?? '').trim(),
+        website: String(tags.website ?? tags['contact:website'] ?? '').trim(),
+        hours: String(tags.opening_hours ?? '').trim(),
+    };
+}
+
+function normalizePoi(element) {
+    const type = String(element?.type ?? '');
+
+    if (!['node', 'way', 'relation'].includes(type)) {
+        return null;
+    }
+
+    const rawId = element.id;
+
+    if (!Number.isFinite(Number(rawId))) {
+        return null;
+    }
+
+    let lat = Number(element.lat);
+    let lng = Number(element.lon ?? element.lng);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        lat = Number(element.center?.lat);
+        lng = Number(element.center?.lon ?? element.center?.lng);
+    }
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return null;
+    }
+
+    const tags = element.tags && typeof element.tags === 'object' ? element.tags : {};
+    const address = poiAddressFromTags(tags);
+
+    return {
+        id: `${type}/${rawId}`,
+        name: String(tags.name ?? '').trim() || 'Tempat tanpa nama',
+        category: poiCategoryLabel(tags),
+        lat,
+        lng,
+        tags,
+        source: 'osm',
+        address: address.address,
+        postcode: address.postcode,
+        area: address.area,
+        phone: address.phone,
+        website: address.website,
+        hours: address.hours,
+    };
+}
+
+async function fetchOverpassPois(center, { signal } = {}) {
+    const query = buildOverpassQuery(center);
+
+    if (query === '') {
+        return [];
+    }
+
+    const controller = new AbortController();
+    const relayAbort = () => controller.abort();
+    const timeoutId = window.setTimeout(relayAbort, poiConfig.request_timeout_ms);
+
+    signal?.addEventListener('abort', relayAbort, { once: true });
+
+    if (signal?.aborted) {
+        relayAbort();
+    }
+
+    try {
+        const response = await fetch(poiConfig.overpass_endpoint, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+            },
+            body: new URLSearchParams({ data: query }).toString(),
+            signal: controller.signal,
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const payload = await response.json();
+
+        if (!Array.isArray(payload?.elements)) {
+            return [];
+        }
+
+        return payload.elements
+            .slice(0, poiConfig.max_results)
+            .map((element) => normalizePoi(element))
+            .filter(Boolean);
+    } catch (error) {
+        if (controller.signal.aborted) {
+            return [];
+        }
+
+        console.warn('nearFind: tempat dari OpenStreetMap tidak dapat dimuat.', error);
+        return [];
+    } finally {
+        window.clearTimeout(timeoutId);
+        signal?.removeEventListener('abort', relayAbort);
+    }
+}
+
+async function reverseGeocodePoi(poi, signal) {
+    const controller = new AbortController();
+    const relayAbort = () => controller.abort();
+    const timeoutId = window.setTimeout(relayAbort, poiConfig.request_timeout_ms);
+
+    signal?.addEventListener('abort', relayAbort, { once: true });
+
+    if (signal?.aborted) {
+        relayAbort();
+    }
+
+    try {
+        const url = new URL(poiConfig.nominatim_reverse_endpoint);
+        url.searchParams.set('format', 'jsonv2');
+        url.searchParams.set('zoom', '16');
+        url.searchParams.set('lat', String(poi.lat));
+        url.searchParams.set('lon', String(poi.lng));
+
+        const response = await fetch(url.toString(), {
+            headers: { Accept: 'application/json' },
+            signal: controller.signal,
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const payload = await response.json();
+        const address = payload?.address;
+
+        if (!address || typeof address !== 'object') {
+            return null;
+        }
+
+        const street = [address.house_number, address.road].filter(Boolean).join(' ');
+        const locality = [address.suburb, address.city ?? address.town ?? address.village].filter(Boolean).join(', ');
+        const detail = {
+            address: [street, locality].filter(Boolean).join(', '),
+            postcode: String(address.postcode ?? '').trim(),
+            area: String(address.suburb ?? address.city ?? address.town ?? address.village ?? '').trim(),
+        };
+
+        return detail.address || detail.postcode || detail.area ? detail : null;
+    } catch (error) {
+        if (controller.signal.aborted) {
+            return null;
+        }
+
+        console.warn('nearFind: alamat dari OpenStreetMap tidak dapat dimuat.', error);
+        return null;
+    } finally {
+        window.clearTimeout(timeoutId);
+        signal?.removeEventListener('abort', relayAbort);
+    }
+}
 
 const THEME_STORAGE_KEY = 'nf-theme';
 const THEME_DARK = 'dark';
@@ -1143,13 +1515,14 @@ function initNeedsList() {
 }
 
 function initNearFind(
-    { categories, needs, locations = [], authenticated = false, mapStyleUrl = DEFAULT_MAP_STYLE_URL, mapDarkStyleUrl, mapLightStyleUrl, flash = null },
+    { categories, needs, locations = [], authenticated = false, mapStyleUrl = DEFAULT_MAP_STYLE_URL, mapDarkStyleUrl, mapLightStyleUrl, flash = null, poi = null },
     { mapElement, needCardElement },
 ) {
     // Tile URLs are shared across themes; dark mode is a CSS filter on the
     // tile pane, so both keys resolve to a raster template either way.
     themeStyles.dark = mapDarkStyleUrl || mapStyleUrl || FALLBACK_DARK_STYLE;
     themeStyles.light = mapLightStyleUrl || mapStyleUrl || FALLBACK_LIGHT_STYLE;
+    poiConfig = normalizePoiConfig(poi);
 
     const categoryById = Object.fromEntries(categories.map((category) => [category.id, category]));
     const fallbackCategory = categoryById.all ?? categories[0];
@@ -1199,10 +1572,17 @@ function initNearFind(
     const locationAreaInput = locationSheet?.querySelector('[data-location-area]');
     const locationLatInput = locationSheet?.querySelector('[data-location-lat]');
     const locationLngInput = locationSheet?.querySelector('[data-location-lng]');
+    const locationCategoryInput = locationSheet?.querySelector('[data-location-category]');
     const locationPanel = document.querySelector('[data-location-panel]');
     const locationPanelTitle = locationPanel?.querySelector('[data-location-panel-title]');
     const locationPanelMeta = locationPanel?.querySelector('[data-location-panel-meta]');
     const locationPanelClose = locationPanel?.querySelector('[data-location-panel-close]');
+    const poiPanel = document.querySelector('[data-poi-panel]');
+    const poiPanelTitle = poiPanel?.querySelector('[data-poi-panel-title]');
+    const poiPanelMeta = poiPanel?.querySelector('[data-poi-panel-meta]');
+    const poiPanelBody = poiPanel?.querySelector('[data-poi-panel-body]');
+    const poiPanelClose = poiPanel?.querySelector('[data-poi-panel-close]');
+    const poiRouteLink = poiPanel?.querySelector('[data-poi-route]');
     const toast = document.getElementById('toast');
     const toastMessage = toast?.querySelector('[data-toast-message]');
     const mapTip = document.querySelector('[data-map-tip]');
@@ -1334,6 +1714,11 @@ function initNearFind(
             });
             resizeObserver.observe(mapElement);
         }
+
+        if (poiConfig.enabled) {
+            map.on('moveend', schedulePoiRefresh);
+            schedulePoiRefresh();
+        }
     }
 
     function bindEvents() {
@@ -1388,7 +1773,8 @@ function initNearFind(
                     break;
                 case 'add-place':
                     if (requireLogin('add-place', actionElement)) {
-                        openLocationSheet(actionElement);
+                        const poi = actionElement.closest('[data-poi-panel]') ? currentSelectedPoi() : null;
+                        openLocationSheet(actionElement, poi ? poiSheetPrefill(poi) : null);
                     }
                     break;
                 case 'submit-need':
@@ -1425,6 +1811,10 @@ function initNearFind(
             trapFocus(locationSheet, event);
         }, listenerOptions);
 
+        poiPanel?.addEventListener('keydown', (event) => {
+            trapFocus(poiPanel, event);
+        }, listenerOptions);
+
         loginGate?.addEventListener('keydown', (event) => {
             trapFocus(loginGate, event);
         }, listenerOptions);
@@ -1449,6 +1839,11 @@ function initNearFind(
 
         document.addEventListener('keydown', (event) => {
             if (event.key !== 'Escape') {
+                return;
+            }
+
+            if (poiPanel && !poiPanel.hasAttribute('hidden')) {
+                closePoiPanel();
                 return;
             }
 
@@ -1536,6 +1931,7 @@ function initNearFind(
         });
         locationSheet?.querySelector('[data-location-backdrop]')?.addEventListener('click', closeLocationSheet);
         locationPanelClose?.addEventListener('click', closeLocationPanel);
+        poiPanelClose?.addEventListener('click', closePoiPanel);
 
         // Validate the picked point, then leave the real POST to the browser.
         // There is no fake success toast or intercepted response here.
@@ -1773,6 +2169,7 @@ function initNearFind(
         if (!submitSheet) {
             return;
         }
+        closePoiPanel();
 
         const centerPoint = reticlePoint();
 
@@ -2043,6 +2440,292 @@ function initNearFind(
         tooltip.remove();
     }
 
+    // --- OpenStreetMap POI overlay -----------------------------------------
+    function schedulePoiRefresh() {
+        if (disposed || !poiConfig.enabled || !map) {
+            return;
+        }
+
+        window.clearTimeout(poiTimer);
+        poiTimer = window.setTimeout(refreshPoiMarkers, POI_REFRESH_DEBOUNCE_MS);
+    }
+
+    async function refreshPoiMarkers() {
+        if (disposed || !poiConfig.enabled || !map) {
+            return;
+        }
+
+        window.clearTimeout(poiTimer);
+        const center = map.getCenter();
+        const key = poiCacheKey(center);
+
+        if (key === '') {
+            return;
+        }
+
+        const cached = poiCache.get(key);
+
+        if (cached && Date.now() - cached.at < poiConfig.cache_ms) {
+            renderPoiMarkers(cached.pois);
+            return;
+        }
+
+        if (cached) {
+            poiCache.delete(key);
+        }
+
+        const seq = ++poiSeq;
+        poiController?.abort();
+        poiController = new AbortController();
+        const controller = poiController;
+        const pois = await fetchOverpassPois(center, { signal: controller.signal });
+
+        if (disposed || seq !== poiSeq || controller !== poiController || !map) {
+            return;
+        }
+
+        poiCache.forEach((entry, entryKey) => {
+            if (Date.now() - entry.at >= poiConfig.cache_ms) {
+                poiCache.delete(entryKey);
+            }
+        });
+        poiCache.set(key, { at: Date.now(), pois });
+        renderPoiMarkers(pois);
+    }
+
+    function renderPoiMarkers(pois) {
+        if (disposed || !map) {
+            return;
+        }
+
+        poiMarkers.forEach((marker) => marker.remove());
+        poiMarkers.clear();
+        currentPois = Array.isArray(pois) ? pois : [];
+
+        if (selectedPoiId !== null && !currentPois.some((poi) => poi.id === selectedPoiId)) {
+            closePoiPanel();
+        }
+
+        currentPois.forEach((poi) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'nf-marker-wrapper nf-poi-marker-wrapper';
+            wrapper.setAttribute('role', 'button');
+            wrapper.setAttribute('tabindex', '0');
+            wrapper.setAttribute('aria-label', escapeHtml(`${poi.name}, ${poi.category}, titik dari OpenStreetMap`));
+            wrapper.innerHTML = `<div class="nf-poi-marker">
+                    <span class="nf-poi-marker-icon">${icon('pin', 'size-3.5')}</span>
+                    <span class="nf-poi-marker-title">${escapeHtml(poi.name)}</span>
+                </div>`;
+
+            const marker = L.marker([poi.lat, poi.lng], {
+                icon: L.divIcon({
+                    html: wrapper.outerHTML,
+                    className: 'nf-leaflet-icon nf-poi-icon',
+                    iconSize: [28, 36],
+                    iconAnchor: [14, 36],
+                }),
+                keyboard: false,
+                riseOnHover: false,
+            }).addTo(map);
+
+            // Need markers use 420 and location markers 430, so this layer
+            // always paints underneath both of them.
+            marker.setZIndexOffset(-1000);
+
+            const element = marker.getElement();
+            element?.addEventListener('click', () => selectPoi(poi.id));
+            element?.addEventListener('keydown', (event) => {
+                if (event.key !== 'Enter' && event.key !== ' ') {
+                    return;
+                }
+
+                event.preventDefault();
+                selectPoi(poi.id);
+            });
+
+            poiMarkers.set(poi.id, marker);
+        });
+    }
+
+    function currentSelectedPoi() {
+        return currentPois.find((poi) => poi.id === selectedPoiId) ?? null;
+    }
+
+    function poiSheetPrefill(poi) {
+        return {
+            name: poi.name,
+            address: poi.address || '',
+            area: poi.area || '',
+            lat: poi.lat,
+            lng: poi.lng,
+            category: poiCategoryId(poi.tags),
+        };
+    }
+
+    function selectPoi(poiId) {
+        if (disposed) {
+            return;
+        }
+
+        const poi = currentPois.find((item) => item.id === poiId);
+
+        if (!poi) {
+            return;
+        }
+
+        clearAreaPreview();
+        closeLocationPanel();
+        hideMarkerTooltip();
+        state.selectedId = null;
+        state.selectedLocationId = null;
+        state.filtered.forEach((filteredNeed) => refreshMarker(filteredNeed));
+        state.locationMarkers.forEach((marker, id) => refreshLocationMarker(id));
+        selectedPoiId = poi.id;
+        setPoiPanel(poi);
+        syncUrlSelection();
+
+        if (map) {
+            panTo(map, [poi.lat, poi.lng], 0.35);
+        }
+
+        announce(`${poi.name} dipilih dari OpenStreetMap.`);
+        maybeReversePoi(poi);
+    }
+
+    function setPoiPanel(poi) {
+        if (!poiPanel) {
+            return;
+        }
+
+        poiPanel.removeAttribute('hidden');
+        poiPanel.setAttribute('aria-hidden', 'false');
+
+        if (poiPanelTitle) {
+            poiPanelTitle.textContent = poi.name;
+        }
+
+        if (poiPanelMeta) {
+            poiPanelMeta.textContent = `${poi.category} · OpenStreetMap`;
+        }
+
+        renderPoiPanelBody(poi);
+
+        if (poiRouteLink) {
+            poiRouteLink.href = `https://www.openstreetmap.org/directions?route=;${poi.lat.toFixed(6)},${poi.lng.toFixed(6)}`;
+            poiRouteLink.target = '_blank';
+            poiRouteLink.rel = 'noopener noreferrer';
+            poiRouteLink.textContent = 'Buka rute';
+        }
+
+        if (needPanel) {
+            needPanel.hidden = true;
+        }
+
+        if (locationPanel) {
+            locationPanel.setAttribute('hidden', '');
+            locationPanel.setAttribute('aria-hidden', 'true');
+        }
+    }
+
+    function renderPoiPanelBody(poi) {
+        if (!poiPanelBody) {
+            return;
+        }
+
+        poiPanelBody.textContent = '';
+        const rows = [
+            ['Kategori', poi.category],
+            ['Alamat', poi.address || 'Alamat belum tersedia.'],
+            ['Kode pos', poi.postcode || 'Kode pos belum tersedia.'],
+            ['Telepon', poi.phone || 'Nomor telepon belum tersedia.'],
+            ['Situs web', poi.website || 'Situs web belum tersedia.'],
+            ['Jam buka', poi.hours || 'Jam buka belum tercantum.'],
+            ['Koordinat', `${poi.lat.toFixed(6)}, ${poi.lng.toFixed(6)}`],
+        ];
+
+        rows.forEach(([label, value]) => {
+            const row = document.createElement('div');
+            row.className = 'nf-poi-row';
+
+            const key = document.createElement('dt');
+            key.className = 'nf-poi-row-label';
+            key.textContent = label;
+
+            const detail = document.createElement('dd');
+            detail.className = 'nf-poi-row-value';
+            detail.textContent = value;
+
+            row.append(key, detail);
+            poiPanelBody.append(row);
+        });
+    }
+
+    function closePoiPanel() {
+        selectedPoiId = null;
+
+        if (!poiPanel || poiPanel.hasAttribute('hidden')) {
+            return;
+        }
+
+        window.clearTimeout(poiReverseTimer);
+        poiReverseController?.abort();
+        poiPanel.setAttribute('hidden', '');
+        poiPanel.setAttribute('aria-hidden', 'true');
+
+        if (needPanel) {
+            needPanel.hidden = false;
+            setCardExpanded(cardExpanded);
+        }
+    }
+
+    function maybeReversePoi(poi) {
+        if (reverseCache.has(poi.id)) {
+            applyPoiReverse(poi, reverseCache.get(poi.id));
+            return;
+        }
+
+        window.clearTimeout(poiReverseTimer);
+        poiReverseController?.abort();
+        poiReverseController = new AbortController();
+        const controller = poiReverseController;
+
+        const run = () => {
+            if (disposed || selectedPoiId !== poi.id || controller !== poiReverseController) {
+                return;
+            }
+
+            lastPoiReverseAt = Date.now();
+            reverseGeocodePoi(poi, controller.signal).then((detail) => {
+                if (disposed || selectedPoiId !== poi.id || controller !== poiReverseController) {
+                    return;
+                }
+
+                reverseCache.set(poi.id, detail);
+                applyPoiReverse(poi, detail);
+            });
+        };
+
+        const wait = Math.max(0, POI_REVERSE_MIN_INTERVAL_MS - (Date.now() - lastPoiReverseAt));
+
+        if (wait > 0) {
+            poiReverseTimer = window.setTimeout(run, wait);
+        } else {
+            run();
+        }
+    }
+
+    function applyPoiReverse(poi, detail) {
+        if (detail) {
+            if (!poi.address) poi.address = detail.address;
+            if (!poi.postcode) poi.postcode = detail.postcode;
+            if (!poi.area) poi.area = detail.area;
+        }
+
+        if (!disposed && selectedPoiId === poi.id) {
+            renderPoiPanelBody(poi);
+        }
+    }
+
     function selectNeed(needId, { pan = true, preserveScroll = false } = {}) {
         const need = state.needs.find((item) => item.id === needId);
 
@@ -2052,6 +2735,7 @@ function initNearFind(
 
         const point = needPoint(need);
 
+        closePoiPanel();
         clearAreaPreview();
         closeLocationPanel();
         state.selectedLocationId = null;
@@ -2471,6 +3155,7 @@ function initNearFind(
         if (!locationSheet) {
             return;
         }
+        closePoiPanel();
 
         const centerPoint = reticlePoint();
 
@@ -2534,6 +3219,11 @@ function initNearFind(
         set(locationAreaInput, place.area);
         set(locationLatInput, Number.isFinite(place.lat) ? place.lat.toFixed(6) : '');
         set(locationLngInput, Number.isFinite(place.lng) ? place.lng.toFixed(6) : '');
+
+        if (locationCategoryInput && typeof place.category === 'string' && place.category !== ''
+            && [...locationCategoryInput.options].some((option) => option.value === place.category)) {
+            locationCategoryInput.value = place.category;
+        }
 
         if (Number.isFinite(place.lat) && Number.isFinite(place.lng)
             && locationSheet && !locationSheet.classList.contains('hidden')) {
@@ -2658,6 +3348,7 @@ function initNearFind(
         if (!location) {
             return;
         }
+        closePoiPanel();
         clearAreaPreview();
 
         state.selectedLocationId = location.id;
@@ -2686,6 +3377,7 @@ function initNearFind(
     }
 
     function setLocationPanel(location) {
+        closePoiPanel();
         if (!locationPanel) {
             return;
         }
@@ -3167,6 +3859,21 @@ function initNearFind(
         window.clearTimeout(locationSearchTimer);
         placeSearchController?.abort();
         locationSearchController?.abort();
+
+        window.clearTimeout(poiTimer);
+        window.clearTimeout(poiReverseTimer);
+        poiController?.abort();
+        poiReverseController?.abort();
+        poiMarkers.forEach((marker) => marker.remove());
+        poiMarkers.clear();
+        poiCache.clear();
+        reverseCache.clear();
+        currentPois = [];
+        selectedPoiId = null;
+        if (poiPanel) {
+            poiPanel.setAttribute('hidden', '');
+            poiPanel.setAttribute('aria-hidden', 'true');
+        }
 
         needPicker.destroy();
         locationPicker.destroy();

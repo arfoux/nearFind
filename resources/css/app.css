@@ -1063,6 +1063,12 @@ lg-navbar.nf-nav > a[aria-current='page'] {
         pointer-events: none;
         transform: translate(-50%, 0.5rem);
     }
+
+    .nf-poi-panel:not([hidden]) ~ .nf-fab {
+        opacity: 0;
+        pointer-events: none;
+        transform: translate(-50%, 0.5rem);
+    }
 }
 
 @media (min-width: 1024px) {
@@ -1235,5 +1241,137 @@ lg-navbar.nf-nav > a[aria-current='page'] {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+/* -------------------------------------------------------------------------- */
+/* OpenStreetMap POI overlay                                                  */
+/* -------------------------------------------------------------------------- */
+
+/* The panel shares the bottom slot with the need and location panels, but
+   stays above map controls (530) and below the FAB (800) and sheets (1200+).
+   It never reaches the top reticle or the header theme toggle. */
+.nf-poi-panel {
+    z-index: 670;
+    height: auto;
+    max-height: min(64dvh, 36rem);
+    pointer-events: auto;
+}
+
+.nf-poi-body {
+    margin: 0;
+}
+
+.nf-poi-row {
+    display: grid;
+    grid-template-columns: 6.25rem minmax(0, 1fr);
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--nf-divider);
+    padding: 0.35rem 0;
+}
+
+.nf-poi-row:last-child {
+    border-bottom: 0;
+}
+
+.nf-poi-row-label {
+    color: var(--color-muted);
+    font-size: 10.5px;
+    font-weight: 600;
+}
+
+.nf-poi-row-value {
+    overflow-wrap: anywhere;
+    color: var(--color-ink);
+    font-size: 11.5px;
+    line-height: 1.45;
+}
+
+.nf-poi-actions {
+    border-top: 1px solid var(--nf-divider);
+}
+
+.nf-poi-action {
+    text-align: center;
+}
+
+.nf-poi-action--primary {
+    background: var(--color-brand-50);
+    color: var(--color-brand-200);
+}
+
+.nf-poi-action:focus-visible {
+    outline: 3px solid var(--nf-focus);
+    outline-offset: 2px;
+}
+
+/* Both themes reuse the neutral surface tokens. No new accent hue, no glow. */
+[data-theme='light'] .nf-poi-panel {
+    background: var(--color-surface);
+}
+
+[data-theme='light'] .nf-poi-action--primary {
+    background: var(--color-brand-50);
+    color: var(--color-brand-200);
+}
+
+/* The OSM layer is deliberately quiet: static pins at z 200, underneath the
+   need markers (420) and saved-place markers (430) on the same marker pane. */
+.nf-poi-icon {
+    z-index: 200 !important;
+}
+
+.nf-poi-marker-wrapper {
+    cursor: pointer;
+}
+
+.nf-poi-marker {
+    display: flex;
+    height: 28px;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid var(--nf-border);
+    border-radius: 999px;
+    background: var(--nf-overlay-strong);
+    padding: 0 8px 0 3px;
+    box-shadow: var(--nf-shadow);
+    color: var(--color-ink);
+}
+
+.nf-poi-marker-icon {
+    display: flex;
+    width: 22px;
+    height: 22px;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: var(--color-brand-50);
+    color: var(--color-muted);
+}
+
+.nf-poi-marker-title {
+    max-width: 96px;
+    overflow: hidden;
+    font-size: 10px;
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+[data-theme='light'] .nf-poi-marker {
+    background: var(--color-surface);
+}
+
+[data-theme='light'] .nf-poi-marker-icon {
+    color: var(--color-brand-200);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nf-poi-panel,
+    .nf-poi-marker,
+    .nf-poi-action {
+        animation: none !important;
+        transition: none !important;
     }
 }
