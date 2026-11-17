@@ -125,6 +125,7 @@
 
                 <div data-location-panel-body class="scrollbar-card min-h-0 max-h-[min(56dvh,32rem)] overflow-y-auto overscroll-contain px-4 pb-5 pt-1 lg:px-5 lg:pb-6"></div>
             </aside>
+            @include('partials.home.area-panel')
             @include('partials.home.poi-panel')
 
             @include('partials.home/fab', [])

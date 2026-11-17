@@ -1375,3 +1375,61 @@ lg-navbar.nf-nav > a[aria-current='page'] {
         transition: none !important;
     }
 }
+
+/* -------------------------------------------------------------------------- */
+/* OpenStreetMap area detail panel                                            */
+/* -------------------------------------------------------------------------- */
+
+/* Shares the bottom slot with the need, location and POI panels. The header and
+   map controls form a stacking context at 700, so this panel must sit above it
+   to keep its close button clickable where controls overlap on narrow screens.
+   It stays below the FAB (800) and sheets (1200+). */
+.nf-area-panel {
+    z-index: 720;
+    height: auto;
+    max-height: min(64dvh, 36rem);
+    pointer-events: auto;
+}
+
+/* The body is a definition list, so reset the browser margin like the POI body. */
+.nf-area-body {
+    margin: 0;
+}
+
+/* Leaflet paths need an explicit cursor and a theme-aware stroke so a selected
+   area reads as clickable over either basemap. The marker stays the keyboard
+   and screen-reader fallback. */
+.nf-area-geometry {
+    cursor: pointer;
+    fill: var(--color-brand-500);
+    fill-opacity: 0.12;
+    stroke: var(--color-brand-200);
+    stroke-width: 2;
+}
+
+.nf-area-geometry:hover,
+.nf-area-geometry:focus-visible {
+    fill-opacity: 0.22;
+    stroke: var(--nf-focus);
+}
+
+[data-theme='light'] .nf-area-geometry {
+    stroke: var(--color-brand-700);
+}
+
+@media (max-width: 1023px) {
+    .nf-area-panel:not([hidden]) ~ .nf-fab {
+        opacity: 0;
+        pointer-events: none;
+        transform: translate(-50%, 0.5rem);
+        visibility: hidden;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nf-area-panel,
+    .nf-area-geometry {
+        animation: none !important;
+        transition: none !important;
+    }
+}

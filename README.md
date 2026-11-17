@@ -12,6 +12,16 @@ Tempat menarik (POI) diambil dari Overpass dan Nominatim yang gratis serta tanpa
 endpoint-nya bisa diganti lewat `NEARFIND_OVERPASS_ENDPOINT` dan `NEARFIND_NOMINATIM_REVERSE_ENDPOINT`.
 Data POI hanya dibaca dan tidak pernah disimpan di D1, dan kegagalan layanan ini tidak boleh
 mengganggu peta.
+Hasil Nominatim diklasifikasikan sebagai daerah (jalan, desa, kota, kabupaten,
+provinsi, negara) atau tempat seperti masjid. Keduanya bisa diklik di peta dan
+membuka panel detail. Detail diambil dari Nominatim tanpa API key; jam buka
+ditampilkan hanya jika tersedia dalam data OpenStreetMap.
+
+Kategori dari tag OSM yang diizinkan dicerminkan ke kategori nearFind di
+`config/needs.php`: tempat ibadah, sekolah, bank, ATM, kantor pos,
+perpustakaan, kepolisian, taman, dan museum. Kategori ini memakai ikon yang
+sudah ada di sprite, tanpa aset baru. Saat tempat dari OpenStreetMap disimpan,
+formulir lokasi memilih kategori nearFind yang cocok bila kategorinya tersedia.
 
 ## SEO
 

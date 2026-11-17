@@ -117,6 +117,71 @@ return [
             'color' => '#F87171',
             'soft_color' => 'rgba(248, 113, 113, 0.22)',
         ],
+        // Kategori ini mencerminkan tag OSM yang diizinkan di needs.poi.tags
+        // dan memakai ikon yang sudah ada di sprite, tanpa aset baru.
+        [
+            'id' => 'worship',
+            'label' => 'Tempat Ibadah',
+            'icon' => 'pin',
+            'color' => '#6b6256',
+            'soft_color' => 'rgba(107, 98, 86, 0.22)',
+        ],
+        [
+            'id' => 'education',
+            'label' => 'Sekolah',
+            'icon' => 'clipboard',
+            'color' => '#7a7166',
+            'soft_color' => 'rgba(122, 113, 102, 0.22)',
+        ],
+        [
+            'id' => 'bank',
+            'label' => 'Bank',
+            'icon' => 'bag',
+            'color' => '#a39684',
+            'soft_color' => 'rgba(163, 150, 132, 0.22)',
+        ],
+        [
+            'id' => 'atm',
+            'label' => 'ATM',
+            'icon' => 'bag',
+            'color' => '#7a7166',
+            'soft_color' => 'rgba(122, 113, 102, 0.22)',
+        ],
+        [
+            'id' => 'postal',
+            'label' => 'Kantor Pos',
+            'icon' => 'mail',
+            'color' => '#6b6256',
+            'soft_color' => 'rgba(107, 98, 86, 0.22)',
+        ],
+        [
+            'id' => 'library',
+            'label' => 'Perpustakaan',
+            'icon' => 'clipboard',
+            'color' => '#a39684',
+            'soft_color' => 'rgba(163, 150, 132, 0.22)',
+        ],
+        [
+            'id' => 'police',
+            'label' => 'Kepolisian',
+            'icon' => 'shield-check',
+            'color' => '#7a7166',
+            'soft_color' => 'rgba(122, 113, 102, 0.22)',
+        ],
+        [
+            'id' => 'park',
+            'label' => 'Taman',
+            'icon' => 'map',
+            'color' => '#6b6256',
+            'soft_color' => 'rgba(107, 98, 86, 0.22)',
+        ],
+        [
+            'id' => 'museum',
+            'label' => 'Museum',
+            'icon' => 'info',
+            'color' => '#a39684',
+            'soft_color' => 'rgba(163, 150, 132, 0.22)',
+        ],
     ],
 
     /*
