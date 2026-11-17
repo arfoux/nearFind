@@ -1,5 +1,4 @@
 @extends('layouts.auth')
-@section('title', 'Masuk · nearFind')
 
 @php
     // The route a guest was heading to, stashed by the auth middleware. The

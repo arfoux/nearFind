@@ -3507,7 +3507,7 @@ function initNearFind(
             <div class="min-w-0 flex-1">
                 <p class="flex items-center gap-1.5 text-[8px] font-semibold uppercase tracking-[0.12em] text-muted">
                     <span class="truncate">${escapeHtml(category.label)}</span>
-                    <span class="text-muted/60" aria-hidden="true">•</span>
+                    <span class="text-muted" aria-hidden="true">•</span>
                     <span class="normal-case tracking-normal text-muted">${supporters} dukungan</span>
                 </p>
                 <h2 class="mt-1 truncate text-[13px] font-semibold tracking-[-0.02em] text-ink">${escapeHtml(need.title)}</h2>

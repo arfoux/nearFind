@@ -1,5 +1,11 @@
 @extends('layouts.app')
-@php $title = 'Profil · nearFind'; $active = 'profil'; @endphp
+@php
+    $active = 'profil';
+    $seoTitle = 'Profil · nearFind';
+    $seoDescription = 'Halaman profil nearFind untuk mengelola dukungan dan laporan kebutuhan warga di sekitarmu.';
+    $seoPath = '/profile';
+    $seoRobots = 'noindex,nofollow';
+@endphp
 
 @section('content')
     <main class="min-h-0 flex-1 overflow-y-auto px-4 pb-8 pt-5 sm:px-6 lg:px-8">
@@ -19,7 +25,7 @@
                         <p class="mt-1 truncate text-[11.5px] text-muted">
                             {{ $email }}
                             @if ($profile->username)
-                                <span class="text-muted/60">•</span>
+                                <span class="text-muted">•</span>
                                 {{ '@'.$profile->username }}
                             @endif
                         </p>

@@ -1,5 +1,9 @@
 @php
-    $title = $title ?? 'nearFind: Peta Kebutuhan Warga';
+    $seoTitle = $seoTitle ?? 'nearFind: Peta Kebutuhan dan Fasilitas Terdekat di Sekitarmu';
+    $seoDescription = $seoDescription ?? 'Temukan kebutuhan warga dan fasilitas umum terdekat di sekitarmu lewat peta OpenStreetMap. Cari tempat ibadah, klinik, sekolah, kafe, bank, ATM, taman, dan peluang usaha lokal dekat sini.';
+    $seoPath = $seoPath ?? '/';
+    $seoRobots = $seoRobots ?? 'index,follow';
+    $seoKeywords = $seoKeywords ?? config('needs.seo.keywords');
     $active = $active ?? 'peta';
 
     // The map page IS the canvas: the Leaflet surface runs edge to edge under a
@@ -45,14 +49,12 @@
             }
         })();
     </script>
-    <meta name="description" content="nearFind membantu warga menemukan dan melaporkan kebutuhan di sekitar, sekaligus membuka peluang usaha bagi pelaku usaha lokal.">
+    @include('partials.seo.head')
 
     {{-- The tab icon is the same mark as partials/brand.blade.php: browsers that
          understand SVG pick favicon.svg, the rest fall back to favicon.ico. --}}
     <link rel="icon" href="{{ url('/favicon.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ url('/apple-touch-icon.png') }}">
-
-    <title>{{ $title }}</title>
 
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])

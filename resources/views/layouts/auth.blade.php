@@ -1,3 +1,11 @@
+@php
+    $seoTitle = $seoTitle ?? 'Masuk · nearFind';
+    $seoDescription = $seoDescription ?? 'Masuk ke nearFind untuk mendukung dan melaporkan kebutuhan warga di sekitarmu.';
+    $seoPath = $seoPath ?? '/auth';
+    $seoRobots = $seoRobots ?? 'noindex,follow';
+    $seoKeywords = $seoKeywords ?? config('needs.seo.keywords');
+@endphp
+
 <!DOCTYPE html>
 <html lang="id" class="h-full" data-theme="light">
 <head>
@@ -19,12 +27,10 @@
             }
         })();
     </script>
-    <meta name="description" content="Masuk ke nearFind untuk mendukung dan melaporkan kebutuhan warga di sekitarmu.">
+    @include('partials.seo.head')
 
     <link rel="icon" href="{{ url('/favicon.svg') }}" type="image/svg+xml">
     <link rel="apple-touch-icon" href="{{ url('/apple-touch-icon.png') }}">
-
-    <title>@yield('title', 'Masuk · nearFind')</title>
 
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])

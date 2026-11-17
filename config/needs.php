@@ -131,4 +131,22 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | SEO dan discoverability
+    |--------------------------------------------------------------------------
+    |
+    | Nilai bawaan metadata untuk kedua layout. Daftar kata kunci memakai
+    | frase alami yang memang sesuai dengan peta, fasilitas umum, dan laporan
+    | kebutuhan warga nearFind. Tidak ada layanan SEO eksternal atau API key.
+    |
+    */
+
+    'seo' => [
+        // Host produksi tetap agar canonical dan URL data terstruktur tetap absolut setelah prerender statis.
+        'site_url' => 'https://nf.nietzsc.de',
+        'site_name' => 'nearFind',
+        'site_description' => 'Temukan kebutuhan warga dan fasilitas umum terdekat di sekitarmu lewat peta OpenStreetMap.',
+        'keywords' => 'peta kebutuhan warga, peta fasilitas umum, peta di sekitar saya, peta lokasi terdekat, cari lokasi dekat sini, fasilitas umum terdekat, tempat terdekat, di sekitar saya, dekat sini, sekitar Sukajadi, Sukajadi Bandung, Gegerkalong, Sukawarna, Pasteur, kebutuhan warga, laporan kebutuhan warga, dukung kebutuhan warga, rekap kebutuhan warga, peluang usaha warga, tempat ibadah terdekat, rumah sakit terdekat, klinik dekat sini, fasilitas kesehatan terdekat, apotek di sekitar saya, sekolah terdekat, perpustakaan terdekat, kafe terdekat, restoran dekat sini, supermarket terdekat, minimarket di sekitar saya, toko roti terdekat, bank terdekat, ATM di sekitar saya, kantor pos terdekat, kantor polisi dekat sini, taman terdekat, museum di sekitar saya, jasa laundry terdekat, servis AC dekat sini, fotokopi terdekat, bibit tanaman, warung sayur, near me, nearby places, nearest places, places near me, points of interest, POI near me, OpenStreetMap, OSM map, map nearby, locations near me, community needs, facilities near me, interactive map, local services near me',
+    ],
 ];
