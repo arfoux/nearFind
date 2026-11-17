@@ -24,6 +24,47 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Tempat menarik (POI) dari OpenStreetMap
+    |--------------------------------------------------------------------------
+    |
+    | Data POI dibaca langsung dari Overpass dan Nominatim saat peta dimuat,
+    | lalu dikirim ke klien lewat data island. Bersifat read-only: tidak ada
+    | baris yang ditulis ke D1. Keduanya gratis tanpa API key. Bila salah satu
+    | gagal, peta tetap tampil seperti biasa.
+    |
+    */
+
+    'poi' => [
+        'enabled' => env('NEARFIND_POI_ENABLED', true),
+        'overpass_endpoint' => env('NEARFIND_OVERPASS_ENDPOINT', 'https://overpass.private.coffee/api/interpreter'),
+        'nominatim_reverse_endpoint' => env('NEARFIND_NOMINATIM_REVERSE_ENDPOINT', 'https://nominatim.openstreetmap.org/reverse'),
+        'search_radius_m' => env('NEARFIND_POI_SEARCH_RADIUS_M', 1000),
+        'max_results' => env('NEARFIND_POI_MAX_RESULTS', 20),
+        'request_timeout_ms' => env('NEARFIND_POI_REQUEST_TIMEOUT_MS', 8000),
+        'cache_ms' => env('NEARFIND_POI_CACHE_MS', 300000),
+        'tags' => [
+            'amenity' => [
+                'place_of_worship',
+                'school',
+                'clinic',
+                'hospital',
+                'pharmacy',
+                'cafe',
+                'restaurant',
+                'bank',
+                'atm',
+                'post_office',
+                'library',
+                'police',
+            ],
+            'shop' => ['supermarket', 'convenience', 'bakery'],
+            'leisure' => ['park'],
+            'tourism' => ['museum'],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Kategori kebutuhan
     |--------------------------------------------------------------------------
     |

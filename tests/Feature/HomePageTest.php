@@ -179,4 +179,69 @@ class HomePageTest extends TestCase
         $this->assertSame($before, Need::count());
         $this->assertSame(1, Profile::where('username', 'warga_sukajadi')->count());
     }
+
+    public function test_home_passes_the_exact_poi_config_defaults_to_the_view(): void
+    {
+        $response = $this->get('/');
+        $response->assertOk();
+
+        // Berasal dari config/needs.php tanpa env override di phpunit.xml.
+        $this->assertSame([
+            'enabled' => true,
+            'overpass_endpoint' => 'https://overpass.private.coffee/api/interpreter',
+            'nominatim_reverse_endpoint' => 'https://nominatim.openstreetmap.org/reverse',
+            'search_radius_m' => 1000,
+            'max_results' => 20,
+            'request_timeout_ms' => 8000,
+            'cache_ms' => 300000,
+            'tags' => [
+                'amenity' => [
+                    'place_of_worship',
+                    'school',
+                    'clinic',
+                    'hospital',
+                    'pharmacy',
+                    'cafe',
+                    'restaurant',
+                    'bank',
+                    'atm',
+                    'post_office',
+                    'library',
+                    'police',
+                ],
+                'shop' => ['supermarket', 'convenience', 'bakery'],
+                'leisure' => ['park'],
+                'tourism' => ['museum'],
+            ],
+        ], $response->viewData('poi'));
+    }
+
+    public function test_the_nearfind_data_island_carries_the_poi_endpoints(): void
+    {
+        $response = $this->get('/');
+        $response->assertOk();
+
+        preg_match('/<script type="application\/json" id="nearfind-data">(.*?)<\/script>/s', (string) $response->getContent(), $match);
+        $data = json_decode($match[1] ?? '[]', true);
+
+        // Kedua endpoint dikirim lewat data island untuk dipakai klien.
+        $this->assertSame('https://overpass.private.coffee/api/interpreter', $data['poi']['overpass_endpoint'] ?? null);
+        $this->assertSame('https://nominatim.openstreetmap.org/reverse', $data['poi']['nominatim_reverse_endpoint'] ?? null);
+    }
+
+    public function test_a_poi_endpoint_config_override_reaches_the_view(): void
+    {
+        // Menimpa kunci config adalah jalur stabil tanpa HTTP mock atau permintaan jaringan.
+        $customEndpoint = 'https://overpass.example.test/api/interpreter';
+        config()->set('needs.poi.overpass_endpoint', $customEndpoint);
+
+        $response = $this->get('/');
+        $response->assertOk();
+
+        $this->assertSame($customEndpoint, $response->viewData('poi')['overpass_endpoint'] ?? null);
+
+        preg_match('/<script type="application\/json" id="nearfind-data">(.*?)<\/script>/s', (string) $response->getContent(), $match);
+        $data = json_decode($match[1] ?? '[]', true);
+        $this->assertSame($customEndpoint, $data['poi']['overpass_endpoint'] ?? null);
+    }
 }
