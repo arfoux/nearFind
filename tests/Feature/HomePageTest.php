@@ -231,7 +231,7 @@ class HomePageTest extends TestCase
             'overpass_endpoint' => 'https://overpass.private.coffee/api/interpreter',
             'nominatim_reverse_endpoint' => 'https://nominatim.openstreetmap.org/reverse',
             'search_radius_m' => 1000,
-            'max_results' => 20,
+            'max_results' => 100,
             'request_timeout_ms' => 8000,
             'cache_ms' => 300000,
             'tags' => [

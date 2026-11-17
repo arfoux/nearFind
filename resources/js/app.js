@@ -76,7 +76,7 @@ const POI_DEFAULTS = {
     overpass_endpoint: 'https://overpass.private.coffee/api/interpreter',
     nominatim_reverse_endpoint: 'https://nominatim.openstreetmap.org/reverse',
     search_radius_m: 1000,
-    max_results: 20,
+    max_results: 100,
     request_timeout_ms: 8000,
     cache_ms: 300000,
     tags: {
@@ -87,7 +87,10 @@ const POI_DEFAULTS = {
     },
 };
 const OVERPASS_FALLBACK_ENDPOINT = 'https://overpass.nextgis.com/api/interpreter';
-const OVERPASS_FALLBACK_RADIUS_M = 3000;
+const POI_VIEWPORT_FACTOR = 5;
+const POI_CENTER_STAGE_FACTOR = 0.2;
+const POI_STORAGE_PREFIX = 'nearfind:osm-poi:v2:';
+const POI_FACILITY_KEYS = ['amenity', 'shop', 'leisure', 'tourism', 'healthcare', 'office', 'public_transport'];
 const POI_LANDMARK_TAGS = new Set([
     'hospital', 'museum', 'place_of_worship', 'school', 'park',
     'supermarket', 'police', 'library', 'bank',
@@ -178,43 +181,135 @@ function escapePoiRegex(value) {
     return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-function poiCacheKey(center) {
-    const lat = Number(center?.lat);
-    const lng = Number(center?.lng ?? center?.lon);
+function poiCacheKey(stage, bounds) {
+    const south = Number(bounds?.south);
+    const west = Number(bounds?.west);
+    const north = Number(bounds?.north);
+    const east = Number(bounds?.east);
 
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    if (![south, west, north, east].every(Number.isFinite)) {
         return '';
     }
 
     return [
+        String(stage),
         poiConfig.overpass_endpoint,
-        lat.toFixed(4),
-        lng.toFixed(4),
-        Math.round(poiConfig.search_radius_m),
+        south.toFixed(4),
+        west.toFixed(4),
+        north.toFixed(4),
+        east.toFixed(4),
         Math.round(poiConfig.max_results),
     ].join('|');
 }
 
-function buildOverpassQuery(center, radius = poiConfig.search_radius_m) {
-    const lat = Number(center?.lat);
-    const lng = Number(center?.lng ?? center?.lon);
+function poiViewportStages(map) {
+    const bounds = map?.getBounds?.();
+    const center = map?.getCenter?.();
 
-    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    if (!bounds?.isValid?.() || !center) {
+        return [];
+    }
+
+    const south = bounds.getSouth();
+    const west = bounds.getWest();
+    const north = bounds.getNorth();
+    const east = bounds.getEast();
+    const latSpan = north - south;
+    const lngSpan = east - west;
+    const spread = (POI_VIEWPORT_FACTOR - 1) / 2;
+    const centerLat = latSpan * POI_CENTER_STAGE_FACTOR / 2;
+    const centerLng = lngSpan * POI_CENTER_STAGE_FACTOR / 2;
+
+    return [
+        {
+            stage: 'center',
+            bounds: {
+                south: center.lat - centerLat,
+                west: center.lng - centerLng,
+                north: center.lat + centerLat,
+                east: center.lng + centerLng,
+            },
+        },
+        {
+            stage: 'viewport',
+            bounds: { south, west, north, east },
+        },
+        {
+            stage: 'radius',
+            bounds: {
+                south: Math.max(-85, south - latSpan * spread),
+                west: Math.max(-180, west - lngSpan * spread),
+                north: Math.min(85, north + latSpan * spread),
+                east: Math.min(180, east + lngSpan * spread),
+            },
+        },
+    ];
+}
+
+function mergePoiGroups(groups) {
+    const merged = new Map();
+
+    groups.flat().forEach((poi) => {
+        if (poi?.id && !merged.has(poi.id)) {
+            merged.set(poi.id, poi);
+        }
+    });
+
+    return [...merged.values()].slice(0, poiConfig.max_results);
+}
+
+function readPoiCache(key) {
+    const memory = poiCache.get(key);
+
+    if (memory && Date.now() - memory.at < poiConfig.cache_ms) {
+        return memory.pois;
+    }
+
+    try {
+        const raw = window.localStorage.getItem(`${POI_STORAGE_PREFIX}${key}`);
+
+        if (raw) {
+            const pois = JSON.parse(raw);
+
+            if (Array.isArray(pois)) {
+                poiCache.set(key, { at: Date.now(), pois });
+                return pois;
+            }
+        }
+    } catch (error) {
+        // localStorage can be unavailable or corrupt; fetch normally.
+    }
+
+    return null;
+}
+
+function writePoiCache(key, pois) {
+    poiCache.set(key, { at: Date.now(), pois });
+
+    try {
+        window.localStorage.setItem(`${POI_STORAGE_PREFIX}${key}`, JSON.stringify(pois));
+    } catch (error) {
+        // Keep the in-memory cache when storage quota is unavailable.
+    }
+}
+
+function buildOverpassQuery(bounds) {
+    const south = Number(bounds?.south);
+    const west = Number(bounds?.west);
+    const north = Number(bounds?.north);
+    const east = Number(bounds?.east);
+
+    if (![south, west, north, east].every(Number.isFinite)) {
         return '';
     }
 
-    const around = `(around:${Math.round(radius)},${lat.toFixed(6)},${lng.toFixed(6)})`;
-    const statements = poiConfig.tags.map(({ key, values }) => {
-        const filter = values.length > 0 ? `~"^(${values.map(escapePoiRegex).join('|')})$"` : '';
-        return `nwr["${key}"${filter}]${around};`;
-    });
-
-    if (statements.length === 0) {
-        statements.push(`nwr${around};`);
-    }
+    const bbox = `(${south},${west},${north},${east})`;
+    const statements = POI_FACILITY_KEYS.map((key) => `  nwr["name"]["${key}"]${bbox};`);
+    statements.push(`  nwr["name"]["railway"~"^(station|halt)$"]${bbox};`);
+    const union = `(\n${statements.join('\n')}\n);`;
 
     const timeout = Math.max(5, Math.ceil(poiConfig.request_timeout_ms / 1000));
-    return `[out:json][timeout:${timeout}];\n${statements.join('\n')}\nout center tags ${poiConfig.max_results};`;
+    return `[out:json][timeout:${timeout}];\n${union}\nout center tags ${poiConfig.max_results};`;
 }
 
 const POI_CATEGORY_LABELS = {
@@ -417,10 +512,20 @@ async function fetchOverpassOnce(endpoint, query, outerSignal) {
 
         return {
             ok: true,
-            pois: payload.elements
-                .slice(0, poiConfig.max_results)
-                .map((element) => normalizePoi(element))
-                .filter(Boolean),
+            pois: (() => {
+                const seen = new Set();
+
+                return payload.elements
+                    .map((element) => normalizePoi(element))
+                    .filter((poi) => {
+                        if (!poi || seen.has(poi.id)) {
+                            return false;
+                        }
+                        seen.add(poi.id);
+                        return true;
+                    })
+                    .slice(0, poiConfig.max_results);
+            })(),
         };
     } catch (error) {
         return { ok: false, error };
@@ -430,7 +535,7 @@ async function fetchOverpassOnce(endpoint, query, outerSignal) {
     }
 }
 
-async function fetchOverpassPois(center, { signal } = {}) {
+async function fetchOverpassPois(bounds, { signal } = {}) {
     const endpoints = [poiConfig.overpass_endpoint];
     if (endpoints[0] !== OVERPASS_FALLBACK_ENDPOINT) {
         endpoints.push(OVERPASS_FALLBACK_ENDPOINT);
@@ -442,8 +547,7 @@ async function fetchOverpassPois(center, { signal } = {}) {
         if (signal?.aborted) {
             return [];
         }
-        const isFallback = endpoint === OVERPASS_FALLBACK_ENDPOINT;
-        const query = buildOverpassQuery(center, isFallback ? OVERPASS_FALLBACK_RADIUS_M : poiConfig.search_radius_m);
+        const query = buildOverpassQuery(bounds);
 
         if (query === '') {
             return [];
@@ -3044,41 +3148,46 @@ function initNearFind(
         }
 
         window.clearTimeout(poiTimer);
-        const center = map.getCenter();
-        const key = poiCacheKey(center);
+        const stages = poiViewportStages(map);
 
-        if (key === '') {
+        if (stages.length === 0) {
             return;
-        }
-
-        const cached = poiCache.get(key);
-
-        if (cached && Date.now() - cached.at < poiConfig.cache_ms) {
-            renderPoiMarkers(cached.pois);
-            return;
-        }
-
-        if (cached) {
-            poiCache.delete(key);
         }
 
         const seq = ++poiSeq;
         poiController?.abort();
         poiController = new AbortController();
         const controller = poiController;
-        const pois = await fetchOverpassPois(center, { signal: controller.signal });
+        const groups = [];
 
-        if (disposed || seq !== poiSeq || controller !== poiController || !map) {
-            return;
-        }
-
-        poiCache.forEach((entry, entryKey) => {
-            if (Date.now() - entry.at >= poiConfig.cache_ms) {
-                poiCache.delete(entryKey);
+        for (const stage of stages) {
+            if (disposed || seq !== poiSeq || controller !== poiController || !map || controller.signal.aborted) {
+                return;
             }
-        });
-        poiCache.set(key, { at: Date.now(), pois });
-        renderPoiMarkers(pois);
+
+            const key = poiCacheKey(stage.stage, stage.bounds);
+
+            if (key === '') {
+                continue;
+            }
+
+            let pois = readPoiCache(key);
+
+            if (pois === null) {
+                pois = await fetchOverpassPois(stage.bounds, { signal: controller.signal });
+
+                if (disposed || seq !== poiSeq || controller !== poiController || !map) {
+                    return;
+                }
+
+                if (pois.length > 0) {
+                    writePoiCache(key, pois);
+                }
+            }
+
+            groups.push(pois);
+            renderPoiMarkers(mergePoiGroups(groups));
+        }
     }
 
     function renderPoiMarkers(pois) {
